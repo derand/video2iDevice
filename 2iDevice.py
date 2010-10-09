@@ -751,7 +751,6 @@ def encodeStreams(fi):
 			if STTNGS['sc']:
 				sConverter.ass2srt('%s%s.ssa'%(path,nm), files[-1][1])
 	
-		
 			
 	print 'files: ',files
 

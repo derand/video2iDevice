@@ -254,61 +254,6 @@ class mpeg4fixer:
 		os.system(cmd)
 		return None
 
-		print names
-		f = open(fn, 'r')
-		of_name = '%s'%fn.split('/')[-1]
-		fo = open(of_name, 'w+')
-		fs = os.path.getsize(fn)
-		pos = 0
-		moov_sz = 0
-		trackCounter = 0
-		while (pos+moov_sz)<fs:
-			(moov_sz, name, pos) = self.__getSectionInfo(f)
-			print '%012d +%s(%d)'%(pos, name, moov_sz)
-			if name=='moov':
-				mi = (0,'',0)
-				moov_out_pos = fo.tell()
-				fo.write(self.__swapBytes(struct.pack('I', 8)))
-				fo.write('moov')
-				moov_out_sz = 8
-				while (mi[2]+mi[0])<(pos+moov_sz):
-					mi = self.__getSectionInfo(f)
-					self.__copySection(mi, f, fo)
-					moov_out_sz += mi[0]
-					if mi[1]=='trak':
-						if names[trackCounter]!=None:
-							print '%012d   %s(%d)\t%s'%(mi[2], mi[1], mi[0], names[trackCounter])
-							nsz = len(names[trackCounter]) + 16
-							print nsz
-							'''
-							fo.write(self.__swapBytes(struct.pack('I', nsz)))
-							fo.write('udta')
-							fo.write(self.__swapBytes(struct.pack('I', nsz-8)))
-							fo.write('name')
-							fo.write(names[trackCounter])
-							moov_out_sz += nsz
-							fo.seek(-1*(mi[0]+nsz), 2)
-							nsz = mi[0]+nsz
-							fo.write(self.__swapBytes(struct.pack('I', nsz)))
-							'''
-						else:
-							print '%012d   %s(%d)'%(mi[2], mi[1], mi[0])
-						trackCounter += 1
-					else:
-						print '%012d   %s(%d)'%(mi[2], mi[1], mi[0])
-					f.seek(mi[0]+mi[2])
-				fo.seek(moov_out_pos)
-				fo.write(self.__swapBytes(struct.pack('I', moov_out_sz)))
-			elif name=='free':
-				if moov_sz>60:
-					self.__copySection((moov_sz, name, pos), f, fo)
-			else:
-				# copy data
-				self.__copySection((moov_sz, name, pos), f, fo)
-			f.seek(pos+moov_sz)
-		f.close()
-		fo.close()
-
 if __name__=='__main__':
 	if len(sys.argv)==2:
 		#mpeg4fixer().fixFlagsAndSubs(sys.argv[1])
