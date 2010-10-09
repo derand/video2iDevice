@@ -81,6 +81,7 @@ STTNGS = {
 	'lang':		'',
 	'ar':		48000,
 	'b':		640,
+	'refs':		6,
 	'tn':		False,
 	'streams':	'',
 	'tfile':	'',
@@ -108,6 +109,7 @@ Options
 	-sn			disable convert subtitles
 	-ar		[int]	audio rate (def 48000)
 	-b		[int]	video bitrate (def 640)
+	-refs	[int]	ref frames for coding video
 	-tn			disable sets tags
 	-mn			disable merge
 	-streams	[str]	select streams numbers (first index 0 separated ':')
@@ -582,7 +584,7 @@ def cVideo(iFile, stream, oFile):
 	print '%dx%d  ==> %dx%d'%(w,h, _w,_h)
 	#for _pass in [1,3,2]:
 	for _pass in [1,2]:
-		cmd = 'ffmpeg -y -i "%s" -pass %d -map %s -an  -vcodec "libx264" -b "%d k" -s "%dx%d" -flags "+loop" -cmp "+chroma" -partitions "+parti4x4+partp8x8+partb8x8" -subq 6  -trellis 0  -refs 6  -coder 0  -me_range 16  -g 240   -keyint_min 25  -sc_threshold 40     -i_qfactor 0.71 -maxrate  "%d k"  -bufsize "1000 k"  -rc_eq "blurCplx^(1-qComp)"   -qcomp 0.6     -qmin 15  -qmax 51  -qdiff 4  -level 30 -threads %d -flags2 -fastpskip -me_method full "%s"'%(iFile, _pass, stream[1], STTNGS['b'], _w,_h, STTNGS['b'], STTNGS['threads'], oFile)
+		cmd = 'ffmpeg -y -i "%s" -pass %d -map %s -an  -vcodec "libx264" -b "%d k" -s "%dx%d" -flags "+loop" -cmp "+chroma" -partitions "+parti4x4+partp8x8+partb8x8" -subq 6  -trellis 0  -refs %d  -coder 0  -me_range 16  -g 240   -keyint_min 25  -sc_threshold 40     -i_qfactor 0.71 -maxrate  "%d k"  -bufsize "1000 k"  -rc_eq "blurCplx^(1-qComp)"   -qcomp 0.6     -qmin 15  -qmax 51  -qdiff 4  -level 30 -threads %d -flags2 -fastpskip -me_method full "%s"'%(iFile, _pass, stream[1], STTNGS['b'], _w,_h, STTNGS['refs'] STTNGS['b'], STTNGS['threads'], oFile)
 		printCmd(cmd)
 		if STTNGS['vc']:
 			p = os.popen(cmd)
