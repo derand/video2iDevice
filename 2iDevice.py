@@ -584,7 +584,7 @@ def cVideo(iFile, stream, oFile):
 	print '%dx%d  ==> %dx%d'%(w,h, _w,_h)
 	#for _pass in [1,3,2]:
 	for _pass in [1,2]:
-		cmd = 'ffmpeg -y -i "%s" -pass %d -map %s -an  -vcodec "libx264" -b "%d k" -s "%dx%d" -flags "+loop" -cmp "+chroma" -partitions "+parti4x4+partp8x8+partb8x8" -subq 6  -trellis 0  -refs %d  -coder 0  -me_range 16  -g 240   -keyint_min 25  -sc_threshold 40     -i_qfactor 0.71 -maxrate  "%d k"  -bufsize "1000 k"  -rc_eq "blurCplx^(1-qComp)"   -qcomp 0.6     -qmin 15  -qmax 51  -qdiff 4  -level 30 -threads %d -flags2 -fastpskip -me_method full "%s"'%(iFile, _pass, stream[1], STTNGS['b'], _w,_h, STTNGS['refs'] STTNGS['b'], STTNGS['threads'], oFile)
+		cmd = 'ffmpeg -y -i "%s" -pass %d -map %s -an  -vcodec "libx264" -b "%d k" -s "%dx%d" -flags "+loop" -cmp "+chroma" -partitions "+parti4x4+partp8x8+partb8x8" -subq 6  -trellis 0  -refs %d  -coder 0  -me_range 16  -g 240   -keyint_min 25  -sc_threshold 40 -i_qfactor 0.71 -maxrate  "%d k" -bufsize "1000 k" -rc_eq "blurCplx^(1-qComp)" -qcomp 0.6 -qmin 15 -qmax 51 -qdiff 4 -flags2 "+bpyramid-mixed_refs+wpred-dct8x8+fastpskip" -me_method full -directpred 2 -b_strategy 1 -level 30 -threads %d "%s"'%(iFile, _pass, stream[1], STTNGS['b'], _w,_h, STTNGS['refs'], STTNGS['b'], STTNGS['threads'], oFile)
 		printCmd(cmd)
 		if STTNGS['vc']:
 			p = os.popen(cmd)
@@ -796,7 +796,7 @@ def encodeStreams(fi):
 	need = False
 	for f in files:
 		n = None
-		if f[2][3].has_key('name'):
+		if f[2]!=None and f[2][3].has_key('name'):
 			n = f[2][3]['name']
 			need = True
 		trackNames.append(n)
