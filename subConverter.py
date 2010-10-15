@@ -8,7 +8,9 @@ import os
 import string
 
 STTNGS = {
-'ASSremoveItems' : ('EdKara', 'TVLpaint', 'SerialMainTitle', 'Kar_OP_1', 'Kar_OP_2', 'Kar_OP_3', 'Kar_OP_4', 	'Kar_ED_1', 'Kar_ED_2', 'Kar_ED_3', 'Kar_ED_4', 'Kar_ED_5', 'Kar_ED_6', '# WORKING OP RO', 'Ending2', 	'EPtv_txt1', 'EPtv_txt2', 'BackComment' ),
+'ASSremoveItems' : ('EdKara', 'TVLpaint', 'SerialMainTitle', 'Kar_OP_1', 'Kar_OP_2', 'Kar_OP_3', 'Kar_OP_4', 	'Kar_ED_1', 'Kar_ED_2', 'Kar_ED_3', 'Kar_ED_4', 'Kar_ED_5', 'Kar_ED_6', '# WORKING OP RO', 'Ending2', 	'EPtv_txt1', 'EPtv_txt2', 'BackComment',
+	'Song1' ),
+
 'subStyleColors' : {
 	"prew" : "d9a1afi",
 	"end" : "d37f63i",
@@ -16,6 +18,37 @@ STTNGS = {
 	"rus_ed" : "8ad3a1i",
 	"eng_op" : "9292e6i",
 	"eng_ed" : "9292e6i"
+	},
+
+'subReplace' : {
+	unicode("На", 'utf-8'): {
+			"text": unicode("Назад обернувшись, смотрю пред собою:\n\"Кто там стоит?\"", 'utf-8'),
+			"style": "Song1"
+		},
+	unicode("Когтями", 'utf-8'): {
+			"text": unicode("Когтями на части всю тьму разорвало...", 'utf-8'),
+			"style": "Song1"
+		},
+	unicode("Когда", 'utf-8'): {
+			"text": unicode("Когда обернётся дождь крови рекой,\nна горло мое вдруг прольется потоком...", 'utf-8'),
+			"style": "Song1"
+		},
+	unicode("Не будет", 'utf-8'): {
+			"text": unicode("Не будет впредь места на целой", 'utf-8'),
+			"style": "Song1"
+		},
+	unicode("Земле, куда ты вернуться бы смог.", 'utf-8'): {
+			"text": unicode("Земле, куда ты вернуться бы смог.", 'utf-8'),
+			"style": "Song1"
+		},
+	unicode("Иди вслед за пальцем,", 'utf-8'): {
+			"text": unicode("Иди вслед за пальцем, за пальцем моим.\nЯ тебя уведу за собою в тот лес,..", 'utf-8'),
+			"style": "Song1"
+		},
+	unicode("...где цикады стрекочут", 'utf-8'): {
+			"text": unicode("...где цикады стрекочут во тьме.\nНо назад ты уже не вернёшься...", 'utf-8'),
+			"style": "Song1"
+		},
 	},
 }
 
@@ -273,12 +306,15 @@ class subConverter:
 		black_list = ()
 		if self.__STNGS.has_key('ASSremoveItems'):
 			black_list = self.__STNGS['ASSremoveItems']
+		subReplace = {}
+		if self.__STNGS.has_key('subReplace'):
+			subReplace = self.__STNGS['subReplace']
 		lastVal = None
 		styles = {}
 		for line in fi:
 			if block==2:
 				elems = line.split(',')
-				t =  re.compile('Style:\s*([^\s]+)').match(elems[0])
+				t =  re.compile('Style:\s*([^,]+)').match(elems[0])
 				if t:
 					sName = t.groups()[0]
 					t =  re.compile('\&(H[0-9a-fA-F]{2})([0-9a-fA-F]{6})').match(elems[3])
@@ -292,13 +328,6 @@ class subConverter:
 				if line[:10] == 'Dialogue: ':
 					line = line[8:]
 					elems = line.split(',')
-					bl = False
-					for style in black_list:
-						if style==elems[3]:
-							bl = True
-							break
-					if bl:
-						continue
 					linetext = ",".join(elems[9:])
 					linetext = unicode( linetext, "utf-8" )
 					linetext = linetext.replace('\\n','\\N');
@@ -308,6 +337,21 @@ class subConverter:
 					linetext = re.sub(r'm\s\-{0,1}\d+\s+\-{0,1}\d+\s+s(\s+\-{0,1}\d+){14}\s+c', '', linetext)	# m 5 0 s 95 0 100 5 100 95 95 100 5 100 0 95 0 5 c
 					#linetext = re.sub(r'\{[^\}]*\}', '', linetext)		# remove from subs {xxxx}
 
+					blackCheck = True
+					if subReplace.has_key(linetext.strip()):
+						v = subReplace[linetext.strip()]
+						if (not v.has_key('style')) or (v.has_key('style') and v['style']==elems[3].strip()):
+							linetext = v['text']
+							blackCheck = False
+
+					if blackCheck:
+						bl = False
+						for style in black_list:
+							if style==elems[3]:
+								bl = True
+								break
+						if bl:
+							continue
 
 					'''
 					# Ergo proxy  

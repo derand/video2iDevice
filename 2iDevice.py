@@ -46,6 +46,14 @@
 #invalid
 #cabac=0 / ref=5 / deblock=1:0:0 / analyse=0x1:0x111 / me=dia / subme=5 / psy=1 / psy_rd=0.00:0.00 / mixed_ref=0 / me_range=16 / chroma_me=1 / trellis=0 / 8x8dct=0 / cqm=0 / deadzone=21,11 / fast_pskip=1 / chroma_qp_offset=0 / threads=3 / sliced_threads=0 / nr=0 / decimate=1 / interlaced=0 / constrained_intra=0 / bframes=0 / weightp=0 / keyint=300 / keyint_min=25 / scenecut=40 / intra_refresh=0 / rc_lookahead=40 / rc=2pass / mbtree=1 / bitrate=650 / ratetol=6.2 / qcomp=0.60 / qpmin=15 / qpmax=51 / qpstep=4 / cplxblur=20.0 / qblur=0.5 / vbv_maxrate=650 / vbv_bufsize=600 / ip_ratio=1.41 / aq=1:1.00 / nal_hrd=none
 
+#at first pass add ref=1:subme=2:me=dia:analyse=none:trellis=0:no-fast-pskip=0:8x8dct=0:weightb=0
+# -flags2 +dct8x8-fastpskip-dct8x8-wpred -subq 6
+
+#Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+#Style: Default,Trebuchet MS,50, &H00FFFFFF,&H0000FFFF,&H000F0991, &H00000000, 0,0,0,0,100,95,0,0,1,3,0,2,35,35,20,204
+#Style: Default 2,Trebuchet MS,50,&H00FFFFFF,&H0000FFFF,&H000F0991,&H00000000, 0,0,0,0,100,95,0,0,1,3,0,8,35,35,20,204
+
+
 '''
 HandBrakeCLI --ipod-atom --encoder x264 --vb 450 --two-pass --rate 23.976 \
 --x264opts "partitions=+parti4x4+partp8x8+partb8x8:subq=5:trellis=1:me_range=16:keyint_min=25:qcomp=0.7:level=30" \
@@ -88,7 +96,8 @@ STTNGS = {
 	'fd':		False,
 	'fadd':		[],
 	'vq':		3,
-	'format':	'm4v'
+	'format':	'm4v',
+	'add2TrackIdx': 0
 }
 
 help = '''
@@ -109,7 +118,7 @@ Options
 	-sn			disable convert subtitles
 	-ar		[int]	audio rate (def 48000)
 	-b		[int]	video bitrate (def 640)
-	-refs	[int]	ref frames for coding video
+	-refs		[int]	ref frames for coding video
 	-tn			disable sets tags
 	-mn			disable merge
 	-streams	[str]	select streams numbers (first index 0 separated ':')
@@ -136,6 +145,7 @@ Options
 	-format		[str]	output format (default: 'm4v')
 	-flexibleTime	[str]	flex time subtitles (format:'0:22:03.58->0:21:10.00;0:02:28.69->0:02:22.85')
 	-stream		[int]	stream idx from appending files (vfile, afile, sfile)
+	-add2TrackIdx	[int]	add to track (def: 0)
 	
 Author
 	Writen by Andrew Derevyagin (2derand+2idevice@gmail.com)
@@ -464,7 +474,7 @@ def tagTrackInfo(fn):
 			if srch!=None:
 				break
 		if srch!=None:
-			tr = int(srch.groups()[0])
+			tr = int(srch.groups()[0])+STTNGS['add2TrackIdx']
 	trs = None
 	if STTNGS.has_key('tracks'):
 		trs = int(STTNGS['tracks'])
