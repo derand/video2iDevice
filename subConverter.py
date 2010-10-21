@@ -105,6 +105,14 @@ class subConverter:
 				if x>self.time2int(arr[i][1]): i+=1
 				if i<0:
 					i=0
+				
+				# fix position
+				while i>0:
+					if x<self.time2int(arr[i][1]): i-=1
+					else: break
+				while i<len(arr):
+					if x>self.time2int(arr[i][1]): i+=1
+					else: break
 				arr.insert(i, val)
 	
 	def postProcessing(self, s):
@@ -199,18 +207,24 @@ class subConverter:
 	def convertL2srtFormat(self, l):
 		txt = l[3]
 		for style in l[4]:
-			if style[0][0]=='#':
+			if style[0][0]=='#' and string.upper(style[0][1:])!='FFFFFF':
 				txt = '<font color="%s">%s</font>'%(style[0], txt)
 			if style[0][0]=='i':
 				txt = '<i>%s</i>'%(txt)
 			if style[0][0]=='u':
 				txt = '<u>%s</u>'%(txt)
+			if style[0][0]=='<':
+				txt = ' &lt;%s&gt;'%(txt)
 		return (l[0], l[1], l[2], txt, l[4])
 
 	def groupByTime(self, lines):
 		last = (None, None)
 		subs = []
 		utterance = []
+		for i in range(5):
+			x = lines[i]
+			print "%s\t%s %s %s"%(x[0],x[1],x[2],x[3])
+		print 
 		for l in lines:
 			curr = ( l[1], l[2] )
 			if self.time2int(curr[0])<self.time2int(last[1]) or last[0]==None:
@@ -418,16 +432,18 @@ class subConverter:
 				l = lines[i]
 				if self.__STNGS.has_key('subStyleColors'):
 					if self.__STNGS['subStyleColors'].has_key(l[0]):
-						if string.upper(self.__STNGS['subStyleColors'][l[0]])!='FFFFFF':
-							style = self.__STNGS['subStyleColors'][l[0]].encode( "utf-8" )
+						tmp = False
+						style = self.__STNGS['subStyleColors'][l[0]].encode( "utf-8" )
 							#MP4Box convert subs looks like "<i><font color="xxxxxx">qwerty</font></i>"
-							lines[i][4].append(("#%s"%style[:6],))
-							if len(style)>6:
+						lines[i][4].append(("#%s"%style[:6],))
+						if len(style)>6:
+							if style[6]=='<':
+								lines[i][4].insert(0, (string.lower(style[6]), ))
+							else:
 								lines[i][4].append((string.lower(style[6]), ))
-							continue
+						continue
 				if styles.has_key(l[0]):
-					if string.upper(styles[l[0]][0])!='FFFFFF':
-						lines[i][4].append(("#%s"%styles[l[0]][0],))
+					lines[i][4].append(("#%s"%styles[l[0]][0],))
 						#lines[i] = ( l[0], l[1], l[2], '<font color="#%s">%s</font>'%(styles[l[0]][0],l[3]) )
 		
 
