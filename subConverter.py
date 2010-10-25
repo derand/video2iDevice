@@ -221,10 +221,6 @@ class subConverter:
 		last = (None, None)
 		subs = []
 		utterance = []
-		for i in range(5):
-			x = lines[i]
-			print "%s\t%s %s %s"%(x[0],x[1],x[2],x[3])
-		print 
 		for l in lines:
 			curr = ( l[1], l[2] )
 			if self.time2int(curr[0])<self.time2int(last[1]) or last[0]==None:
@@ -395,7 +391,9 @@ class subConverter:
 					linetext = linetext.strip().encode('utf-8')
 					#print len(unicode(linetext,'utf-8')),linetext
 					if len(linetext)>0:
-						val = (elems[3].strip(), self.timesrt(elems[1]), self.timesrt(elems[2]), linetext, [])
+						_style = elems[3].strip()
+						if _style[0]=='*': _style= _style[1:]
+						val = (_style, self.timesrt(elems[1]), self.timesrt(elems[2]), linetext, [])
 						self.__insert(lines, val)
 						lastVal = val
 
@@ -571,6 +569,31 @@ class subConverter:
 			os.system(cmd)
 		return fname_srt2
 
+	def readAssStyles(self, fname_ass, styles={}):
+		fi = open(fname_ass)
+		block = 0
+		for line in fi:
+			if block==2:
+				elems = line.split(',')
+				t =  re.compile('Style:\s*([^,]+)').match(elems[0])
+				if t:
+					sName = t.groups()[0]
+					t =  re.compile('\&(H[0-9a-fA-F]{2})([0-9a-fA-F]{6})').match(elems[3])
+					if t:
+						col = t.groups()[1]
+						styles[sName] = (col,)
+
+			line = line.strip()
+			if '[Script Info]' == line:
+				block = 1
+			if ('[V4+ Styles]' == line) or ('[V4 Styles]' == line):
+				block = 2
+			if '[Events]' == line:
+				block = 3
+		fi.close()
+
+		return styles
+
 
 
 if __name__=='__main__':
@@ -582,9 +605,20 @@ if __name__=='__main__':
 			fname_srt = os.path.basename(re.compile('\\.ass$').sub('.srt', sys.argv[1]))
 			print sys.argv[1], fname_srt
 			sc.ass2srt(sys.argv[1], fname_srt)
+	elif len(sys.argv)>2:
+		if sys.argv[1]=='-styles':
+			sc = subConverter(STTNGS)
+			st = {}
+			for i in range(2, len(sys.argv)):
+				st = sc.readAssStyles(sys.argv[i], st)
+			for key in st:
+				print key, '\t', st[key] 
+			
+	
 
 	sss = '''{\\r\\fscx110\\fscy120\\fsp2\\t(400,550,\\1a&HFF&)}р{\\r\\fscx110\\fscy120\\fsp2\\t(100,250,\\1a&HFF&)}е{\\rfscx110\\fscy120\\fsp2\\t(350,500,\\1a&HFF&)}д{\\r\\fscx110\\fscy120\\fsp2\\t(350,500,\\1a&HFF&)}а{\\r\\fscx110\\fscy120\\fsp2\\t(500,650,\\1a&HFF&)}к{\\r\\fscx110\\fscy120\\fsp2\\t(600,750,\\1a&HFF&)}ц{\\fscx110\\fscy120\\fsp2\\t(250,400,\\1a&HFF&)}и{\\r\\fscx110\\fscy120\\fsp2\\t(0,150,\\1a&HFF&)}я: {\\r\\fscx110\\fscy120\\fsp2\\t(550,700,\\1a&HFF&)}n{\\r\\fscx110\\fscy120\\fsp2\\t(50,200,\\1a&HFF&)}e{\\r\\fscx110\\fscy120\\fsp2\\t(650,800,\\1a&HFF&)}u{\\r\\fscx110\\fscy120\\fsp2\\t(200,350,\\1a&HFF&)}t{\\r\\fscx110\\fscy120\\fsp2\\t(300,600,\\1a&HFF&)}r{\\r\\fscx110\\fscy120\\fsp2\\t(700,850,\\1a&HFF&)}a{\\r\\fscx110\\fscy120\\fsp2\\t(250,400,\\1a&HFF&)}l'''
 	tmp = re.sub(r'\{\\[^\}]*\}', '', sss)
+	print '\n-------------'
 	print unicode(tmp, 'utf-8').encode('ascii', 'xmlcharrefreplace')
 
 

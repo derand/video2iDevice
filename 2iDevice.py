@@ -89,7 +89,7 @@ STTNGS = {
 	'lang':		'',
 	'ar':		48000,
 	'b':		640,
-	'refs':		6,
+	'refs':		2,
 	'tn':		False,
 	'streams':	'',
 	'tfile':	'',
@@ -145,6 +145,7 @@ Options
 	-format		[str]	output format (default: 'm4v')
 	-flexibleTime	[str]	flex time subtitles (format:'0:22:03.58->0:21:10.00;0:02:28.69->0:02:22.85')
 	-stream		[int]	stream idx from appending files (vfile, afile, sfile)
+	-title		[srt]	stream title from appending files (vfile, afile, sfile)
 	-add2TrackIdx	[int]	add to track (def: 0)
 	
 Author
@@ -229,9 +230,10 @@ def getSettings():
 				tmp = STTNGS['fadd']
 				if len(tmp)>0:
 					tmp[-1][-1]['stream'] = int(el)
-				else:
-					# parametr before [v,a,s]file parametr 
-					STTNGS['streams'] = el
+			elif ckey=='title':
+				tmp = STTNGS['fadd']
+				if len(tmp)>0:
+					tmp[-1][-1]['title'] = el
 			else:
 				if STTNGS.has_key(ckey):
 					if type(STTNGS[ckey])==type([]):
@@ -712,6 +714,9 @@ def encodeStreams(fi):
 			sys.exit(1)
 		print add[0], ext, nn
 		_fi = fileInfo(nn)
+		title = None
+		if add[-1].has_key('title'):
+			title = add[-1]['title']
 		if add[0]==0:
 			stream = None
 			if add[2].has_key('stream'):
@@ -721,6 +726,8 @@ def encodeStreams(fi):
 					stream = _fi['streams'][i]
 					if stream[0]==add[0]:
 						break
+			if title:
+				stream[3]['name'] = title
 			files.append((0,name+'_%s.mp4'%os.path.basename(nn), stream))
 			cVideo(nn, stream, files[-1][1])
 
@@ -733,6 +740,8 @@ def encodeStreams(fi):
 					stream = _fi['streams'][i]
 					if stream[0]==add[0]:
 						break
+			if title:
+				stream[3]['name'] = title
 			files.append((1,'%s.aac'%os.path.basename(nn), stream))
 			cAudio(nn, stream, files[-1][1])
 
@@ -745,6 +754,8 @@ def encodeStreams(fi):
 					stream = _fi['streams'][i]
 					if stream[0]==add[0]:
 						break
+			if title:
+				stream[3]['name'] = title
 			files.append((2,'./%s.srt'%os.path.basename(nn), stream))
 			cSubs(nn, stream, _fi['informer'], add[2], files[-1][1])
 			findSubs = False
