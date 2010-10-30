@@ -172,7 +172,7 @@ def getSettings():
 	ckey = 'files'
 	saveP = False
 	for el in sys.argv[1:]:
-		if el[0]=='-':
+		if len(el)>0 and el[0]=='-':
 			ckey = el[1:]
 			if ckey=="th":
 				ckey='threads'
@@ -726,9 +726,11 @@ def encodeStreams(fi):
 					stream = _fi['streams'][i]
 					if stream[0]==add[0]:
 						break
+			tmp_fn = '%s.mp4'%os.path.basename(nn)
 			if title:
 				stream[3]['name'] = title
-			files.append((0,name+'_%s.mp4'%os.path.basename(nn), stream))
+				tmp_fn = '%s_%s.mp4'%(os.path.basename(nn), title)
+			files.append((0, tmp_fn, stream))
 			cVideo(nn, stream, files[-1][1])
 
 		elif add[0]==1:
@@ -740,9 +742,11 @@ def encodeStreams(fi):
 					stream = _fi['streams'][i]
 					if stream[0]==add[0]:
 						break
+			tmp_fn = '%s.aac'%os.path.basename(nn)
 			if title:
 				stream[3]['name'] = title
-			files.append((1,'%s.aac'%os.path.basename(nn), stream))
+				tmp_fn = '%s_%s.aac'%(os.path.basename(nn), title)
+			files.append((1,tmp_fn, stream))
 			cAudio(nn, stream, files[-1][1])
 
 		elif add[0]==2:
@@ -754,9 +758,11 @@ def encodeStreams(fi):
 					stream = _fi['streams'][i]
 					if stream[0]==add[0]:
 						break
+			tmp_fn = '%s.srt'%os.path.basename(nn)
 			if title:
 				stream[3]['name'] = title
-			files.append((2,'./%s.srt'%os.path.basename(nn), stream))
+				tmp_fn = '%s_%s.srt'%(os.path.basename(nn), title)
+			files.append((2,tmp_fn, stream))
 			cSubs(nn, stream, _fi['informer'], add[2], files[-1][1])
 			findSubs = False
 	
