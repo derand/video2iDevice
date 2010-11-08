@@ -22,32 +22,33 @@ STTNGS = {
 
 'subReplace' : {
 	unicode("На", 'utf-8'): {
-			"text": unicode("Назад обернувшись, смотрю пред собою:\n\"Кто там стоит?\"", 'utf-8'),
-			"style": "Song1"
+			"text": unicode("<i><font color=\"#b9d4b5\">На</font><font color=\"#846546\">зад обернувшись, смотрю пред собою:\n\"Кто там стоит?\"</font></i>", 'utf-8'),
+			"style": "Song1",
+			"duration": 470
 		},
 	unicode("Когтями", 'utf-8'): {
 			"text": unicode("Когтями на части всю тьму разорвало...", 'utf-8'),
-			"style": "Song1"
+			"style": "Song1",
 		},
 	unicode("Когда", 'utf-8'): {
 			"text": unicode("Когда обернётся дождь крови рекой,\nна горло мое вдруг прольется потоком...", 'utf-8'),
-			"style": "Song1"
+			"style": "Song1",
 		},
 	unicode("Не будет", 'utf-8'): {
 			"text": unicode("Не будет впредь места на целой", 'utf-8'),
-			"style": "Song1"
+			"style": "Song1",
 		},
 	unicode("Земле, куда ты вернуться бы смог.", 'utf-8'): {
 			"text": unicode("Земле, куда ты вернуться бы смог.", 'utf-8'),
-			"style": "Song1"
+			"style": "Song1",
 		},
 	unicode("Иди вслед за пальцем,", 'utf-8'): {
 			"text": unicode("Иди вслед за пальцем, за пальцем моим.\nЯ тебя уведу за собою в тот лес,..", 'utf-8'),
-			"style": "Song1"
+			"style": "Song1",
 		},
 	unicode("...где цикады стрекочут", 'utf-8'): {
 			"text": unicode("...где цикады стрекочут во тьме.\nНо назад ты уже не вернёшься...", 'utf-8'),
-			"style": "Song1"
+			"style": "Song1",
 		},
 	},
 }
@@ -57,6 +58,8 @@ class subConverter:
 		self.__STNGS = STTNGS
 
 	def timesrt(self, stamp):
+		if len(stamp)==12:
+			return stamp
 		return "0%s0" % (stamp.replace('.', ','))
 	
 	def time2int(self, stamp):
@@ -348,10 +351,14 @@ class subConverter:
 					#linetext = re.sub(r'\{[^\}]*\}', '', linetext)		# remove from subs {xxxx}
 
 					blackCheck = True
+					subEnd = self.timesrt(elems[2])
 					if subReplace.has_key(linetext.strip()):
 						v = subReplace[linetext.strip()]
 						if (not v.has_key('style')) or (v.has_key('style') and v['style']==elems[3].strip()):
 							linetext = v['text']
+							if v.has_key('duration'):
+								subDuration = v['duration']
+								subEnd = self.int2time(self.time2int(self.timesrt(elems[1]))+subDuration)
 							blackCheck = False
 
 					if blackCheck:
@@ -363,29 +370,6 @@ class subConverter:
 						if bl:
 							continue
 
-					'''
-					# Ergo proxy  
-					linetext = linetext.strip()
-					bl = False
-					for lt in ['EP', 'op', 'ed', 'and', 'save', 'me', 'could', 'stop', 'you', 'the', 'noise', 'I\'m', 'trying', 'to', 'get', 'some', 'rest', 'all', 'un', 'born', 'chi', 'cken', 'voi', 'ces', 'in', 'my', 'head', 'that']:
-						if linetext==lt:
-							bl = True
-							break
-					if bl:
-						continue
-					if linetext=='Come':
-						linetext = 'Come and save me'
-					if linetext=='Please':
-						linetext = 'Please could you stop the noise I\'m trying to get some rest'
-					if linetext=='From':
-						linetext = 'From all the unborn chicken voices in my head'
-					if linetext=='What\'s':
-						linetext = 'What\'s that'
-					if lastVal!=None:
-						if linetext.encode('utf-8')==lastVal[3] and lastVal[0]=='EP_Title2':
-							continue
-					 '''
-
 					while linetext.find('\n\n')>0:
 						linetext = linetext.replace('\n\n','\n');
 					linetext = linetext.strip().encode('utf-8')
@@ -393,7 +377,7 @@ class subConverter:
 					if len(linetext)>0:
 						_style = elems[3].strip()
 						if _style[0]=='*': _style= _style[1:]
-						val = (_style, self.timesrt(elems[1]), self.timesrt(elems[2]), linetext, [])
+						val = (_style, self.timesrt(elems[1]), subEnd, linetext, [])
 						self.__insert(lines, val)
 						lastVal = val
 
@@ -611,7 +595,9 @@ if __name__=='__main__':
 			st = {}
 			for i in range(2, len(sys.argv)):
 				st = sc.readAssStyles(sys.argv[i], st)
-			for key in st:
+			keys = st.keys()
+			keys.sort()
+			for key in keys:
 				print key, '\t', st[key] 
 			
 	

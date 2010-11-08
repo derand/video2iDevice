@@ -422,6 +422,10 @@ def fileInfoUsingMKV(filename):
 					prms['channels'] = val
 				elif key=='Name':
 					prms['name'] = val
+				elif key=='Display width':
+					prms['dwidth'] = int(val)
+				elif key=='Display height':
+					prms['dheight'] = int(val)
 	if streamType!=None:
 		if lang==None:
 			lang = 'und'
@@ -561,6 +565,8 @@ def rename(fn):
 def cVideo(iFile, stream, oFile):
 	w = stream[3]['width']
 	h = stream[3]['height']
+	if stream[3].has_key('dwidth'): w = stream[3]['dwidth']
+	if stream[3].has_key('dheight'): h = stream[3]['dheight']
 	if STTNGS['vq']==1:
 		_w = 480
 		_h = (h*_w)/w
@@ -824,7 +830,7 @@ def encodeStreams(fi):
 	for f in files:
 		n = None
 		if f[2]!=None and f[2][3].has_key('name'):
-			n = f[2][3]['name']
+			n = unicode(f[2][3]['name'], 'utf-8').encode('utf-8')
 			need = True
 		trackNames.append(n)
 	if need:
