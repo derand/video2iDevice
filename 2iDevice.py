@@ -269,6 +269,7 @@ def loadSettingsFile(filename):
 			_tmp += line.strip()
 			if _tmp[-1]==arrSymb:
 				if inside_key:
+					#print _tmp
 					rv[save_key] = json.loads(_tmp)
 					inside_key = False
 		else:

@@ -17,7 +17,16 @@ STTNGS = {
 	"rus_op" : "8ad3a1i",
 	"rus_ed" : "8ad3a1i",
 	"eng_op" : "9292e6i",
-	"eng_ed" : "9292e6i"
+	"eng_ed" : "9292e6i",
+	
+	",Keiichi" : "ffcf9e",
+	",Rena" : "ffbea4",
+	",Mion" : "b7ffad",
+	",Satoko" : "fbffb8",
+	",Rika" : "c3ccff",
+	",Shion" : "b1ffdd",
+	",Hanyuu" : "cff4ff",
+	",Oishi" : "eaddd9"
 	},
 
 'subReplace' : {
@@ -312,6 +321,23 @@ class subConverter:
 
 		fo.close()
 
+	def getSubStyle(self, st, defStyles):
+		rv = None
+		if self.__STNGS.has_key('subStyleColors'):
+			for key in self.__STNGS['subStyleColors']:
+				tmp = key.split(',')
+				if len(tmp)==1:
+					if key==st[0]:
+						rv = self.__STNGS['subStyleColors'][key].encode( "utf-8" )
+						break
+				else:
+					if tmp[1]==st[1] and (tmp[0]=='' or tmp[0]==st[0]):
+						rv = self.__STNGS['subStyleColors'][key].encode( "utf-8" )
+						break
+		elif defStyles.has_key(st[0]):
+			rv = defStyles[st][0].encode( "utf-8" )
+		return rv
+
 	def readAss(self, fname_ass):
 		fi = open(fname_ass)
 		block = 0
@@ -346,7 +372,7 @@ class subConverter:
 					linetext = linetext.replace('\\n','\\N');
 					linetext = linetext.replace('\\N','\n');
 					linetext = re.sub(r'\{\\[^\}]*\}', '', linetext)
-					linetext = re.sub(r'([lmb](\s\-{0,1}\d+){2,6}\s{0,1}){2,}', '', linetext)	# m 0 0 l 0 150 l 250 150 l 250 0
+					linetext = re.sub(r'([lmb](\s\-{0,1}\d+){2,8}\s{0,1}){2,}', '', linetext)	# m 0 0 l 0 150 l 250 150 l 250 0
 					linetext = re.sub(r'm\s\-{0,1}\d+\s+\-{0,1}\d+\s+s(\s+\-{0,1}\d+){14}\s+c', '', linetext)	# m 5 0 s 95 0 100 5 100 95 95 100 5 100 0 95 0 5 c
 					#linetext = re.sub(r'\{[^\}]*\}', '', linetext)		# remove from subs {xxxx}
 
@@ -376,8 +402,9 @@ class subConverter:
 					#print len(unicode(linetext,'utf-8')),linetext
 					if len(linetext)>0:
 						_style = elems[3].strip()
-						if _style[0]=='*': _style= _style[1:]
-						val = (_style, self.timesrt(elems[1]), subEnd, linetext, [])
+						if _style[0]=='*': _style = _style[1:]
+						_name = elems[4].strip()
+						val = ([_style, _name], self.timesrt(elems[1]), subEnd, linetext, [])
 						self.__insert(lines, val)
 						lastVal = val
 
@@ -397,25 +424,44 @@ class subConverter:
 		c = None
 		needFontTag = False;
 		for l in lines:
-			if styles.has_key(l[0]):
+			style = self.getSubStyle(l[0], styles)
+			if c != None and c != style:
+				needFontTag = True
+				break
+			c = style
+			'''
+			st = l[0][0]
+			if styles.has_key(st):
 				if c!=None:
-					if c != styles[l[0]]:
+					if c != styles[st]:
 						needFontTag = True
 						break
-				c = styles[l[0]]
+				c = styles[st]
 			if self.__STNGS.has_key('subStyleColors'):
-				if self.__STNGS['subStyleColors'].has_key(styles[l[0]]):
-					if string.upper(self.__STNGS['subStyleColors'][styles[l[0]]])!='FFFFFF':
+				if self.__STNGS['subStyleColors'].has_key(styles[st]):
+					if string.upper(self.__STNGS['subStyleColors'][styles[st]])!='FFFFFF':
 						needFontTag = True
 						break
+			'''
 
 		if needFontTag:
 			for i in range(len(lines)):
 				l = lines[i]
+				style = self.getSubStyle(l[0], styles)
+				if style!=None:
+					lines[i][4].append(("#%s"%style[:6],))
+					if len(style)>6:
+						if style[6]=='<':
+							lines[i][4].insert(0, (string.lower(style[6]), ))
+						else:
+							lines[i][4].append((string.lower(style[6]), ))
+				#print lines[i][0], lines[i][3], lines[i][4], style
+				'''
+				st = l[0][0]
 				if self.__STNGS.has_key('subStyleColors'):
-					if self.__STNGS['subStyleColors'].has_key(l[0]):
+					if self.__STNGS['subStyleColors'].has_key(st):
 						tmp = False
-						style = self.__STNGS['subStyleColors'][l[0]].encode( "utf-8" )
+						style = self.__STNGS['subStyleColors'][st].encode( "utf-8" )
 							#MP4Box convert subs looks like "<i><font color="xxxxxx">qwerty</font></i>"
 						lines[i][4].append(("#%s"%style[:6],))
 						if len(style)>6:
@@ -424,10 +470,10 @@ class subConverter:
 							else:
 								lines[i][4].append((string.lower(style[6]), ))
 						continue
-				if styles.has_key(l[0]):
-					lines[i][4].append(("#%s"%styles[l[0]][0],))
+				if styles.has_key(st):
+					lines[i][4].append(("#%s"%styles[st][0],))
 						#lines[i] = ( l[0], l[1], l[2], '<font color="#%s">%s</font>'%(styles[l[0]][0],l[3]) )
-		
+				'''
 
 		return lines
 
@@ -457,7 +503,7 @@ class subConverter:
 						if len(ttt)==2:
 							tm1 = ttt[0].strip()
 							tm2 = ttt[1].strip()
-							val = ('', tm1, tm2, txt, [])
+							val = (['', ''], tm1, tm2, txt, [])
 							self.__insert(lines, val)
 							#print '%d\n-%s\n--%s'%(idx, tm, txt)
 							#fo.write('%d\n%s\n%s\n\n'%(idx, tm, txt))
@@ -486,7 +532,7 @@ class subConverter:
 			if len(ttt)==2:
 				tm1 = ttt[0].strip()
 				tm2 = ttt[1].strip()
-				val = ('', ttt[0].strip(), ttt[1].strip(), txt, [])
+				val = (['', ''], ttt[0].strip(), ttt[1].strip(), txt, [])
 				self.__insert(lines, val)
 		fi.close()
 
