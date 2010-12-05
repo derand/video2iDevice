@@ -734,9 +734,10 @@ def encodeStreams(fi):
 					if stream[0]==add[0]:
 						break
 			tmp_fn = '%s.mp4'%os.path.basename(nn)
-			if title:
+			if title and title!='':
 				stream[3]['name'] = title
-				tmp_fn = '%s_%s.mp4'%(os.path.basename(nn), title)
+				if len(title):
+					tmp_fn = '%s_%s.mp4'%(os.path.basename(nn), title)
 			files.append((0, tmp_fn, stream))
 			cVideo(nn, stream, files[-1][1])
 
@@ -750,9 +751,10 @@ def encodeStreams(fi):
 					if stream[0]==add[0]:
 						break
 			tmp_fn = '%s.aac'%os.path.basename(nn)
-			if title:
+			if title!=None:
 				stream[3]['name'] = title
-				tmp_fn = '%s_%s.aac'%(os.path.basename(nn), title)
+				if len(title):
+					tmp_fn = '%s_%s.aac'%(os.path.basename(nn), title)
 			files.append((1,tmp_fn, stream))
 			cAudio(nn, stream, files[-1][1])
 
@@ -766,9 +768,10 @@ def encodeStreams(fi):
 					if stream[0]==add[0]:
 						break
 			tmp_fn = '%s.srt'%os.path.basename(nn)
-			if title:
+			if title and title!='':
 				stream[3]['name'] = title
-				tmp_fn = '%s_%s.srt'%(os.path.basename(nn), title)
+				if len(title):
+					tmp_fn = '%s_%s.srt'%(os.path.basename(nn), title)
 			files.append((2,tmp_fn, stream))
 			cSubs(nn, stream, _fi['informer'], add[2], files[-1][1])
 			findSubs = False

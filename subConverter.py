@@ -314,7 +314,7 @@ class subConverter:
 				#print "%s\t%s\t%s"%(lastTm, tm, " \t ".join(s))
 				if s!='':
 					if self.time2int(lastTm)<self.time2int(tm):
-						fo.write('%d\n%s --> %s\n%s\n\n'%(num, lastTm, tm, self.postProcessing("\n".join(s))) )
+						fo.write('%d\n%s --> %s\n%s\n\n'%(num, lastTm.encode('utf-8'), tm.encode('utf-8'), self.postProcessing("\n".join(s))) )
 						num += 1
 				#lastTm = self.int2time(self.time2int(tm)+20)
 				lastTm = tm
@@ -335,7 +335,7 @@ class subConverter:
 						rv = self.__STNGS['subStyleColors'][key].encode( "utf-8" )
 						break
 		elif defStyles.has_key(st[0]):
-			rv = defStyles[st][0].encode( "utf-8" )
+			rv = defStyles[st[0]]
 		return rv
 
 	def readAss(self, fname_ass):
@@ -372,6 +372,7 @@ class subConverter:
 					linetext = linetext.replace('\\n','\\N');
 					linetext = linetext.replace('\\N','\n');
 					linetext = re.sub(r'\{\\[^\}]*\}', '', linetext)
+					#linetext = re.sub(r'\{[^\}]*\}', '', linetext)   # {}
 					linetext = re.sub(r'([lmb](\s\-{0,1}\d+){2,8}\s{0,1}){2,}', '', linetext)	# m 0 0 l 0 150 l 250 150 l 250 0
 					linetext = re.sub(r'm\s\-{0,1}\d+\s+\-{0,1}\d+\s+s(\s+\-{0,1}\d+){14}\s+c', '', linetext)	# m 5 0 s 95 0 100 5 100 95 95 100 5 100 0 95 0 5 c
 					#linetext = re.sub(r'\{[^\}]*\}', '', linetext)		# remove from subs {xxxx}
@@ -485,14 +486,21 @@ class subConverter:
 		lastLineEmpty = True
 		set = False
 		lines = []
+		subReplace = {}
+		if self.__STNGS.has_key('subReplace'):
+			subReplace = self.__STNGS['subReplace']
 		for line in fi:
-			line = line.strip()
-			if len(line)>3 and line[:3]=='\xEF\xBB\xBF':
+			line = unicode(line, 'utf-8').strip()
+			if len(line)>3 and line[:3]==u'\xEF\xBB\xBF':
 				line = line[3:]
 
 			line = re.sub(r'\{\\[^\}]*\}', '', line)
-
+			
 			if len(line)!=0:
+				
+				if subReplace.has_key(line):
+					line = subReplace[line]['text']
+
 				if lastLineEmpty:
 					try:
 					    x = int(line)
@@ -503,7 +511,7 @@ class subConverter:
 						if len(ttt)==2:
 							tm1 = ttt[0].strip()
 							tm2 = ttt[1].strip()
-							val = (['', ''], tm1, tm2, txt, [])
+							val = (['', ''], tm1, tm2, txt.encode('utf-8'), [])
 							self.__insert(lines, val)
 							#print '%d\n-%s\n--%s'%(idx, tm, txt)
 							#fo.write('%d\n%s\n%s\n\n'%(idx, tm, txt))
@@ -521,7 +529,7 @@ class subConverter:
 					elif txt==None:
 						txt = line
 					else:
-						txt += '\n%s'%line
+						txt += u'\n%s'%line
 				set= False
 				lastLineEmpty = False
 			else:
@@ -532,7 +540,7 @@ class subConverter:
 			if len(ttt)==2:
 				tm1 = ttt[0].strip()
 				tm2 = ttt[1].strip()
-				val = (['', ''], ttt[0].strip(), ttt[1].strip(), txt, [])
+				val = (['', ''], ttt[0].strip(), ttt[1].strip(), txt.encode('utf-8'), [])
 				self.__insert(lines, val)
 		fi.close()
 
