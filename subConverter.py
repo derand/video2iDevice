@@ -8,17 +8,20 @@ import os
 import string
 
 STTNGS = {
-'ASSremoveItems' : ('EdKara', 'TVLpaint', 'SerialMainTitle', 'Kar_OP_1', 'Kar_OP_2', 'Kar_OP_3', 'Kar_OP_4', 	'Kar_ED_1', 'Kar_ED_2', 'Kar_ED_3', 'Kar_ED_4', 'Kar_ED_5', 'Kar_ED_6', '# WORKING OP RO', 'Ending2', 	'EPtv_txt1', 'EPtv_txt2', 'BackComment',
-	'Song1' ),
+	# remove this items from result
+'ASSremoveItems' : ('Song123', 'song345' ),
 
+	# change color
 'subStyleColors' : {
+	# by style name
 	"prew" : "d9a1afi",
 	"end" : "d37f63i",
 	"rus_op" : "8ad3a1i",
 	"rus_ed" : "8ad3a1i",
 	"eng_op" : "9292e6i",
 	"eng_ed" : "9292e6i",
-	
+
+	# by author
 	",Keiichi" : "ffcf9e",
 	",Rena" : "ffbea4",
 	",Mion" : "b7ffad",
@@ -26,7 +29,8 @@ STTNGS = {
 	",Rika" : "c3ccff",
 	",Shion" : "b1ffdd",
 	",Hanyuu" : "cff4ff",
-	",Oishi" : "eaddd9"
+	",Oishi" : "eaddd9",
+	"Opening" : "123456i"
 	},
 
 'subReplace' : {
@@ -128,6 +132,9 @@ class subConverter:
 				arr.insert(i, val)
 	
 	def postProcessing(self, s):
+		"""
+			combine one chars lines
+		"""
 		arr = s.strip().split('\n')
 		i=0
 		c=0
@@ -226,7 +233,7 @@ class subConverter:
 			if style[0][0]=='u':
 				txt = '<u>%s</u>'%(txt)
 			if style[0][0]=='<':
-				txt = ' &lt;%s&gt;'%(txt)
+				txt = '&lt;%s&gt;'%(txt)
 		return (l[0], l[1], l[2], txt, l[4])
 
 	def groupByTime(self, lines):
@@ -321,6 +328,152 @@ class subConverter:
 
 		fo.close()
 
+
+	def writeOut2ttxt(self, fname_ttxt, lines):
+		'''
+				write with points at new line
+		'''
+		s = ''
+		subs = self.groupByTime(lines)
+
+		num = 1
+		fo = open(fname_ttxt,'w')
+		fo.write('''<?xml version="1.0" encoding="UTF-8" ?>
+
+<TextStream version="1.1">
+<TextStreamHeader width="400" height="60" layer="0" translation_x="0" translation_y="0">
+<TextSampleDescription horizontalJustification="center" verticalJustification="bottom" backColor="0 0 0 0" verticalText="no" fillTextRegion="no" continuousKaraoke="no" scroll="None">
+
+<FontTable>
+<FontTableEntry fontName="Serif" fontID="1"/>
+</FontTable>
+
+<TextBox top="0" left="0" bottom="60" right="400"/>
+<Style styles="Normal" fontID="1" fontSize="18" color="ff ff ff ff"/>
+
+</TextSampleDescription>
+</TextStreamHeader>''')
+		lastSubTm = '00:00:00.000'
+		for i in subs:
+			maxLines = 0
+			minTm = i[0][1]
+			maxTm = minTm
+			for l in i:
+				x=0
+				for j in i:
+					 if  (self.time2int(l[1])>=self.time2int(j[1])) and (self.time2int(l[1])<self.time2int(j[2])):
+						x+=1
+				if maxLines<x: maxLines=x
+				if self.time2int(l[1])<self.time2int(minTm): minTm = l[1]
+				if self.time2int(l[2])>self.time2int(maxTm): maxTm = l[2]
+			lastTm = minTm
+			_prew = []
+			print ""
+			while self.time2int(lastTm)<self.time2int(maxTm):
+				linesByTime = []
+				tm = None
+				for j in i:
+					if (self.time2int(j[1])>self.time2int(lastTm)) and (self.time2int(j[1])<self.time2int(tm) or tm==None):
+						tm = j[1]
+					if (self.time2int(j[2])>self.time2int(lastTm)) and (self.time2int(j[2])<self.time2int(tm) or tm==None):
+						tm = j[2]
+				for j in i:
+					if  ((self.time2int(lastTm)>=self.time2int(j[1])) and (self.time2int(lastTm)<self.time2int(j[2]))):
+						linesByTime.append(j)
+				#print maxLines,linesByTime
+
+				s = []
+				_now = []
+				for j in range(maxLines):
+					s.append(None)
+					_now.append(None)
+				tmp = []
+				for l in linesByTime: tmp.append(l)
+				for k in range(len(_prew)):
+					for n in range(len(tmp)):
+						if tmp[n]==_prew[k]:
+							s[k] = tmp[n]
+							_now[k] = tmp[n]
+							tmp.remove(tmp[n])
+							break
+				for l in tmp:
+					j=0
+					while s[j]!=None:
+						j+=1
+					s[j] = l
+					_now[j] = l
+				_prew = _now
+				while s[0]==None:
+					s = s[1:]
+
+				#print s
+				if s!=[]:
+					if self.time2int(lastTm)<self.time2int(tm):
+						tmFrom = (lastTm[:-4]+'.'+lastTm[-3:]).encode('utf-8')
+						tmTo = (tm[:-4]+'.'+tm[-3:]).encode('utf-8')
+						print tmFrom, tmTo
+						sub = ''
+						#idx=0
+						tags = ''
+						for l in s:
+							color = 'ffffff'
+							subStyles = ''
+							
+							subLen = len(unicode(sub, 'utf-8'))
+							if l==None:
+								#print '.'
+								color = '38 38 38 ff'
+								_len = 2
+								#tags = '%s<Style fromChar="%d" toChar="%d" %s color="%s"/>'%(tags, subLen+1, subLen+_len, subStyles, color)
+								if len(sub):
+									sub = '%s\n¶'%sub
+								else:
+									sub = '¶'
+							else:
+								add = l[3].replace('&lt;', '<').replace('&gt;', '>')
+								for style in l[4]:
+									if style[0][0]=='#':
+										color = style[0][1:]
+									elif style[0][0]=='i':
+										subStyles = subStyles+',Italic'
+									elif style[0][0]=='u':
+										pass
+									elif style[0][0]=='<':
+										add = '<%s>'%add
+								if len(subStyles)>0: subStyles = ' styles="%s"'%subStyles[1:]
+								print color, color[0:2],l[4]
+								color = '%s %s %s ff'%(color[0:2], color[2:4], color[4:6])
+								color = color.lower()
+								if color<>'ff ff ff ff':
+									subStyles = subStyles+' color="%s"'%color
+								#subLen = len(unicode(sub, 'utf-8'))
+								_len = len(unicode(add, 'utf-8'))
+								if len(sub):
+									sub = '%s\n%s'%(sub, add)
+									if len(subStyles)>0:
+										tags = '%s<Style fromChar="%d" toChar="%d" %s/>'%(tags, subLen+1, subLen+_len+1, subStyles)
+								else:
+									sub = '%s'%add
+									if len(subStyles)>0:
+										tags = '%s<Style fromChar="%d" toChar="%d" %s/>'%(tags, subLen, subLen+_len, subStyles)
+								#print color, l[3], l[4]
+						sub = sub.replace('<', '&lt;').replace('>', '&gt;').replace('¶', '&nbsp;')
+						print sub, subStyles
+						if lastSubTm<>tmFrom:
+							fo.write('\n<TextSample sampleTime="%s" xml:space="preserve"></TextSample>'%lastSubTm)
+						fo.write('\n<TextSample sampleTime="%s" xml:space="preserve">%s%s</TextSample>'%(tmFrom, sub, tags))
+						lastSubTm = tmTo
+						#fo.write('%d\n%s --> %s\n%s\n\n'%(num, lastTm.encode('utf-8'), tm.encode('utf-8'), self.postProcessing("\n".join(s))) )
+						#str = self.postProcessing("\n".join(s))
+						#print len(unicode(str, 'utf-8')), str
+						num += 1
+				#lastTm = self.int2time(self.time2int(tm)+20)
+				lastTm = tm
+
+		fo.write('\n<TextSample sampleTime="%s" xml:space="preserve"></TextSample>'%lastSubTm)
+		fo.write('\n</TextStream>\n');
+		fo.close()
+
 	def getSubStyle(self, st, defStyles):
 		rv = None
 		if self.__STNGS.has_key('subStyleColors'):
@@ -334,7 +487,7 @@ class subConverter:
 					if tmp[1]==st[1] and (tmp[0]=='' or tmp[0]==st[0]):
 						rv = self.__STNGS['subStyleColors'][key].encode( "utf-8" )
 						break
-		elif defStyles.has_key(st[0]):
+		if rv==None and defStyles.has_key(st[0]):
 			rv = defStyles[st[0]]
 		return rv
 
@@ -430,20 +583,6 @@ class subConverter:
 				needFontTag = True
 				break
 			c = style
-			'''
-			st = l[0][0]
-			if styles.has_key(st):
-				if c!=None:
-					if c != styles[st]:
-						needFontTag = True
-						break
-				c = styles[st]
-			if self.__STNGS.has_key('subStyleColors'):
-				if self.__STNGS['subStyleColors'].has_key(styles[st]):
-					if string.upper(self.__STNGS['subStyleColors'][styles[st]])!='FFFFFF':
-						needFontTag = True
-						break
-			'''
 
 		if needFontTag:
 			for i in range(len(lines)):
@@ -456,26 +595,6 @@ class subConverter:
 							lines[i][4].insert(0, (string.lower(style[6]), ))
 						else:
 							lines[i][4].append((string.lower(style[6]), ))
-				#print lines[i][0], lines[i][3], lines[i][4], style
-				'''
-				st = l[0][0]
-				if self.__STNGS.has_key('subStyleColors'):
-					if self.__STNGS['subStyleColors'].has_key(st):
-						tmp = False
-						style = self.__STNGS['subStyleColors'][st].encode( "utf-8" )
-							#MP4Box convert subs looks like "<i><font color="xxxxxx">qwerty</font></i>"
-						lines[i][4].append(("#%s"%style[:6],))
-						if len(style)>6:
-							if style[6]=='<':
-								lines[i][4].insert(0, (string.lower(style[6]), ))
-							else:
-								lines[i][4].append((string.lower(style[6]), ))
-						continue
-				if styles.has_key(st):
-					lines[i][4].append(("#%s"%styles[st][0],))
-						#lines[i] = ( l[0], l[1], l[2], '<font color="#%s">%s</font>'%(styles[l[0]][0],l[3]) )
-				'''
-
 		return lines
 
 	def readSrt(self, fname_srt):
@@ -489,6 +608,7 @@ class subConverter:
 		subReplace = {}
 		if self.__STNGS.has_key('subReplace'):
 			subReplace = self.__STNGS['subReplace']
+		subStyle = None
 		for line in fi:
 			line = unicode(line, 'utf-8').strip()
 			if len(line)>3 and line[:3]==u'\xEF\xBB\xBF':
@@ -498,8 +618,19 @@ class subConverter:
 			
 			if len(line)!=0:
 				
+				subStyle = []
 				if subReplace.has_key(line):
-					line = subReplace[line]['text']
+					if subReplace[line].has_key('outStyle'):
+						outStyle = subReplace[line]['outStyle']
+						subStyle.append(("#%s"%outStyle[:6],))
+						if len(outStyle)>6:
+							if outStyle[6]=='<':
+								subStyle.insert(0, (string.lower(outStyle[6]), ))
+							else:
+								subStyle.append((string.lower(outStyle[6]), ))
+						print line, subStyle
+					#else:
+					#	line = subReplace[line]['text']
 
 				if lastLineEmpty:
 					try:
@@ -511,8 +642,11 @@ class subConverter:
 						if len(ttt)==2:
 							tm1 = ttt[0].strip()
 							tm2 = ttt[1].strip()
-							val = (['', ''], tm1, tm2, txt.encode('utf-8'), [])
+							val = (['', ''], tm1, tm2, txt.encode('utf-8'), subStyle)
 							self.__insert(lines, val)
+							print lines
+							if len(subStyle)>0:
+								sys.exit(0)
 							#print '%d\n-%s\n--%s'%(idx, tm, txt)
 							#fo.write('%d\n%s\n%s\n\n'%(idx, tm, txt))
 						idx = x
@@ -540,7 +674,7 @@ class subConverter:
 			if len(ttt)==2:
 				tm1 = ttt[0].strip()
 				tm2 = ttt[1].strip()
-				val = (['', ''], ttt[0].strip(), ttt[1].strip(), txt.encode('utf-8'), [])
+				val = (['', ''], ttt[0].strip(), ttt[1].strip(), txt.encode('utf-8'), subStyle)
 				self.__insert(lines, val)
 		fi.close()
 
@@ -588,6 +722,15 @@ class subConverter:
 
 		self.writeOut2srt(fname_srt, lines)
 		return fname_srt
+
+	def ass2ttxt(self, fname_ass, fname_ttxt, sttngs={}):
+		lines = self.readAss(fname_ass)
+
+		if sttngs.has_key('flexibleTime'):
+			lines = self.flexibleTiming(lines, sttngs['flexibleTime'] )
+
+		self.writeOut2ttxt(fname_ttxt, lines)
+		return fname_ttxt
 
 	def srt2srt(self, fname_srt1, fname_srt2=None, sttngs={}):
 		tmp_fn = fname_srt2
@@ -640,9 +783,9 @@ if __name__=='__main__':
 		if sys.argv[1][-4:]=='.srt':
 			sc.srt2srt(sys.argv[1])
 		else:
-			fname_srt = os.path.basename(re.compile('\\.ass$').sub('.srt', sys.argv[1]))
+			fname_srt = os.path.basename(re.compile('\\.ass$').sub('.ttxt', sys.argv[1]))
 			print sys.argv[1], fname_srt
-			sc.ass2srt(sys.argv[1], fname_srt)
+			sc.ass2ttxt(sys.argv[1], fname_srt)
 	elif len(sys.argv)>2:
 		if sys.argv[1]=='-styles':
 			sc = subConverter(STTNGS)

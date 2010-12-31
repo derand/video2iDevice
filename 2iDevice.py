@@ -147,6 +147,7 @@ Options
 	-stream		[int]	stream idx from appending files (vfile, afile, sfile)
 	-title		[srt]	stream title from appending files (vfile, afile, sfile)
 	-add2TrackIdx	[int]	add to track (def: 0)
+	-s		[int]x[int]	rsult resolution
 	
 Author
 	Writen by Andrew Derevyagin (2derand+2idevice@gmail.com)
@@ -600,6 +601,10 @@ def cVideo(iFile, stream, oFile):
 				_w += 16-_w%16
 			else:
 				_w -= _w%16
+	if STTNGS.has_key('s'):
+		res = STTNGS['s'].split('x')
+		_w = int(res[0])
+		_h = int(res[1])
 	print '%dx%d  ==> %dx%d'%(w,h, _w,_h)
 	#for _pass in [1,3,2]:
 	for _pass in [1,2]:
@@ -615,6 +620,7 @@ def cAudio(iFile, stream, oFile):
 		ar = stream[3]['frequency']
 
 	cmd = 'ffmpeg -y -i "%s" -map %s -vn -acodec libfaac -ab 128k -ac 2 -ar %d -threads %d -strict experimental "%s"'%(iFile, stream[1], ar, STTNGS['threads'], oFile)
+	#cmd = 'ffmpeg -y -i "%s" -map %s -vn -acodec copy -strict experimental "%s"'%(iFile, stream[1], oFile)
 	printCmd(cmd)
 	if STTNGS['ac']:
 		p = os.popen(cmd)
@@ -640,7 +646,7 @@ def cSubs(iFile, stream, informer, prms, oFile):
 	elif ext=='ass' or ext=='ssa':
 		if STTNGS['sc']:
 			sConverter = subConverter(STTNGS)
-			sConverter.ass2srt(iFile, oFile, prms)
+			sConverter.ass2ttxt(iFile, oFile, prms)
 	elif ext=='ttxt':
 		pass
 	else:
@@ -655,7 +661,7 @@ def cSubs(iFile, stream, informer, prms, oFile):
 					p = os.popen(cmd)
 					p.close()
 					sConverter = subConverter(STTNGS)
-					sConverter.ass2srt(tmpName, oFile, prms)
+					sConverter.ass2ttxt(tmpName, oFile, prms)
 			else:
 				cmd = 'mkvextract tracks "%s" %s:"%s"'%(fi['filename'], stream[3]['mkvinfo_trackNumber'], oFile)
 				printCmd(cmd)
@@ -672,7 +678,7 @@ def cSubs(iFile, stream, informer, prms, oFile):
 				p = os.popen(cmd)
 				p.close()
 				sConverter = subConverter(STTNGS)
-				sConverter.ass2srt(tmpName, oFile)
+				sConverter.ass2ttxt(tmpName, oFile)
 
 
 def encodeStreams(fi):
@@ -704,7 +710,7 @@ def encodeStreams(fi):
 			cAudio(fi['filename'], stream, files[-1][1])
 
 		elif stream[0]==2:
-			srtName = name+'_%s.srt'%stream[1]
+			srtName = name+'_%s.ttxt'%stream[1]
 			files.append((2,srtName, stream))
 			cSubs(fi['filename'], stream, fi['informer'], {}, files[-1][1])
 			findSubs = False
@@ -767,11 +773,11 @@ def encodeStreams(fi):
 					stream = _fi['streams'][i]
 					if stream[0]==add[0]:
 						break
-			tmp_fn = '%s.srt'%os.path.basename(nn)
+			tmp_fn = '%s.ttxt'%os.path.basename(nn)
 			if title and title!='':
 				stream[3]['name'] = title
 				if len(title):
-					tmp_fn = '%s_%s.srt'%(os.path.basename(nn), title)
+					tmp_fn = '%s_%s.ttxt'%(os.path.basename(nn), title)
 			files.append((2,tmp_fn, stream))
 			cSubs(nn, stream, _fi['informer'], add[2], files[-1][1])
 			findSubs = False
@@ -782,13 +788,13 @@ def encodeStreams(fi):
 			if STTNGS['sc']:
 				sConverter.srt2srt('%s%s.srt'%(path,nm), files[-1][1])
 		if os.path.exists('%s%s.ass'%(path,nm)):
-			files.append((2,'%s.srt'%nm, None))
+			files.append((2,'%s.ttxt'%nm, None))
 			if STTNGS['sc']:
-				sConverter.ass2srt('%s%s.ass'%(path,nm), files[-1][1])
+				sConverter.ass2ttxt('%s%s.ass'%(path,nm), files[-1][1])
 		if os.path.exists('%s%s.ssa'%(path,nm)):
-			files.append((2,'%s.srt'%nm, None))
+			files.append((2,'%s.ttxt'%nm, None))
 			if STTNGS['sc']:
-				sConverter.ass2srt('%s%s.ssa'%(path,nm), files[-1][1])
+				sConverter.ass2ttxt('%s%s.ssa'%(path,nm), files[-1][1])
 	
 			
 	print 'files: ',files
