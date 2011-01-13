@@ -642,7 +642,7 @@ def cSubs(iFile, stream, informer, prms, oFile):
 	if ext=='srt':
 		if STTNGS['sc']:
 			sConverter = subConverter(STTNGS)
-			sConverter.srt2srt(iFile, oFile, prms)
+			sConverter.srt2ttxt(iFile, oFile, prms)
 	elif ext=='ass' or ext=='ssa':
 		if STTNGS['sc']:
 			sConverter = subConverter(STTNGS)
@@ -669,7 +669,7 @@ def cSubs(iFile, stream, informer, prms, oFile):
 					p = os.popen(cmd)
 					p.close()
 					sConverter = subConverter(STTNGS)
-					sConverter.srt2srt(oFile)
+					sConverter.srt2ttxt(oFile)
 		else:
 			tmpName = iFile.split('/')[-1]+'_%s.srt'%stream[1]
 			cmd = 'ffmpeg -y -i "%s" -map %s -an -vn -sbsf mov2textsub -scodec copy "%s"'%(fi['filename'], stream[1], tmpName)
@@ -786,7 +786,7 @@ def encodeStreams(fi):
 		if os.path.exists('%s%s.srt'%(path,nm)):
 			files.append((2,'./%s.srt'%nm, None))
 			if STTNGS['sc']:
-				sConverter.srt2srt('%s%s.srt'%(path,nm), files[-1][1])
+				sConverter.srt2ttxt('%s%s.srt'%(path,nm), files[-1][1])
 		if os.path.exists('%s%s.ass'%(path,nm)):
 			files.append((2,'%s.ttxt'%nm, None))
 			if STTNGS['sc']:

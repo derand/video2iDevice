@@ -20,6 +20,8 @@ STTNGS = {
 	"rus_ed" : "8ad3a1i",
 	"eng_op" : "9292e6i",
 	"eng_ed" : "9292e6i",
+	
+	"Note" : "b3ddb5<",
 
 	# by author
 	",Keiichi" : "ffcf9e",
@@ -455,6 +457,11 @@ class subConverter:
 												add = '[%s]'%add
 												__inc+=1
 										
+										# set style lenght
+										if len(style)>2:
+											_start = style[1]
+											_end = style[2]
+
 										# fix styles length if changed line length
 										if __inc>0:
 											for j in range(len(__tags)):
@@ -468,15 +475,9 @@ class subConverter:
 												if len(sub)==0 and (subLen+_len)==val[0]:
 													val[1] += 1
 												__tags[j] = val
-											_len += __inc*2
-										
-										# set style lenght
-										if len(style)>2:
-											_start = style[1]
-											_end = style[2]
+											_end += __inc*2
 	
 										if len(subStyles)>0: subStyles = ' styles="%s"'%subStyles[1:]
-										print color, l[4]
 										color = '%s %s %s ff'%(color[0:2], color[2:4], color[4:6])
 										color = color.lower()
 										if color<>'ff ff ff ff':
@@ -502,7 +503,7 @@ class subConverter:
 							tags = '%s<Style fromChar="%d" toChar="%d" %s/>'%(tags, __t[0], __t[1], __t[2])
 								
 						sub = sub.replace('<', '&lt;').replace('>', '&gt;').replace('¶', '&nbsp;')
-						print sub, subStyles
+						#print sub, subStyles
 						if lastSubTm<>tmFrom:
 							fo.write('\n<TextSample sampleTime="%s" xml:space="preserve"></TextSample>'%lastSubTm)
 						print'%s%s'%(sub,tags.encode('utf-8'))
@@ -558,7 +559,7 @@ class subConverter:
 		__add=0
 		while end_pos>-1:
 			__idx = line[__add:].find(srch)+__add
-			if __idx<__add or __idx>end_pos:
+			if __idx<=__add or __idx>end_pos:
 				break
 			__add = end_pos+1
 			end_pos = line[__add:].find('</%s>'%tag)+__add
@@ -592,9 +593,22 @@ class subConverter:
 		return line,bounds
 
 	def stylesFromSrtLine(self, line):
-		#print line
 		(l, styles) = self.tagsBounds(line, ['font ', 'i'], [])
-		# TODO: merge equal bounds tags, remove bounds from full-line sub
+
+		#merge equal bounds tags, remove bounds from full-line sub
+		styles = sorted(styles, key=lambda el: el[1])
+		__tmp = []
+		for i in range(len(styles)):
+			if len(__tmp) and __tmp[-1][1]==styles[i][1] and __tmp[-1][2]==styles[i][2]:
+				__tmp[-1][0] += styles[i][0]
+			else:
+				__tmp.append(styles[i])
+		styles = []
+		for s in __tmp:
+			if s[1]==0 and s[2]==len(l):
+				styles.append([s[0],])
+			else:
+				styles.append(s)
 		return (l, styles)
 
 	def readAss(self, fname_ass):
@@ -905,6 +919,8 @@ class subConverter:
 if __name__=='__main__':
 	if len(sys.argv)==2:
 		sc = subConverter(STTNGS)
+		#sc.stylesFromSrtLine(unicode('<i><font color="#b9d4b5">Потому что ты и только ты</font></i>', 'utf-8'))
+		#sc.stylesFromSrtLine(unicode('<i><font color="#b9d4b5">Потому</font> что</i> ты<i> и</i> только ты', 'utf-8'))
 		if sys.argv[1][-4:]=='.srt':
 			fname_ttxt = os.path.basename(re.compile('\\.srt$').sub('.ttxt', sys.argv[1]))
 			sc.srt2ttxt(sys.argv[1], fname_ttxt)
