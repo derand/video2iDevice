@@ -63,6 +63,10 @@ STTNGS = {
 			"text": unicode("...где цикады стрекочут во тьме.\nНо назад ты уже не вернёшься...", 'utf-8'),
 			"style": "Song1",
 		},
+	unicode("Вон туда.", 'utf-8'): {
+			"text": unicode("Вон туда.", 'utf-8'),
+			"outStyle": "808080[",
+		},
 	},
 }
 
@@ -331,7 +335,7 @@ class subConverter:
 
 	def writeOut2ttxt(self, fname_ttxt, lines):
 		'''
-				write with points at new line
+				write lines to ttxt format
 		'''
 		s = ''
 		subs = self.groupByTime(lines)
@@ -414,54 +418,95 @@ class subConverter:
 						print tmFrom, tmTo
 						sub = ''
 						#idx=0
-						tags = ''
+						__tags = []
 						for l in s:
-							color = 'ffffff'
 							subStyles = ''
-							
 							subLen = len(unicode(sub, 'utf-8'))
 							if l==None:
-								#print '.'
 								color = '38 38 38 ff'
 								_len = 2
-								#tags = '%s<Style fromChar="%d" toChar="%d" %s color="%s"/>'%(tags, subLen+1, subLen+_len, subStyles, color)
 								if len(sub):
 									sub = '%s\n¶'%sub
 								else:
 									sub = '¶'
 							else:
 								add = l[3].replace('&lt;', '<').replace('&gt;', '>')
-								for style in l[4]:
-									if style[0][0]=='#':
-										color = style[0][1:]
-									elif style[0][0]=='i':
-										subStyles = subStyles+',Italic'
-									elif style[0][0]=='u':
-										pass
-									elif style[0][0]=='<':
-										add = '<%s>'%add
-								if len(subStyles)>0: subStyles = ' styles="%s"'%subStyles[1:]
-								print color, color[0:2],l[4]
-								color = '%s %s %s ff'%(color[0:2], color[2:4], color[4:6])
-								color = color.lower()
-								if color<>'ff ff ff ff':
-									subStyles = subStyles+' color="%s"'%color
-								#subLen = len(unicode(sub, 'utf-8'))
+								#print '--', l[0], l[1], l[2], l[3], l[4]
 								_len = len(unicode(add, 'utf-8'))
+								if len(l[4]):
+									for style in l[4]:
+										_start = 0
+										_end = _len
+										color = 'ffffff'
+										subStyles = ''
+										__inc = 0
+										for j in range(len(style[0])):
+											if style[0][j]=='#':
+												color = style[0][j+1:j+7]
+												j+=6
+											elif style[0][j]=='i':
+												subStyles = subStyles+',Italic'
+											elif style[0][j]=='u':
+												pass
+											elif style[0][j]=='<':
+												add = '<%s>'%add
+												__inc+=1
+											elif style[0][j]=='[':
+												add = '[%s]'%add
+												__inc+=1
+										
+										# fix styles length if changed line length
+										if __inc>0:
+											for j in range(len(__tags)):
+												val = __tags[j]
+												if len(sub) and (subLen+1)==val[0]:
+													val[1] += 1
+												if len(sub)==0 and subLen==val[0]:
+													val[1] += 1
+												if len(sub) and (subLen+1+_len)==val[1]:
+													val[1] += 1
+												if len(sub)==0 and (subLen+_len)==val[0]:
+													val[1] += 1
+												__tags[j] = val
+											_len += __inc*2
+										
+										# set style lenght
+										if len(style)>2:
+											_start = style[1]
+											_end = style[2]
+	
+										if len(subStyles)>0: subStyles = ' styles="%s"'%subStyles[1:]
+										print color, l[4]
+										color = '%s %s %s ff'%(color[0:2], color[2:4], color[4:6])
+										color = color.lower()
+										if color<>'ff ff ff ff':
+											subStyles = subStyles+' color="%s"'%color
+										#subLen = len(unicode(sub, 'utf-8'))
+										if len(sub):
+											#sub = '%s\n%s'%(sub, add)
+											if len(subStyles)>0:
+												__tags.append([subLen+1+_start, subLen+1+_end, subStyles])
+												#tags = '%s<Style fromChar="%d" toChar="%d" %s/>'%(tags, subLen+1+_start, subLen+1+_end, subStyles)
+										else:
+											#sub = '%s'%add
+											if len(subStyles)>0:
+												__tags.append([subLen+_start, subLen+_end, subStyles])
+												#tags = '%s<Style fromChar="%d" toChar="%d" %s/>'%(tags, subLen+_start, subLen+_end, subStyles)
 								if len(sub):
 									sub = '%s\n%s'%(sub, add)
-									if len(subStyles)>0:
-										tags = '%s<Style fromChar="%d" toChar="%d" %s/>'%(tags, subLen+1, subLen+_len+1, subStyles)
 								else:
 									sub = '%s'%add
-									if len(subStyles)>0:
-										tags = '%s<Style fromChar="%d" toChar="%d" %s/>'%(tags, subLen, subLen+_len, subStyles)
-								#print color, l[3], l[4]
+
+						tags = ''
+						for __t in __tags:
+							tags = '%s<Style fromChar="%d" toChar="%d" %s/>'%(tags, __t[0], __t[1], __t[2])
+								
 						sub = sub.replace('<', '&lt;').replace('>', '&gt;').replace('¶', '&nbsp;')
 						print sub, subStyles
 						if lastSubTm<>tmFrom:
 							fo.write('\n<TextSample sampleTime="%s" xml:space="preserve"></TextSample>'%lastSubTm)
-						fo.write('\n<TextSample sampleTime="%s" xml:space="preserve">%s%s</TextSample>'%(tmFrom, sub, tags))
+						print'%s%s'%(sub,tags.encode('utf-8'))
+						fo.write('\n<TextSample sampleTime="%s" xml:space="preserve">%s%s</TextSample>'%(tmFrom, sub, tags.encode('utf-8')))
 						lastSubTm = tmTo
 						#fo.write('%d\n%s --> %s\n%s\n\n'%(num, lastTm.encode('utf-8'), tm.encode('utf-8'), self.postProcessing("\n".join(s))) )
 						#str = self.postProcessing("\n".join(s))
@@ -473,6 +518,7 @@ class subConverter:
 		fo.write('\n<TextSample sampleTime="%s" xml:space="preserve"></TextSample>'%lastSubTm)
 		fo.write('\n</TextStream>\n');
 		fo.close()
+
 
 	def getSubStyle(self, st, defStyles):
 		rv = None
@@ -490,6 +536,66 @@ class subConverter:
 		if rv==None and defStyles.has_key(st[0]):
 			rv = defStyles[st[0]]
 		return rv
+
+	def firstTagBounds(self, line, tags, add=0):
+		tag = None
+		min_pos = -1
+		for __tag in tags:
+			srch = '<%s>'%__tag
+			if __tag[-1]==' ':
+				srch = srch[:-1]
+			idx = line.find(srch);
+			if (min_pos==-1 or min_pos>idx) and idx<>-1:
+				min_pos = idx
+				tag = __tag
+		if tag==None:
+			return (None, -1, -1)
+		if tag[-1]==' ':
+			srch = srch[:-1]
+			tag = tag[:-1]
+		# search right close tag index
+		end_pos = line.find('</%s>'%tag)
+		__add=0
+		while end_pos>-1:
+			__idx = line[__add:].find(srch)+__add
+			if __idx<__add or __idx>end_pos:
+				break
+			__add = end_pos+1
+			end_pos = line[__add:].find('</%s>'%tag)+__add
+		if tag<>None and end_pos<=min_pos:
+			return self.firstTagBounds(line[min_pos+1:], tags, add+min_pos)
+		return (tag, min_pos, end_pos)
+
+	def tagsBounds(self, line, tags, bounds=[], add=0):
+		(tag, min_pos, end_pos) = self.firstTagBounds(line, tags)
+		while tag<>None:
+			idx = min_pos+line[min_pos:].find('>')+1
+			b = []
+			if tag=='font':
+				srch = re.compile('\s+color\s*=\s*[\'\"](\#[a-fA-F0-9]{6})[\'\"]').search(line[min_pos:idx])
+				if srch==None:
+					print 'Error on line: "%s"'%line
+					sys.exit(1)
+				b.append(srch.groups()[0])
+			else:
+				b.append(tag)
+			
+			if len(b)>0:
+				b.append(add+min_pos)
+				(converted_line,bounds) = self.tagsBounds(line[idx:end_pos], tags, bounds, b[-1])
+				#end_pos = line.find('</%s>'%tag)
+				tmp_line = line[:min_pos]+converted_line
+				line = tmp_line+line[end_pos+len('</%s>'%tag):]
+				b.append(add+len(tmp_line))
+				bounds.insert(0, b)
+			(tag, min_pos, end_pos) = self.firstTagBounds(line, tags)
+		return line,bounds
+
+	def stylesFromSrtLine(self, line):
+		#print line
+		(l, styles) = self.tagsBounds(line, ['font ', 'i'], [])
+		# TODO: merge equal bounds tags, remove bounds from full-line sub
+		return (l, styles)
 
 	def readAss(self, fname_ass):
 		fi = open(fname_ass)
@@ -525,10 +631,9 @@ class subConverter:
 					linetext = linetext.replace('\\n','\\N');
 					linetext = linetext.replace('\\N','\n');
 					linetext = re.sub(r'\{\\[^\}]*\}', '', linetext)
-					#linetext = re.sub(r'\{[^\}]*\}', '', linetext)   # {}
 					linetext = re.sub(r'([lmb](\s\-{0,1}\d+){2,8}\s{0,1}){2,}', '', linetext)	# m 0 0 l 0 150 l 250 150 l 250 0
 					linetext = re.sub(r'm\s\-{0,1}\d+\s+\-{0,1}\d+\s+s(\s+\-{0,1}\d+){14}\s+c', '', linetext)	# m 5 0 s 95 0 100 5 100 95 95 100 5 100 0 95 0 5 c
-					#linetext = re.sub(r'\{[^\}]*\}', '', linetext)		# remove from subs {xxxx}
+					#linetext = re.sub(r'\{[^\}]*\}', '', linetext)		# remove from subs comments {xxxx}
 
 					blackCheck = True
 					subEnd = self.timesrt(elems[2])
@@ -589,12 +694,13 @@ class subConverter:
 				l = lines[i]
 				style = self.getSubStyle(l[0], styles)
 				if style!=None:
-					lines[i][4].append(("#%s"%style[:6],))
-					if len(style)>6:
-						if style[6]=='<':
-							lines[i][4].insert(0, (string.lower(style[6]), ))
-						else:
-							lines[i][4].append((string.lower(style[6]), ))
+					lines[i][4].append(("#%s"%style,))
+					#lines[i][4].append(("#%s"%style[:6],))
+					#if len(style)>6:
+					#	if style[6]=='<':
+					#		lines[i][4].insert(0, (string.lower(style[6]), ))
+					#	else:
+					#		lines[i][4].append((string.lower(style[6]), ))
 		return lines
 
 	def readSrt(self, fname_srt):
@@ -619,6 +725,7 @@ class subConverter:
 			if len(line)!=0:
 				
 				subStyle = []
+				'''
 				if subReplace.has_key(line):
 					if subReplace[line].has_key('outStyle'):
 						outStyle = subReplace[line]['outStyle']
@@ -628,9 +735,11 @@ class subConverter:
 								subStyle.insert(0, (string.lower(outStyle[6]), ))
 							else:
 								subStyle.append((string.lower(outStyle[6]), ))
-						print line, subStyle
-					#else:
-					#	line = subReplace[line]['text']
+						print subStyle
+				'''
+				if subReplace.has_key(line):
+					if subReplace[line].has_key('text'):
+						line = subReplace[line]['text']
 
 				if lastLineEmpty:
 					try:
@@ -644,7 +753,6 @@ class subConverter:
 							tm2 = ttt[1].strip()
 							val = (['', ''], tm1, tm2, txt.encode('utf-8'), subStyle)
 							self.__insert(lines, val)
-							print lines
 							if len(subStyle)>0:
 								sys.exit(0)
 							#print '%d\n-%s\n--%s'%(idx, tm, txt)
@@ -677,6 +785,14 @@ class subConverter:
 				val = (['', ''], ttt[0].strip(), ttt[1].strip(), txt.encode('utf-8'), subStyle)
 				self.__insert(lines, val)
 		fi.close()
+		
+		for i in range(len(lines)):
+			val = lines[i]
+			tmp = self.stylesFromSrtLine(unicode(val[3], 'utf-8'))
+			if len(tmp[1]):
+				val = (val[0], val[1], val[2], tmp[0].encode('utf-8'), tmp[1])
+				lines[i] = val
+			print '%s %s'%(val[4], val[3])
 
 		return lines
 	
@@ -725,6 +841,15 @@ class subConverter:
 
 	def ass2ttxt(self, fname_ass, fname_ttxt, sttngs={}):
 		lines = self.readAss(fname_ass)
+
+		if sttngs.has_key('flexibleTime'):
+			lines = self.flexibleTiming(lines, sttngs['flexibleTime'] )
+
+		self.writeOut2ttxt(fname_ttxt, lines)
+		return fname_ttxt
+
+	def srt2ttxt(self, fname_srt, fname_ttxt, sttngs={}):
+		lines = self.readSrt(fname_srt)
 
 		if sttngs.has_key('flexibleTime'):
 			lines = self.flexibleTiming(lines, sttngs['flexibleTime'] )
@@ -781,11 +906,12 @@ if __name__=='__main__':
 	if len(sys.argv)==2:
 		sc = subConverter(STTNGS)
 		if sys.argv[1][-4:]=='.srt':
-			sc.srt2srt(sys.argv[1])
+			fname_ttxt = os.path.basename(re.compile('\\.srt$').sub('.ttxt', sys.argv[1]))
+			sc.srt2ttxt(sys.argv[1], fname_ttxt)
 		else:
-			fname_srt = os.path.basename(re.compile('\\.ass$').sub('.ttxt', sys.argv[1]))
-			print sys.argv[1], fname_srt
-			sc.ass2ttxt(sys.argv[1], fname_srt)
+			fname_ttxt = os.path.basename(re.compile('\\.ass$').sub('.ttxt', sys.argv[1]))
+			print sys.argv[1], fname_ttxt
+			sc.ass2ttxt(sys.argv[1], fname_ttxt)
 	elif len(sys.argv)>2:
 		if sys.argv[1]=='-styles':
 			sc = subConverter(STTNGS)
