@@ -663,13 +663,14 @@ def cSubs(iFile, stream, informer, prms, oFile):
 					sConverter = subConverter(STTNGS)
 					sConverter.ass2ttxt(tmpName, oFile, prms)
 			else:
-				cmd = 'mkvextract tracks "%s" %s:"%s"'%(fi['filename'], stream[3]['mkvinfo_trackNumber'], oFile)
+				strFileName = re.compile('\\.ttxt$').sub('.srt', oFile)
+				cmd = 'mkvextract tracks "%s" %s:"%s"'%(fi['filename'], stream[3]['mkvinfo_trackNumber'], strFileName)
 				printCmd(cmd)
 				if STTNGS['sc']:
 					p = os.popen(cmd)
 					p.close()
 					sConverter = subConverter(STTNGS)
-					sConverter.srt2ttxt(oFile)
+					sConverter.srt2ttxt(strFileName, oFile)
 		else:
 			tmpName = iFile.split('/')[-1]+'_%s.srt'%stream[1]
 			cmd = 'ffmpeg -y -i "%s" -map %s -an -vn -sbsf mov2textsub -scodec copy "%s"'%(fi['filename'], stream[1], tmpName)

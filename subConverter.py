@@ -563,6 +563,8 @@ class subConverter:
 				break
 			__add = end_pos+1
 			end_pos = line[__add:].find('</%s>'%tag)+__add
+		if tag<>None and end_pos==-1 and len(tag)>1:
+			return (tag, min_pos, len(line))
 		if tag<>None and end_pos<=min_pos:
 			return self.firstTagBounds(line[min_pos+1:], tags, add+min_pos)
 		return (tag, min_pos, end_pos)
