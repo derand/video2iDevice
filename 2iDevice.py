@@ -10,35 +10,6 @@
 #
 
 
-# extract audio
-# ffmpeg -y -i ./e01\ -\ Пробуждение.mkv -vn -acodec libfaac -ab 128k -ac 2 -ar 48000  -map 0.1 ./audio_rus.aac
-# if channels=5.1
-#    ffmpeg -y -i ./e01\ -\ Пробуждение.mkv -vn -acodec ac3 -ab 128k  -ar 48000  -ac 6 -map 0.2 ./audio_eng.ac3
-#    ffmpeg -y -i ./audio_eng.ac3 -vn -acodec libfaac -ab 128k  -ar 48000  -ac 2 ./audio_eng1.aac
-
-#extract subtitles
-# ffmpeg -y -i ./e01\ -\ Пробуждение.mkv -map 0:3 -an -vn -sbsf mov2textsub -scodec copy ./sub_rus.ass
-
-#extracting video
-### ffmpeg -y -i ./e01\ -\ Пробуждение.mkv -an -vcodec h263 -f h263 -b "350k" -r 12 -s "720x360" -map 0.0 ./video.263
-# ffmpeg -y -i ./e01\ -\ Пробуждение.mkv -an -vcodec "libx264" -b "350k" -s "720x360" -flags "+loop" -cmp "+chroma" -partitions "+parti4x4+partp8x8+partb8x8" -subq "5"     -trellis "1"     -refs "1"     -coder "0"     -me_range "16"     -g "300"     -keyint_min "25"     -sc_threshold "40"     -i_qfactor "0.71" -maxrate  "300k"     -bufsize "300k"     -rc_eq "blurCplx^(1-qComp)"     -qcomp "0.6"     -qmin "15"     -qmax "51"     -qdiff "4"     -level "30" ./video.mp4
-
-#merge ttracks
-# ffmpeg -y -i ./video.mp4 -vcodec copy -i ./audio_eng1.aac -acodec copy -ab 128k -i ./audio_rus.aac -acodec copy -ab 128k ./e01.m4v -newaudio
-
-#merge for handbrake
-# ffmpeg -y -i ./video.mp4 -vcodec copy -i ./audio_eng1.aac -acodec copy -ab 128k -i ./audio_rus.aac -acodec copy -ab 128k ./video_.mp4 -newaudio
-
-#merge with subs
-# MP4Box -add ./Death.Note.01.iz.37.avi_0.0.mp4 -add ./Death.Note.01.iz.37.avi_0.1.aac:lang=rus:group=1 -add ./Death.Note.01.iz.37.avi_0.2.aac:lang=jpn:disable:group=1 -add ./Death.Note.01.iz.37.srt:group=2:lang=rus ./Death.Note.01.iz.37.m4v -new
-
-#edit metadata
-# MP4Box -itags "name=mullet:artist=tennessee waterfall:comment=squirrel pelt" ./Death.Note.01.iz.37.m4v
-
-#hardsub (problemm with ass)
-# mencoder -ass ./tmp.mp4 -sub ./tmp.ass -subcp utf-8 -zoom -o tmp2.mp4 -oac copy -ovc x264 -x264encopts bitrate=650
-
-
 #####################  #########################
 #valid
 #cabac=0 / ref=5 / deblock=1:0:0 / analyse=0x1:0x131 / me=umh / subme=6 / psy=1 / psy_rd=0.0:0.0 / mixed_ref=0 / me_range=16 / chroma_me=1 / trellis=0 / 8x8dct=0 / cqm=0 / deadzone=21,11 / chroma_qp_offset=0 / threads=1 / nr=0 / decimate=1 / mbaff=0 / constrained_intra=0 / bframes=0 / wpredp=0 / keyint=240 / keyint_min=24 / scenecut=40 / rc_lookahead=40 / rc=crf / mbtree=1 / crf=12.8 / qcomp=0.60 / qpmin=10 / qpmax=51 / qpstep=4 / vbv_maxrate=1500 / vbv_bufsize=2000 / ip_ratio=1.40 / aq=1:1.00
