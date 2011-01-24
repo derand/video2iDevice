@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+# writed by derand (2derand@gmail.com)
+# - Sorry for horrible code -
+
 import re
 import glob
 import sys
@@ -647,6 +650,10 @@ class subConverter:
 					elems = line.split(',')
 					linetext = ",".join(elems[9:])
 					linetext = unicode( linetext, "utf-8" )
+
+					#if len(linetext)>12 and (linetext[:7]=='{\\bord3' or linetext[:5]=='{\\be1') and (len(elems[3])>3 and elems[3][:3]=="ed_"):
+					#	linetext=''
+
 					linetext = linetext.replace('\\n','\\N');
 					linetext = linetext.replace('\\N','\n');
 					linetext = re.sub(r'\{\\[^\}]*\}', '', linetext)

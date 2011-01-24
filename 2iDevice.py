@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+# writed by derand (http://derand.blogspot.com)
+# - Sorry for horrible code -
+
 # thanks:
 #   http://ffmpeg.org/ffmpeg-doc.html
 #   http://www.linux.org.ru/forum/desktop/3597304
@@ -59,6 +62,7 @@ STTNGS = {
 	'sc':		True,
 	'lang':		'',
 	'ar':		48000,
+	'ab':		128,
 	'b':		640,
 	'refs':		2,
 	'tn':		False,
@@ -89,6 +93,7 @@ Options
 	-an			disable convert audio
 	-sn			disable convert subtitles
 	-ar		[int]	audio rate (def 48000)
+	-ab		[int]	audio bitrate (def 128k)
 	-b		[int]	video bitrate (def 640)
 	-refs		[int]	ref frames for coding video
 	-tn			disable sets tags
@@ -322,6 +327,11 @@ def fileInfoUsingFFMPEG(filename):
 				if channels=='stereo' or channels=='2 channels':
 					channels = '2'
 				prms['channels'] = channels
+				if len(info)>4:
+					bitrate = info[4]
+					if bitrate.find(' '):
+						bitrate = bitrate[:bitrate.find(' ')]
+					prms['bitrate'] = int(bitrate)
 			elif t == 'Subtitle':
 				tp = 2
 				info = l.split(', ')
@@ -594,8 +604,11 @@ def cAudio(iFile, stream, oFile):
 	ar = STTNGS['ar']
 	if ar>stream[3]['frequency']:
 		ar = stream[3]['frequency']
+	ab = STTNGS['ab']
+	if 	stream[3].has_key('bitrate') and ab>stream[3]['bitrate']:
+		ab = stream[3]['bitrate']
 
-	cmd = 'ffmpeg -y -i "%s" -map %s -vn -acodec libfaac -ab 128k -ac 2 -ar %d -threads %d -strict experimental "%s"'%(iFile, stream[1], ar, STTNGS['threads'], oFile)
+	cmd = 'ffmpeg -y -i "%s" -map %s -vn -acodec libfaac -ab %dk -ac 2 -ar %d -threads %d -strict experimental "%s"'%(iFile, stream[1], ab, ar, STTNGS['threads'], oFile)
 	#cmd = 'ffmpeg -y -i "%s" -map %s -vn -acodec copy -strict experimental "%s"'%(iFile, stream[1], oFile)
 	printCmd(cmd)
 	if STTNGS['ac']:
@@ -606,7 +619,7 @@ def cAudio(iFile, stream, oFile):
 			p = os.popen(cmd)
 			p.close()
 					
-			cmd = 'ffmpeg -y -i ./tmp.ac3 -vn -acodec libfaac -ab 128k  -ar %d  -ac 2 -threads %d "%s"'%(ar, STTNGS['threads'], oFile)
+			cmd = 'ffmpeg -y -i ./tmp.ac3 -vn -acodec libfaac -ab %dk  -ar %d  -ac 2 -threads %d "%s"'%(ab, ar, STTNGS['threads'], oFile)
 			printCmd(cmd)
 			p = os.popen(cmd)
 			p.close()
