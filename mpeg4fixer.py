@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+# writed by derand (2derand@gmail.com)
+
 import os
 import sys
 import struct
