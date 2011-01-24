@@ -425,12 +425,14 @@ class subConverter:
 							subStyles = ''
 							subLen = len(unicode(sub, 'utf-8'))
 							if l==None:
-								color = '38 38 38 ff'
-								_len = 2
+								color = '38 38 38 00'
+								subStyles =' color="%s"'%color
 								if len(sub):
 									sub = '%s\n¶'%sub
+									__tags.append([subLen+1, subLen+2, subStyles])
 								else:
 									sub = '¶'
+									__tags.append([subLen, subLen+1, subStyles])
 							else:
 								add = l[3].replace('&lt;', '<').replace('&gt;', '>')
 								#print '--', l[0], l[1], l[2], l[3], l[4]
@@ -502,8 +504,9 @@ class subConverter:
 						for __t in __tags:
 							tags = '%s<Style fromChar="%d" toChar="%d" %s/>'%(tags, __t[0], __t[1], __t[2])
 								
-						sub = sub.replace('<', '&lt;').replace('>', '&gt;').replace('¶', '&nbsp;')
-						#print sub, subStyles
+						#sub = sub.replace('<', '&lt;').replace('>', '&gt;').replace('¶', '&nbsp;')
+						#sub = sub.replace('<', '&lt;').replace('>', '&gt;').replace('¶', ' ')
+						sub = sub.replace('<', '&lt;').replace('>', '&gt;').replace('¶', '.')
 						if lastSubTm<>tmFrom:
 							fo.write('\n<TextSample sampleTime="%s" xml:space="preserve"></TextSample>'%lastSubTm)
 						print'%s%s'%(sub,tags.encode('utf-8'))

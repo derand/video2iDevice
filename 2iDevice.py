@@ -68,7 +68,8 @@ STTNGS = {
 	'fadd':		[],
 	'vq':		3,
 	'format':	'm4v',
-	'add2TrackIdx': 0
+	'add2TrackIdx': 0,
+	'version' : '0.5'
 }
 
 help = '''
@@ -104,7 +105,7 @@ Options
 	-rename2	[str]	rename result file to. supports tags: [SEASON], [EPISODE_ID]
 	-fd			fix video duration
 	-et		[str]	set episodes titles separated ';'
-	-stik		[str]	set iTunes stick. can be 'TV Show' ...
+	-stik		[str]	set iTunes stick. can be 'Movie', 'Music Video', 'TV Show' ... (see: AtomicParsley --stik-list)
 	-TVShowName	[str]	set showname tag
 	-TVSeasonNum	[str]	set season num
 	-description	[str]	set deascription
@@ -118,7 +119,8 @@ Options
 	-stream		[int]	stream idx from appending files (vfile, afile, sfile)
 	-title		[srt]	stream title from appending files (vfile, afile, sfile)
 	-add2TrackIdx	[int]	add to track (def: 0)
-	-s		[int]x[int]	rsult resolution
+	-s		[int]x[int]	result resolution
+	-v			script version
 	
 Author
 	Writen by Andrew Derevyagin (2derand+2idevice@gmail.com)
@@ -173,6 +175,9 @@ def getSettings():
 				saveP = True
 			if ckey=='h':
 				print help
+				sys.exit(0)
+			if ckey=='v':
+				print "Version: %s"%STTNGS['version']
 				sys.exit(0)
 		else:
 			if saveP:
@@ -467,7 +472,7 @@ def tagTrackInfo(fn):
 	return (tr, trs)
 
 def iTagger(fn):
-	prms = ' --copyright "derand (2derand@gmail.com)"'
+	prms = ' --copyright "derand"'
 	if not STTNGS['tn']:
 		if STTNGS.has_key('artwork'):
 			prms += ' --artwork "%s"'%STTNGS['artwork']
@@ -494,7 +499,7 @@ def iTagger(fn):
 			prms += ' --description "%s"'%STTNGS['description']
 		if STTNGS.has_key('year'):
 			prms += ' --year "%s"'%STTNGS['year']
-	prms += ' --encodingTool "2iDevice.py" --overWrite'
+	prms += ' --encodingTool "2iDevice.py (http://derand.blogspot.com)" --overWrite'
 	cmd = 'AtomicParsley "%s" %s'%(unicode(fn,'UTF-8'), prms)
 	printCmd(cmd)
 	os.system(cmd.encode('utf-8'))
@@ -851,5 +856,7 @@ if __name__=='__main__':
 		print '\n------------------------ %s ------------------------'%fn
 		fi = fileInfo(fn)
 		encodeStreams(fi)
+
+	os.system('date')
 
 
