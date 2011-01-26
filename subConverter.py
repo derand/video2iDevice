@@ -377,7 +377,7 @@ class subConverter:
 				if self.time2int(l[2])>self.time2int(maxTm): maxTm = l[2]
 			lastTm = minTm
 			_prew = []
-			print ""
+			#print ""
 			while self.time2int(lastTm)<self.time2int(maxTm):
 				linesByTime = []
 				tm = None
@@ -420,7 +420,7 @@ class subConverter:
 					if self.time2int(lastTm)<self.time2int(tm):
 						tmFrom = (lastTm[:-4]+'.'+lastTm[-3:]).encode('utf-8')
 						tmTo = (tm[:-4]+'.'+tm[-3:]).encode('utf-8')
-						print tmFrom, tmTo
+						#print tmFrom, tmTo
 						sub = ''
 						#idx=0
 						__tags = []
@@ -512,7 +512,7 @@ class subConverter:
 						sub = sub.replace('<', '&lt;').replace('>', '&gt;').replace('¶', '.')
 						if lastSubTm<>tmFrom:
 							fo.write('\n<TextSample sampleTime="%s" xml:space="preserve"></TextSample>'%lastSubTm)
-						print'%s%s'%(sub,tags.encode('utf-8'))
+						#print'%s%s'%(sub,tags.encode('utf-8'))
 						fo.write('\n<TextSample sampleTime="%s" xml:space="preserve">%s%s</TextSample>'%(tmFrom, sub, tags.encode('utf-8')))
 						lastSubTm = tmTo
 						#fo.write('%d\n%s --> %s\n%s\n\n'%(num, lastTm.encode('utf-8'), tm.encode('utf-8'), self.postProcessing("\n".join(s))) )
@@ -651,7 +651,7 @@ class subConverter:
 					linetext = ",".join(elems[9:])
 					linetext = unicode( linetext, "utf-8" )
 
-					#if len(linetext)>12 and (linetext[:7]=='{\\bord3' or linetext[:5]=='{\\be1') and (len(elems[3])>3 and elems[3][:3]=="ed_"):
+					#if len(linetext)>12 and (linetext[:15]=='{\\fad(200,200)}') and (len(elems[3])>3 and elems[3][:3]=="ed_"):
 					#	linetext=''
 
 					linetext = linetext.replace('\\n','\\N');

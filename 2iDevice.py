@@ -124,7 +124,7 @@ Options
 	-stream		[int]	stream idx from appending files (vfile, afile, sfile)
 	-title		[srt]	stream title from appending files (vfile, afile, sfile)
 	-add2TrackIdx	[int]	add to track (def: 0)
-	-s		[int]x[int]	result resolution
+	-s		[int]x[int]	result resolution, can looks like ('*x320', '960x*')
 	-v			script version
 	
 Author
@@ -216,6 +216,12 @@ def getSettings():
 				tmp = STTNGS['fadd']
 				if len(tmp)>0:
 					tmp[-1][-1]['title'] = el
+			elif ckey=='ar' and len(STTNGS['fadd'])>0:
+				tmp = STTNGS['fadd']
+				tmp[-1][-1]['ar'] = int(el)
+			elif ckey=='ab' and len(STTNGS['fadd'])>0:
+				tmp = STTNGS['fadd']
+				tmp[-1][-1]['ab'] = int(el)
 			else:
 				if STTNGS.has_key(ckey):
 					if type(STTNGS[ckey])==type([]):
@@ -550,48 +556,40 @@ def rename(fn):
 	printCmd(cmd)
 	os.system(cmd)
 
+def sizeConvert(real1, real2, out1):
+	out2 = (real2*out1)/real1
+	if out2%16>7:
+		out2 += 16-out2%16
+	else:
+		out2 -= out2%16
+	return (out1, out2)
+
 def cVideo(iFile, stream, oFile):
 	w = stream[3]['width']
 	h = stream[3]['height']
 	if stream[3].has_key('dwidth'): w = stream[3]['dwidth']
 	if stream[3].has_key('dheight'): h = stream[3]['dheight']
-	if STTNGS['vq']==1:
-		_w = 480
-		_h = (h*_w)/w
-		tmp = _h%16
-		if _h%16>7:
-			_h += 16-_h%16
-		else:
-			_h -= _h%16
-	elif STTNGS['vq']==2:
-		_h = 320
-		_w = (w*_h)/h
-		tmp = _w%16
-		if _w%16>7:
-			_w += 16-_w%16
-		else:
-			_w -= _w%16
-	else:
-		_w = 480
-		_h = (h*_w)/w
-		tmp = _h%16
-		if _h%16>7:
-			_h += 16-_h%16
-		else:
-			_h -= _h%16
-		if _h<320:
-			_h = 320
-			_w = (w*_h)/h
-			tmp = _w%16
-			if _w%16>7:
-				_w += 16-_w%16
-			else:
-				_w -= _w%16
+	
 	if STTNGS.has_key('s'):
 		res = STTNGS['s'].split('x')
-		_w = int(res[0])
-		_h = int(res[1])
-	print '%dx%d  ==> %dx%d'%(w,h, _w,_h)
+		if res[0]=='*':
+			(_h, _w) = sizeConvert(h, w, int(res[1]))
+		elif res[1]=='*':
+			(_w, _h) = sizeConvert(w, h, int(res[0]))
+		else:
+			_w = int(res[0])
+			_h = int(res[1])
+	else:
+		if STTNGS['vq']==1:
+			(_w, _h) = sizeConvert(w, h, 480)
+		elif STTNGS['vq']==2:
+			(_h, _w) = sizeConvert(h, w, 320)
+		else:
+			(_w, _h) = sizeConvert(w, h, 480)
+			if _h<320:
+				(_h, _w) = sizeConvert(h, w, 320)
+
+	print '\033[1;33m %dx%d  ==> %dx%d \033[00m'%(w,h, _w,_h)
 	#for _pass in [1,3,2]:
 	for _pass in [1,2]:
 		cmd = 'ffmpeg -y -i "%s" -pass %d -map %s -an  -vcodec "libx264" -b "%d k" -s "%dx%d" -flags "+loop" -cmp "+chroma" -partitions "+parti4x4+partp8x8+partb8x8" -subq 6  -trellis 0  -refs %d  -coder 0  -me_range 16  -g 240   -keyint_min 25  -sc_threshold 40 -i_qfactor 0.71 -maxrate  "%d k" -bufsize "1000 k" -rc_eq "blurCplx^(1-qComp)" -qcomp 0.6 -qmin 15 -qmax 51 -qdiff 4 -flags2 "+bpyramid-mixed_refs+wpred-dct8x8+fastpskip" -me_method full -directpred 2 -b_strategy 1 -level 30 -threads %d "%s"'%(iFile, _pass, stream[1], STTNGS['b'], _w,_h, STTNGS['refs'], STTNGS['b'], STTNGS['threads'], oFile)
@@ -602,10 +600,15 @@ def cVideo(iFile, stream, oFile):
 
 def cAudio(iFile, stream, oFile):
 	ar = STTNGS['ar']
-	if ar>stream[3]['frequency']:
-		ar = stream[3]['frequency']
 	ab = STTNGS['ab']
-	if 	stream[3].has_key('bitrate') and ab>stream[3]['bitrate']:
+	if stream[3].has_key('extended'):
+		if stream[3]['extended'].has_key('ar'):
+			ar = stream[3]['extended']['ar']
+		if stream[3]['extended'].has_key('ab'):
+			ar = stream[3]['extended']['ab']
+	if stream[3].has_key('frequency') and ar>stream[3]['frequency']:
+		ar = stream[3]['frequency']
+	if stream[3].has_key('bitrate') and ab>stream[3]['bitrate']:
 		ab = stream[3]['bitrate']
 
 	cmd = 'ffmpeg -y -i "%s" -map %s -vn -acodec libfaac -ab %dk -ac 2 -ar %d -threads %d -strict experimental "%s"'%(iFile, stream[1], ab, ar, STTNGS['threads'], oFile)
@@ -730,6 +733,7 @@ def encodeStreams(fi):
 					if stream[0]==add[0]:
 						break
 			tmp_fn = '%s.mp4'%os.path.basename(nn)
+			stream[3]['extended'] = add[-1]
 			if title and title!='':
 				stream[3]['name'] = title
 				if len(title):
@@ -747,6 +751,7 @@ def encodeStreams(fi):
 					if stream[0]==add[0]:
 						break
 			tmp_fn = '%s.aac'%os.path.basename(nn)
+			stream[3]['extended'] = add[-1]
 			if title!=None:
 				stream[3]['name'] = title
 				if len(title):
@@ -764,6 +769,7 @@ def encodeStreams(fi):
 					if stream[0]==add[0]:
 						break
 			tmp_fn = '%s.ttxt'%os.path.basename(nn)
+			stream[3]['extended'] = add[-1]
 			if title and title!='':
 				stream[3]['name'] = title
 				if len(title):
