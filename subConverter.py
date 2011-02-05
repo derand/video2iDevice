@@ -641,6 +641,10 @@ class subConverter:
 					if t:
 						col = t.groups()[1]
 						styles[sName] = (col,)
+			if line[:8] == 'alogue: ':
+				line = 'Di%s'%line
+			if line[:10] == 'Dialogue: ':
+				block = 3
 			if block==3:
 				#print line
 				if line[:8] == 'alogue: ':
@@ -949,7 +953,7 @@ if __name__=='__main__':
 			keys = st.keys()
 			keys.sort()
 			for key in keys:
-				print key, '\t', st[key] 
+				print "\t\"%s\" : \"%s\","%(key, st[key][0]) 
 			
 	
 

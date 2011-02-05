@@ -73,7 +73,7 @@ STTNGS = {
 	'vq':		3,
 	'format':	'm4v',
 	'add2TrackIdx': 0,
-	'version' : '0.5'
+	'version' : '0.5.1'
 }
 
 help = '''
@@ -118,7 +118,7 @@ Options
 	-artwork	[str]	set artwork filename
 	-TRACK_REGEX	[srt]	set regular exeption for select track from filename
 	-TRACKS_REGEX	[srt]	set regular exeption for select tracks from filename
-	-vq		[int]	video quality (1 - 480x*,   2 - *x320, 3 - max)
+	-vq		[int]	(deprecated: use -s) video quality (1 - 480x*,   2 - *x320, 3 - max)
 	-format		[str]	output format (default: 'm4v')
 	-flexibleTime	[str]	flex time subtitles (format:'0:22:03.58->0:21:10.00;0:02:28.69->0:02:22.85')
 	-stream		[int]	stream idx from appending files (vfile, afile, sfile)
@@ -515,6 +515,8 @@ def iTagger(fn):
 			prms += ' --description "%s"'%STTNGS['description']
 		if STTNGS.has_key('year'):
 			prms += ' --year "%s"'%STTNGS['year']
+		if STTNGS.has_key('artist'):
+			prms += ' --artist "%s"'%STTNGS['artist']
 	prms += ' --encodingTool "2iDevice.py (http://derand.blogspot.com)" --overWrite'
 	cmd = 'AtomicParsley "%s" %s'%(unicode(fn,'UTF-8'), prms)
 	printCmd(cmd)
