@@ -399,6 +399,7 @@ class subConverter:
 				tmp = []
 				for l in linesByTime: tmp.append(l)
 				for k in range(len(_prew)):
+					#break
 					for n in range(len(tmp)):
 						if tmp[n]==_prew[k]:
 							s[k] = tmp[n]
@@ -631,6 +632,7 @@ class subConverter:
 			subReplace = self.__STNGS['subReplace']
 		lastVal = None
 		styles = {}
+		canMergeLines = True
 		for line in fi:
 			if block==2:
 				elems = line.split(',')
@@ -658,11 +660,12 @@ class subConverter:
 					#if len(linetext)>12 and (linetext[:15]=='{\\fad(200,200)}') and (len(elems[3])>3 and elems[3][:3]=="ed_"):
 					#	linetext=''
 
-					linetext = linetext.replace('\\n','\\N');
-					linetext = linetext.replace('\\N','\n');
+					linetext = linetext.replace('\\n','\\N')
+					linetext = linetext.replace('\\N','\n')
 					linetext = re.sub(r'\{\\[^\}]*\}', '', linetext)
 					linetext = re.sub(r'([lmb](\s\-{0,1}\d+){2,8}\s{0,1}){2,}', '', linetext)	# m 0 0 l 0 150 l 250 150 l 250 0
 					linetext = re.sub(r'm\s\-{0,1}\d+\s+\-{0,1}\d+\s+s(\s+\-{0,1}\d+){14}\s+c', '', linetext)	# m 5 0 s 95 0 100 5 100 95 95 100 5 100 0 95 0 5 c
+					linetext = linetext.replace('\\h','')
 					#linetext = re.sub(r'\{[^\}]*\}', '', linetext)		# remove from subs comments {xxxx}
 
 					blackCheck = True
@@ -686,16 +689,37 @@ class subConverter:
 							continue
 
 					while linetext.find('\n\n')>0:
-						linetext = linetext.replace('\n\n','\n');
-					linetext = linetext.strip().encode('utf-8')
+						linetext = linetext.replace('\n\n','\n')
+					tmpStr = ''
+					canMerge = True
+					for l in linetext.split('\n'):
+						ch = '\n'
+						if l.find(' ')==-1 and l.find('.')==-1 and l.find(',')==-1:
+							if canMerge:
+								ch = ' '
+							canMerge = True
+						else:
+							canMerge = False
+						tmpStr = '%s%s%s'%(tmpStr, ch, l)
+					linetext = tmpStr.strip()
+					linetext8 = linetext.encode('utf-8')
 					#print len(unicode(linetext,'utf-8')),linetext
-					if len(linetext)>0:
+					if len(linetext8)>0:
 						_style = elems[3].strip()
 						if _style[0]=='*': _style = _style[1:]
 						_name = elems[4].strip()
-						val = ([_style, _name], self.timesrt(elems[1]), subEnd, linetext, [])
-						self.__insert(lines, val)
-						lastVal = val
+						val = [[_style, _name], self.timesrt(elems[1]), subEnd, linetext8, []]
+						if lastVal<>None:
+							if canMergeLines and lastVal[0][0]==val[0][0] and lastVal[1]==val[1] and lastVal[2]==lastVal[2] and linetext.find(' ')==-1 and linetext.find('.')==-1 and linetext.find(',')==-1:
+								lastVal[3] = '%s %s'%(unicode(lastVal[3], 'utf-8'), linetext)
+								lastVal[3] = lastVal[3].encode('utf-8')
+							else:
+								self.__insert(lines, val)
+								lastVal = val
+						else:
+							self.__insert(lines, val)
+							lastVal = val
+						canMergeLines = (linetext.find(' ')==-1 and linetext.find('.')==-1 and linetext.find(',')==-1)
 
 			line = line.strip()
 			if '[Script Info]' == line:
@@ -871,6 +895,14 @@ class subConverter:
 
 	def ass2ttxt(self, fname_ass, fname_ttxt, sttngs={}):
 		lines = self.readAss(fname_ass)
+		'''
+		for i in range(len(lines)):
+			val = lines[i]
+			tm1 = self.int2time(self.time2int(val[1])+550)
+			tm2 = self.int2time(self.time2int(val[2])+550)
+			val = (val[0], tm1, tm2, val[3], val[4])
+			lines[i] = val
+		'''
 
 		if sttngs.has_key('flexibleTime'):
 			lines = self.flexibleTiming(lines, sttngs['flexibleTime'] )

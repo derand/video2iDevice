@@ -126,6 +126,8 @@ Options
 	-add2TrackIdx	[int]	add to track (def: 0)
 	-s		[int]x[int]	result resolution, can looks like ('*x320', '960x*')
 	-v			script version
+	-passes    [str] video passes coding separeted ':'
+	-r         [str] frame rate
 	
 Author
 	Writen by Andrew Derevyagin (2derand+2idevice@gmail.com)
@@ -229,10 +231,13 @@ def getSettings():
 					elif type(STTNGS[ckey])==type(123):
 						STTNGS[ckey] = int(el)
 					else:
+						STTNGS[ckey] = el
+						'''
 						if ckey=='format':
 							STTNGS[ckey] = el
 						else:
 							STTNGS[ckey] += el
+						'''
 				else:
 					STTNGS[ckey] = el
 			saveP = True
@@ -592,9 +597,19 @@ def cVideo(iFile, stream, oFile):
 				(_h, _w) = sizeConvert(h, w, 320)
 
 	print '\033[1;33m %dx%d  ==> %dx%d \033[00m'%(w,h, _w,_h)
+
+	passes = [1,2]
+	if STTNGS.has_key('passes'):
+		passes = []
+		for el in STTNGS['passes'].split(':'):
+			passes.append(int(el))
+
 	#for _pass in [1,3,2]:
-	for _pass in [1,2]:
-		cmd = 'ffmpeg -y -i "%s" -pass %d -map %s -an  -vcodec "libx264" -b "%d k" -s "%dx%d" -flags "+loop" -cmp "+chroma" -partitions "+parti4x4+partp8x8+partb8x8" -subq 6  -trellis 0  -refs %d  -coder 0  -me_range 16  -g 240   -keyint_min 25  -sc_threshold 40 -i_qfactor 0.71 -maxrate  "%d k" -bufsize "1000 k" -rc_eq "blurCplx^(1-qComp)" -qcomp 0.6 -qmin 15 -qmax 51 -qdiff 4 -flags2 "+bpyramid-mixed_refs+wpred-dct8x8+fastpskip" -me_method full -directpred 2 -b_strategy 1 -level 30 -threads %d "%s"'%(iFile, _pass, stream[1], STTNGS['b'], _w,_h, STTNGS['refs'], STTNGS['b'], STTNGS['threads'], oFile)
+	for _pass in passes:
+		cmd = 'ffmpeg -y -i "%s" -pass %d -map %s -an  -vcodec "libx264" -b "%d k" -s "%dx%d" -flags "+loop" -cmp "+chroma" -partitions "+parti4x4+partp8x8+partb8x8" -subq 6  -trellis 0  -refs %d  -coder 0  -me_range 16  -g 240   -keyint_min 25  -sc_threshold 40 -i_qfactor 0.71 -maxrate  "%d k" -bufsize "1000 k" -rc_eq "blurCplx^(1-qComp)" -qcomp 0.6 -qmin 15 -qmax 51 -qdiff 4 -flags2 "+bpyramid-mixed_refs+wpred-dct8x8+fastpskip" -me_method full -directpred 2 -b_strategy 1 -level 30 -threads %d'%(iFile, _pass, stream[1], STTNGS['b'], _w,_h, STTNGS['refs'], STTNGS['b'], STTNGS['threads'] )
+		if STTNGS.has_key('r'):
+			cmd = '%s -r %s'%(cmd, STTNGS['r'])
+		cmd = '%s "%s"'%(cmd, oFile)
 		printCmd(cmd)
 		if STTNGS['vc']:
 			p = os.popen(cmd)
