@@ -492,7 +492,14 @@ class subConverter:
 										if len(sub):
 											#sub = '%s\n%s'%(sub, add)
 											if len(subStyles)>0:
-												__tags.append([subLen+1+_start, subLen+1+_end, subStyles])
+												if len(__tags):
+													__lastStyle = __tags[-1]
+													if __lastStyle[2]==subStyles and __lastStyle[1]==(subLen+_start):
+														__lastStyle[1] = subLen+1+_end
+													else:
+														__tags.append([subLen+_start, subLen+1+_end, subStyles])
+												else:
+													__tags.append([subLen+_start, subLen+1+_end, subStyles])
 												#tags = '%s<Style fromChar="%d" toChar="%d" %s/>'%(tags, subLen+1+_start, subLen+1+_end, subStyles)
 										else:
 											#sub = '%s'%add
@@ -505,6 +512,7 @@ class subConverter:
 									sub = '%s'%add
 
 						tags = ''
+						#for __t in sorted(__tags, key=lambda el: el[1]-el[0]):
 						for __t in __tags:
 							tags = '%s<Style fromChar="%d" toChar="%d" %s/>'%(tags, __t[0], __t[1], __t[2])
 								
