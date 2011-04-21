@@ -342,6 +342,11 @@ class subConverter:
 		'''
 				write lines to ttxt format
 		'''
+		
+		#print lines[90]
+		#print lines[90][3]
+		#sys.exit(0)
+		
 		s = ''
 		subs = self.groupByTime(lines)
 
@@ -422,8 +427,9 @@ class subConverter:
 						tmFrom = (lastTm[:-4]+'.'+lastTm[-3:]).encode('utf-8')
 						tmTo = (tm[:-4]+'.'+tm[-3:]).encode('utf-8')
 						#print tmFrom, tmTo
+						#sub = '¶¶¶¶¶¶¶¶¶¶¶¶¶¶¶¶¶¶¶¶¶¶¶¶В¶¶¶¶¶¶¶¶¶¶¶¶¶¶¶¶¶¶¶¶¶¶¶а¶'
+						#__tags = [[0, 50, 'color="38 38 38 40"'],]
 						sub = ''
-						#idx=0
 						__tags = []
 						for l in s:
 							subStyles = ''
@@ -540,9 +546,9 @@ class subConverter:
 		rv = None
 		if self.__STNGS.has_key('subStyleColors'):
 			for key in self.__STNGS['subStyleColors']:
-				tmp = key.split(',')
+				tmp = key.encode( "utf-8" ).split(',')
 				if len(tmp)==1:
-					if key==st[0]:
+					if key.encode( "utf-8" )==st[0]:
 						rv = self.__STNGS['subStyleColors'][key].encode( "utf-8" )
 						break
 				else:
@@ -665,6 +671,8 @@ class subConverter:
 					linetext = ",".join(elems[9:])
 					linetext = unicode( linetext, "utf-8" )
 
+					#if len(linetext)>12 and ((linetext[:7]=='{\\bord3') or (linetext[:5]=='{\\be1')) and (len(elems[3])>3 and elems[3][:3]=="ed_"):
+					#	linetext=''
 					#if len(linetext)>12 and (linetext[:15]=='{\\fad(200,200)}') and (len(elems[3])>3 and elems[3][:3]=="ed_"):
 					#	linetext=''
 
@@ -674,7 +682,7 @@ class subConverter:
 					linetext = re.sub(r'([lmb](\s\-{0,1}\d+){2,8}\s{0,1}){2,}', '', linetext)	# m 0 0 l 0 150 l 250 150 l 250 0
 					linetext = re.sub(r'm\s\-{0,1}\d+\s+\-{0,1}\d+\s+s(\s+\-{0,1}\d+){14}\s+c', '', linetext)	# m 5 0 s 95 0 100 5 100 95 95 100 5 100 0 95 0 5 c
 					linetext = linetext.replace('\\h','')
-					#linetext = re.sub(r'\{[^\}]*\}', '', linetext)		# remove from subs comments {xxxx}
+					linetext = re.sub(r'\{[^\}]*\}', '', linetext)		# remove from subs comments {xxxx}
 
 					blackCheck = True
 					subEnd = self.timesrt(elems[2])
@@ -690,13 +698,13 @@ class subConverter:
 					if blackCheck:
 						bl = False
 						for style in black_list:
-							if style==elems[3]:
+							if style==unicode(elems[3], 'utf-8'):
 								bl = True
 								break
 						if bl:
 							continue
 
-					while linetext.find('\n\n')>0:
+					while linetext.find('\n\n')>=0:
 						linetext = linetext.replace('\n\n','\n')
 					tmpStr = ''
 					canMerge = True
@@ -755,14 +763,14 @@ class subConverter:
 			for i in range(len(lines)):
 				l = lines[i]
 				style = self.getSubStyle(l[0], styles)
+				strLineStyle = self.stylesFromSrtLine(unicode(l[3], 'utf-8'))
 				if style!=None:
-					lines[i][4].append(("#%s"%style,))
-					#lines[i][4].append(("#%s"%style[:6],))
-					#if len(style)>6:
-					#	if style[6]=='<':
-					#		lines[i][4].insert(0, (string.lower(style[6]), ))
-					#	else:
-					#		lines[i][4].append((string.lower(style[6]), ))
+					if strLineStyle[1]==[]:
+						lines[i][4].append(("#%s"%style,))
+				if strLineStyle[1]!=[]:
+					lines[i][3] = strLineStyle[0].encode('utf-8')
+					for s in strLineStyle[1]:
+						lines[i][4].append(s)
 		return lines
 
 	def readSrt(self, fname_srt):
@@ -892,6 +900,15 @@ class subConverter:
 			rv.append(val)
 		return rv
 
+	def timeAdd(self, lines, time):
+		for i in range(len(lines)):
+			val = lines[i]
+			tm1 = self.int2time(self.time2int(val[1])+time)
+			tm2 = self.int2time(self.time2int(val[2])+time)
+			val = (val[0], tm1, tm2, val[3], val[4])
+			lines[i] = val
+		return lines
+
 	def ass2srt(self, fname_ass, fname_srt, sttngs={}):
 		lines = self.readAss(fname_ass)
 
@@ -911,6 +928,10 @@ class subConverter:
 			val = (val[0], tm1, tm2, val[3], val[4])
 			lines[i] = val
 		'''
+		print '----------',sttngs
+		
+		if sttngs.has_key('addTimeDiff'):
+			lines = self.timeAdd(lines, sttngs['addTimeDiff'])
 
 		if sttngs.has_key('flexibleTime'):
 			lines = self.flexibleTiming(lines, sttngs['flexibleTime'] )
@@ -973,6 +994,9 @@ class subConverter:
 
 
 if __name__=='__main__':
+	#sc = subConverter(STTNGS)
+	#print sc.stylesFromSrtLine(unicode('<i><font color=\"#b9d4b5\">На</font><font color=\"#101010\">зад обернувшись, смотрю пред собою:\n\"Кто там стоит?\"</font></i>', 'utf-8'))
+	#sys.exit(0)
 	if len(sys.argv)==2:
 		sc = subConverter(STTNGS)
 		#sc.stylesFromSrtLine(unicode('<i><font color="#b9d4b5">Потому что ты и только ты</font></i>', 'utf-8'))

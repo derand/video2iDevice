@@ -290,6 +290,7 @@ def fileInfoUsingFFMPEG(filename):
 	rv['informer'] = 'ffmpeg'
 	streams = []
 	p = os.popen('ffmpeg -i "%s" 2>&1'%filename)
+	print 'ffmpeg -i "%s" 2>&1'%filename
 	for line in p.readlines():
 		if line.find(searchString)>-1:
 			l = line[line.find(searchString)+len(searchString):-1]
@@ -456,6 +457,12 @@ def fileInfo(filename):
 	rv = {}
 	if ext=='mkv' or ext=='mka':
 		rv = fileInfoUsingMKV(filename)
+	elif ext=='ass':
+		rv = {
+			'informer': 'ffmpeg',
+			'filename': filename,
+			'streams' : [[2, '0.0', None, {'codec': 'ass'}]]
+			}
 	else:
 		rv = fileInfoUsingFFMPEG(filename)
 	return rv
