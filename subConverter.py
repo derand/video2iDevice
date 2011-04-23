@@ -9,6 +9,7 @@ import glob
 import sys
 import os
 import string
+import fileCoding
 
 STTNGS = {
 	# remove this items from result
@@ -647,6 +648,7 @@ class subConverter:
 		lastVal = None
 		styles = {}
 		canMergeLines = True
+		fCoding = fileCoding.code_detecter(fname_ass)
 		for line in fi:
 			if block==2:
 				elems = line.split(',')
@@ -669,7 +671,7 @@ class subConverter:
 					line = line[8:]
 					elems = line.split(',')
 					linetext = ",".join(elems[9:])
-					linetext = unicode( linetext, "utf-8" )
+					linetext = unicode( linetext, fCoding )
 
 					#if len(linetext)>12 and ((linetext[:7]=='{\\bord3') or (linetext[:5]=='{\\be1')) and (len(elems[3])>3 and elems[3][:3]=="ed_"):
 					#	linetext=''
@@ -785,8 +787,9 @@ class subConverter:
 		if self.__STNGS.has_key('subReplace'):
 			subReplace = self.__STNGS['subReplace']
 		subStyle = None
+		fCoding = fileCoding.code_detecter(fname_srt)
 		for line in fi:
-			line = unicode(line, 'utf-8').strip()
+			line = unicode(line, fCoding).strip()
 			if len(line)>3 and line[:3]==u'\xEF\xBB\xBF':
 				line = line[3:]
 
@@ -795,18 +798,6 @@ class subConverter:
 			if len(line)!=0:
 				
 				subStyle = []
-				'''
-				if subReplace.has_key(line):
-					if subReplace[line].has_key('outStyle'):
-						outStyle = subReplace[line]['outStyle']
-						subStyle.append(("#%s"%outStyle[:6],))
-						if len(outStyle)>6:
-							if outStyle[6]=='<':
-								subStyle.insert(0, (string.lower(outStyle[6]), ))
-							else:
-								subStyle.append((string.lower(outStyle[6]), ))
-						print subStyle
-				'''
 				if subReplace.has_key(line):
 					if subReplace[line].has_key('text'):
 						line = subReplace[line]['text']
@@ -912,6 +903,9 @@ class subConverter:
 	def ass2srt(self, fname_ass, fname_srt, sttngs={}):
 		lines = self.readAss(fname_ass)
 
+		if sttngs.has_key('addTimeDiff'):
+			lines = self.timeAdd(lines, sttngs['addTimeDiff'])
+
 		if sttngs.has_key('flexibleTime'):
 			lines = self.flexibleTiming(lines, sttngs['flexibleTime'] )
 
@@ -942,6 +936,9 @@ class subConverter:
 	def srt2ttxt(self, fname_srt, fname_ttxt, sttngs={}):
 		lines = self.readSrt(fname_srt)
 
+		if sttngs.has_key('addTimeDiff'):
+			lines = self.timeAdd(lines, sttngs['addTimeDiff'])
+
 		if sttngs.has_key('flexibleTime'):
 			lines = self.flexibleTiming(lines, sttngs['flexibleTime'] )
 
@@ -954,6 +951,9 @@ class subConverter:
 			tmp_fn = "%s.tmp"%fname_srt1
 
 		lines = self.readSrt(fname_srt1)
+
+		if sttngs.has_key('addTimeDiff'):
+			lines = self.timeAdd(lines, sttngs['addTimeDiff'])
 
 		if sttngs.has_key('flexibleTime'):
 			lines = self.flexibleTiming(lines, sttngs['flexibleTime'] )
