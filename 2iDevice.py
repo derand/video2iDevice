@@ -128,6 +128,7 @@ Options
 	-v			script version
 	-passes    [str] video passes coding separeted ':'
 	-r         [str] frame rate
+	-addTimeDiff [int] add time(ms) diff to subs (last sub stream)
 	
 Author
 	Writen by Andrew Derevyagin (2derand+2idevice@gmail.com)
@@ -152,8 +153,9 @@ def printCmd(cmd):
 def getSettings():
 	ckey = 'files'
 	saveP = False
+	waitParam = False
 	for el in sys.argv[1:]:
-		if len(el)>0 and el[0]=='-':
+		if len(el)>0 and el[0]=='-' and not waitParam:
 			ckey = el[1:]
 			if ckey=="th":
 				ckey='threads'
@@ -180,6 +182,8 @@ def getSettings():
 			if ckey=='fd':
 				STTNGS['fd'] = True
 				saveP = True
+			if ckey=='addTimeDiff':
+				waitParam = True
 			if ckey=='h':
 				print help
 				sys.exit(0)
@@ -187,6 +191,7 @@ def getSettings():
 				print "Version: %s"%STTNGS['version']
 				sys.exit(0)
 		else:
+			waitParam = False
 			if saveP:
 				ckey = 'files'
 			if ckey=='vfile' or ckey=='afile' or ckey=='sfile':
@@ -224,6 +229,10 @@ def getSettings():
 			elif ckey=='ab' and len(STTNGS['fadd'])>0:
 				tmp = STTNGS['fadd']
 				tmp[-1][-1]['ab'] = int(el)
+			elif ckey=='addTimeDiff' and len(STTNGS['fadd'])>0:
+				tmp = STTNGS['fadd']
+				if tmp[-1][0]==2:
+					tmp[-1][-1]['addTimeDiff'] = int(el)
 			else:
 				if STTNGS.has_key(ckey):
 					if type(STTNGS[ckey])==type([]):
@@ -373,6 +382,7 @@ def fileInfoUsingMKV(filename):
 	trackID = None
 	lang = None
 	prms = {}
+	trackNumber = 0
 	for line in p.readlines():
 		line = line[:-1]
 		if len(line)>2 and line[:2]=='|+':
@@ -393,7 +403,9 @@ def fileInfoUsingMKV(filename):
 			if inTrackSegment:
 				(key, val) =  mkvInfoKeyValue(tmp)
 				if key=='Track number':
-					trackID = '0.%d'%(int(val)-1)
+					#trackID = '0.%d'%(int(val)-1)
+					trackID = '0.%d'%trackNumber
+					trackNumber = trackNumber+1
 					prms['mkvinfo_trackNumber'] = val
 				elif key=='Track type':
 					if val=='video':
@@ -509,6 +521,7 @@ def iTagger(fn):
 		if STTNGS.has_key('TVShowName'):
 			prms += ' --TVShowName "%s"'%STTNGS['TVShowName']
 			prms += ' --album "%s"'%STTNGS['TVShowName']
+			prms += ' --artist "%s"'%STTNGS['TVShowName']
 		if STTNGS.has_key('TVSeasonNum'):
 			prms += ' --TVSeasonNum "%s"'%STTNGS['TVSeasonNum']
 		(track, tracks) = tagTrackInfo(fn)
@@ -527,7 +540,7 @@ def iTagger(fn):
 			prms += ' --description "%s"'%STTNGS['description']
 		if STTNGS.has_key('year'):
 			prms += ' --year "%s"'%STTNGS['year']
-		if STTNGS.has_key('artist'):
+		if prms.find(' --artist ')==-1 and STTNGS.has_key('artist'):
 			prms += ' --artist "%s"'%STTNGS['artist']
 	prms += ' --encodingTool "2iDevice.py (http://derand.blogspot.com)" --overWrite'
 	cmd = 'AtomicParsley "%s" %s'%(unicode(fn,'UTF-8'), prms)
@@ -660,6 +673,7 @@ def cSubs(iFile, stream, informer, prms, oFile):
 			sConverter = subConverter(STTNGS)
 			sConverter.srt2ttxt(iFile, oFile, prms)
 	elif ext=='ass' or ext=='ssa':
+		print iFile, stream, informer, prms, oFile
 		if STTNGS['sc']:
 			sConverter = subConverter(STTNGS)
 			sConverter.ass2ttxt(iFile, oFile, prms)
