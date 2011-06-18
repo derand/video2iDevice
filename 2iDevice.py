@@ -73,7 +73,8 @@ STTNGS = {
 	'vq':		3,
 	'format':	'm4v',
 	'add2TrackIdx': 0,
-	'version' : '0.5.1'
+	'version' : '0.5.2',
+	'vcopy':	False,
 }
 
 help = '''
@@ -129,6 +130,7 @@ Options
 	-passes    [str] video passes coding separeted ':'
 	-r         [str] frame rate
 	-addTimeDiff [int] add time(ms) diff to subs (last sub stream)
+	-vcopy			copy video stream
 	
 Author
 	Writen by Andrew Derevyagin (2derand+2idevice@gmail.com)
@@ -175,6 +177,9 @@ def getSettings():
 				saveP = True
 			if ckey=='sn':
 				STTNGS['sc'] = False
+				saveP = True
+			if ckey=='vcopy':
+				STTNGS['vcopy'] = True
 				saveP = True
 			if ckey=='tn' or ckey=='mn':
 				STTNGS[ckey] = True
@@ -271,7 +276,7 @@ def loadSettingsFile(filename):
 			_tmp += line.strip()
 			if _tmp[-1]==arrSymb:
 				if inside_key:
-					#print _tmp
+					print _tmp
 					rv[save_key] = json.loads(_tmp)
 					inside_key = False
 		else:
@@ -624,11 +629,16 @@ def cVideo(iFile, stream, oFile):
 		for el in STTNGS['passes'].split(':'):
 			passes.append(int(el))
 
-	#for _pass in [1,3,2]:
+	if STTNGS['vcopy']:
+		passes = [1]
+
 	for _pass in passes:
-		cmd = 'ffmpeg -y -i "%s" -pass %d -map %s -an  -vcodec "libx264" -b "%d k" -s "%dx%d" -flags "+loop" -cmp "+chroma" -partitions "+parti4x4+partp8x8+partb8x8" -subq 6  -trellis 0  -refs %d  -coder 0  -me_range 16  -g 240   -keyint_min 25  -sc_threshold 40 -i_qfactor 0.71 -maxrate  "%d k" -bufsize "1000 k" -rc_eq "blurCplx^(1-qComp)" -qcomp 0.6 -qmin 15 -qmax 51 -qdiff 4 -flags2 "+bpyramid-mixed_refs+wpred-dct8x8+fastpskip" -me_method full -directpred 2 -b_strategy 1 -level 30 -threads %d'%(iFile, _pass, stream[1], STTNGS['b'], _w,_h, STTNGS['refs'], STTNGS['b'], STTNGS['threads'] )
-		if STTNGS.has_key('r'):
-			cmd = '%s -r %s'%(cmd, STTNGS['r'])
+		if STTNGS['vcopy']:
+			cmd = 'ffmpeg -y -i "%s" -map %s -an -vcodec copy -threads %d'%(iFile, stream[1], STTNGS['threads'] )
+		else:
+			cmd = 'ffmpeg -y -i "%s" -pass %d -map %s -an  -vcodec "libx264" -b "%d k" -s "%dx%d" -flags "+loop" -cmp "+chroma" -partitions "+parti4x4+partp8x8+partb8x8" -subq 6  -trellis 0  -refs %d  -coder 0  -me_range 16  -g 240   -keyint_min 25  -sc_threshold 40 -i_qfactor 0.71 -maxrate  "%d k" -bufsize "1000 k" -rc_eq "blurCplx^(1-qComp)" -qcomp 0.6 -qmin 15 -qmax 51 -qdiff 4 -flags2 "+bpyramid-mixed_refs+wpred-dct8x8+fastpskip" -me_method full -directpred 2 -b_strategy 1 -level 30 -threads %d'%(iFile, _pass, stream[1], STTNGS['b'], _w,_h, STTNGS['refs'], STTNGS['b'], STTNGS['threads'] )
+			if STTNGS.has_key('r'):
+				cmd = '%s -r %s'%(cmd, STTNGS['r'])
 		cmd = '%s "%s"'%(cmd, oFile)
 		printCmd(cmd)
 		if STTNGS['vc']:
@@ -648,7 +658,12 @@ def cAudio(iFile, stream, oFile):
 	if stream[3].has_key('bitrate') and ab>stream[3]['bitrate']:
 		ab = stream[3]['bitrate']
 
-	cmd = 'ffmpeg -y -i "%s" -map %s -vn -acodec libfaac -ab %dk -ac 2 -ar %d -threads %d -strict experimental "%s"'%(iFile, stream[1], ab, ar, STTNGS['threads'], oFile)
+	cmd = None
+	if stream[3].has_key('codec') and stream[3]['codec']=='aac' and stream[3].has_key('channels') and stream[3]['channels']=='2' and stream[3].has_key('bitrate') and stream[3]['bitrate']==ab and stream[3].has_key('frequency') and stream[3]['frequency']==ar:
+		cmd = 'ffmpeg -y -i "%s" -map %s -vn -acodec copy "%s"'%(iFile, stream[1], oFile)
+	else:
+		cmd = 'ffmpeg -y -i "%s" -map %s -vn -acodec libfaac -ab %dk -ac 2 -ar %d -threads %d -strict experimental "%s"'%(iFile, stream[1], ab, ar, STTNGS['threads'], oFile)
+
 	#cmd = 'ffmpeg -y -i "%s" -map %s -vn -acodec copy -strict experimental "%s"'%(iFile, stream[1], oFile)
 	printCmd(cmd)
 	if STTNGS['ac']:
