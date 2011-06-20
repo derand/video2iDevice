@@ -892,12 +892,16 @@ class subConverter:
 		return rv
 
 	def timeAdd(self, lines, time):
+		tmp = []
 		for i in range(len(lines)):
 			val = lines[i]
 			tm1 = self.int2time(self.time2int(val[1])+time)
 			tm2 = self.int2time(self.time2int(val[2])+time)
 			val = (val[0], tm1, tm2, val[3], val[4])
-			lines[i] = val
+			#lines[i] = val
+			if self.time2int(val[1])>0:
+				tmp.append(val)
+		lines = tmp
 		return lines
 
 	def ass2srt(self, fname_ass, fname_srt, sttngs={}):
@@ -1005,9 +1009,12 @@ if __name__=='__main__':
 			fname_ttxt = os.path.basename(re.compile('\\.srt$').sub('.ttxt', sys.argv[1]))
 			sc.srt2ttxt(sys.argv[1], fname_ttxt)
 		else:
-			fname_ttxt = os.path.basename(re.compile('\\.ass$').sub('.ttxt', sys.argv[1]))
+			#fname_ttxt = os.path.basename(re.compile('\\.ass$').sub('.ttxt', sys.argv[1]))
+			#print sys.argv[1], fname_ttxt
+			#sc.ass2ttxt(sys.argv[1], fname_ttxt)
+			fname_ttxt = os.path.basename(re.compile('\\.ass$').sub('.srt', sys.argv[1]))
 			print sys.argv[1], fname_ttxt
-			sc.ass2ttxt(sys.argv[1], fname_ttxt)
+			sc.ass2srt(sys.argv[1], fname_ttxt)
 	elif len(sys.argv)>2:
 		if sys.argv[1]=='-styles':
 			sc = subConverter(STTNGS)
