@@ -75,6 +75,7 @@ STTNGS = {
 	'add2TrackIdx': 0,
 	'version' : '0.5.2',
 	'vcopy':	False,
+	'acopy':	False,
 }
 
 help = '''
@@ -131,6 +132,7 @@ Options
 	-r         [str] frame rate
 	-addTimeDiff [int] add time(ms) diff to subs (last sub stream)
 	-vcopy			copy video stream
+	-acopy			copy audio stream
 	
 Author
 	Writen by Andrew Derevyagin (2derand+2idevice@gmail.com)
@@ -180,6 +182,9 @@ def getSettings():
 				saveP = True
 			if ckey=='vcopy':
 				STTNGS['vcopy'] = True
+				saveP = True
+			if ckey=='acopy':
+				STTNGS['acopy'] = True
 				saveP = True
 			if ckey=='tn' or ckey=='mn':
 				STTNGS[ckey] = True
@@ -659,7 +664,7 @@ def cAudio(iFile, stream, oFile):
 		ab = stream[3]['bitrate']
 
 	cmd = None
-	if stream[3].has_key('codec') and stream[3]['codec']=='aac' and stream[3].has_key('channels') and stream[3]['channels']=='2' and stream[3].has_key('bitrate') and stream[3]['bitrate']==ab and stream[3].has_key('frequency') and stream[3]['frequency']==ar:
+	if STTNGS['acopy'] or (stream[3].has_key('codec') and stream[3]['codec']=='aac' and stream[3].has_key('channels') and stream[3]['channels']=='2' and stream[3].has_key('bitrate') and stream[3]['bitrate']==ab and stream[3].has_key('frequency') and stream[3]['frequency']==ar):
 		cmd = 'ffmpeg -y -i "%s" -map %s -vn -acodec copy "%s"'%(iFile, stream[1], oFile)
 	else:
 		cmd = 'ffmpeg -y -i "%s" -map %s -vn -acodec libfaac -ab %dk -ac 2 -ar %d -threads %d -strict experimental "%s"'%(iFile, stream[1], ab, ar, STTNGS['threads'], oFile)
