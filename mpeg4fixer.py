@@ -143,7 +143,7 @@ class mpeg4fixer:
 		return rv
 
 	def __writeFreeBlock(self, si, fo):
-		(sz, name, pos) = si
+		(sz, name, pos) = si[:3]
 		fo.seek(0, 2)
 		fo.write(self.__swapBytes(struct.pack('I', sz)))
 		fo.write('free')
@@ -247,7 +247,6 @@ class mpeg4fixer:
 						print '%012d   %s(%d)'%(mi[2], mi[1], mi[0])
 			elif gi[1]=='free':
 				self.__writeFreeBlock(gi, fo)
-				#pass
 			else:
 				self.__copySection(gi, f, fo)
 		f.close()

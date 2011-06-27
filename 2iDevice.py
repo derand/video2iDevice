@@ -54,7 +54,7 @@ from subConverter import subConverter
 from mpeg4fixer import mpeg4fixer
 
 STTNGS = {
-	'threads':	3,
+	'threads':	2,
 	'files':	[],
 	'mn':		False,
 	'ac':		True,
