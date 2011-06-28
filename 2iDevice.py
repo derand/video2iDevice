@@ -929,7 +929,7 @@ if __name__=='__main__':
 	#print STTNGS['subStyleColors']
 	getSettings()
 	
-	if not STTNGS.has_key('threads')
+	if not STTNGS.has_key('threads'):
 		STTNGS['threads'] = os.sysconf('SC_NPROCESSORS_CONF')
 
 	for fn in STTNGS['files']:
