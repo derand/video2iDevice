@@ -54,7 +54,7 @@ from subConverter import subConverter
 from mpeg4fixer import mpeg4fixer
 
 STTNGS = {
-	'threads':	2,
+#	'threads':	3,
 	'files':	[],
 	'mn':		False,
 	'ac':		True,
@@ -928,6 +928,9 @@ if __name__=='__main__':
 					STTNGS[key] = val
 	#print STTNGS['subStyleColors']
 	getSettings()
+	
+	if not STTNGS.has_key('threads')
+		STTNGS['threads'] = os.sysconf('SC_NPROCESSORS_CONF')
 
 	for fn in STTNGS['files']:
 		print '\n------------------------ %s ------------------------'%fn
