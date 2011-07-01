@@ -76,6 +76,7 @@ STTNGS = {
 	'version' : '0.5.2',
 	'vcopy':	False,
 	'acopy':	False,
+	'vr':		23.976,
 }
 
 help = '''
@@ -129,7 +130,7 @@ Options
 	-s		[int]x[int]	result resolution, can looks like ('*x320', '960x*')
 	-v			script version
 	-passes    [str] video passes coding separeted ':'
-	-r         [str] frame rate
+	-vr        [str] frame rate
 	-addTimeDiff [int] add time(ms) diff to subs (last sub stream)
 	-vcopy			copy video stream
 	-acopy			copy audio stream
@@ -249,6 +250,8 @@ def getSettings():
 						STTNGS[ckey].append(el)
 					elif type(STTNGS[ckey])==type(123):
 						STTNGS[ckey] = int(el)
+					elif type(STTNGS[ckey])==type(1.23):
+						STTNGS[ckey] = float(el)
 					else:
 						STTNGS[ckey] = el
 						'''
@@ -302,6 +305,13 @@ def loadSettingsFile(filename):
 				rv[key] = val
 	return rv
 
+def stringToNumber(prm):
+	if prm.find(' ')>-1:
+		prm = prm[:prm.find(' ')]
+	if prm.find('.')>-1:
+		return float(prm)
+	return int(prm)
+
 def fileInfoUsingFFMPEG(filename):
 	rv = {}
 	searchString = 'Stream #'
@@ -343,9 +353,14 @@ def fileInfoUsingFFMPEG(filename):
 				if res.find(' ')>-1:
 					res = res[:res.find(' ')]
 				h = res
-				prms['width'] = int(w)
-				prms['height'] = int(h)
-				#prms['bitrate'] = info[3]
+				prms['width'] = stringToNumber(w)
+				prms['height'] = stringToNumber(h)
+				
+				#    Stream #0.0: Video: msmpeg4, yuv420p, 512x384, 23.98 tbr, 23.98 tbn, 23.98 tbc
+				#    Stream #0.0(und): Video: h264 (High), yuv420p, 1280x720 [PAR 1:1 DAR 16:9], 1346 kb/s, 25.46 fps, 24 tbr, 1001 tbn, 2002 tbc
+				#if len(prms['codec']>4) and prms['codec'][:4]=='h264':
+				#	prms['bitrate'] = stringToNumber(info[3])
+				#	prms['fps'] = stringToNumber(info[4])
 			elif t == 'Audio':
 				tp = 1
 				info = l.split(', ')
@@ -641,9 +656,12 @@ def cVideo(iFile, stream, oFile):
 		if STTNGS['vcopy']:
 			cmd = 'ffmpeg -y -i "%s" -map %s -an -vcodec copy -threads %d'%(iFile, stream[1], STTNGS['threads'] )
 		else:
-			cmd = 'ffmpeg -y -i "%s" -pass %d -map %s -an  -vcodec "libx264" -b "%d k" -s "%dx%d" -flags "+loop" -cmp "+chroma" -partitions "+parti4x4+partp8x8+partb8x8" -subq 6  -trellis 0  -refs %d  -coder 0  -me_range 16  -g 240   -keyint_min 25  -sc_threshold 40 -i_qfactor 0.71 -maxrate  "%d k" -bufsize "1000 k" -rc_eq "blurCplx^(1-qComp)" -qcomp 0.6 -qmin 15 -qmax 51 -qdiff 4 -flags2 "+bpyramid-mixed_refs+wpred-dct8x8+fastpskip" -me_method full -directpred 2 -b_strategy 1 -level 30 -threads %d -profile baseline '%(iFile, _pass, stream[1], STTNGS['b'], _w,_h, STTNGS['refs'], STTNGS['b'], STTNGS['threads'] )
-			if STTNGS.has_key('r'):
-				cmd = '%s -r %s'%(cmd, STTNGS['r'])
+			vProfile = 'baseline'
+			if _h>320:
+				vProfile = 'main'
+			cmd = 'ffmpeg -y -i "%s" -pass %d -map %s -an  -vcodec "libx264" -b "%d k" -s "%dx%d" -flags "+loop" -cmp "+chroma" -partitions "+parti4x4+partp8x8+partb8x8" -subq 6  -trellis 0  -refs %d  -coder 0  -me_range 16  -g 240   -keyint_min 25  -sc_threshold 40 -i_qfactor 0.71 -maxrate  "%d k" -bufsize "1000 k" -rc_eq "blurCplx^(1-qComp)" -qcomp 0.6 -qmin 15 -qmax 51 -qdiff 4 -flags2 "+bpyramid-mixed_refs+wpred-dct8x8+fastpskip" -me_method full -directpred 2 -b_strategy 1 -level 30 -threads %d -profile %s '%(iFile, _pass, stream[1], STTNGS['b'], _w,_h, STTNGS['refs'], STTNGS['b'], STTNGS['threads'], vProfile)
+			if STTNGS.has_key('vr'):
+				cmd = '%s -r %.3f'%(cmd, STTNGS['vr'])
 		cmd = '%s "%s"'%(cmd, oFile)
 		printCmd(cmd)
 		if STTNGS['vc']:
