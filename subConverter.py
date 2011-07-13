@@ -104,19 +104,25 @@ class subConverter:
 			tmp = '\n'
 		return '%s%s%s'%(sub,tmp,add)
 
+	def __compareLines(self, val1, val2):
+		# val = [[_style, _name], self.timesrt(elems[1]), subEnd, linetext8, []]
+		return val1[0][0]==val2[0][0] and val1[0][1]==val2[0][1] and val1[1]==val2[1] and val1[2]==val2[2] and val1[3]==val2[3]
+
 	def __insert(self, arr, val):
 		if len(arr)==0:
 			arr.append(val)
 		elif len(arr)==1:
-			if self.time2int(val[1])>self.time2int(arr[0][1]):
-				arr.append(val)
-			else:
-				arr.insert(0, val)
+			if not self.__compareLines(arr[0], val):
+				if self.time2int(val[1])>self.time2int(arr[0][1]):
+					arr.append(val)
+				else:
+					arr.insert(0, val)
 		else:
 			s = ''
 			x = self.time2int(val[1])
 			if x>=self.time2int(arr[-1][1]):
-				arr.append(val)
+				if not self.__compareLines(arr[-1], val):
+					arr.append(val)
 			else:
 				l = len(arr)/2+len(arr)%2
 				i = l
@@ -139,7 +145,9 @@ class subConverter:
 				while i<len(arr):
 					if x>self.time2int(arr[i][1]): i+=1
 					else: break
-				arr.insert(i, val)
+
+				if not self.__compareLines(arr[i], val):
+					arr.insert(i, val)
 	
 	def postProcessing(self, s):
 		"""
