@@ -79,7 +79,6 @@ STTNGS = {
 	'vr':		23.976,
 }
 
-
 help = '''
 converter video for iPhone/iPod Touch/iPad
 for work script you should install ffmpeg with x264 codec (http://derand.blogspot.com/2009/06/ffmpeg-x264.html),
