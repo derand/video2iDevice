@@ -515,6 +515,7 @@ def getLang(i, lng=None):
 def tagTrackInfo(fn):
 	srch = None
 	tr = None
+	rv = {}
 	if STTNGS.has_key('track'):
 		tr = int(STTNGS['track'])
 	if STTNGS.has_key('TRACK_REGEX'):
@@ -524,6 +525,7 @@ def tagTrackInfo(fn):
 				break
 		if srch!=None:
 			tr = int(srch.groups()[0])+STTNGS['add2TrackIdx']
+	rv['track'] = tr
 	trs = None
 	if STTNGS.has_key('tracks'):
 		trs = int(STTNGS['tracks'])
@@ -534,22 +536,50 @@ def tagTrackInfo(fn):
 				break
 		if srch!=None:
 			trs = int(srch.groups()[0])
-	return (tr, trs)
+	rv['tracks'] = trs
+	if STTNGS.has_key('artwork'):
+		rv['artwork'] = STTNGS['artwork']
+	if STTNGS.has_key('stik'):
+		rv['stik'] = STTNGS['stik']
+	if STTNGS.has_key('TVShowName'):
+		rv['show'] = STTNGS['TVShowName']
+	if STTNGS.has_key('TVSeasonNum'):
+		rv['season'] = STTNGS['TVSeasonNum']
+	if STTNGS.has_key('description'):
+		rv['description'] = STTNGS['description']
+	if STTNGS.has_key('year'):
+		rv['year'] = STTNGS['year']
+	if STTNGS.has_key('artist'):
+		rv['artist'] = STTNGS['artist']
+	if tr==None and not rv.has_key('season'):
+		srch = re.compile('[sS](\d{2})[eE](\d{2})').search(fn)
+		if srch!=None:
+			tr = int(srch.groups()[1])+STTNGS['add2TrackIdx']
+			rv['track'] = tr
+			rv['season'] = int(srch.groups()[0])
+	return rv
 
 def iTagger(fn):
+	def __add_param(info, name, _id, prms):
+		if info.has_key(_id):
+			return prms + ' %s "%s"'%(name, info[_id])
+		return prms
+
 	prms = ' --copyright "derand"'
 	if not STTNGS['tn']:
-		if STTNGS.has_key('artwork'):
-			prms += ' --artwork "%s"'%STTNGS['artwork']
-		if STTNGS.has_key('stik'):
-			prms += ' --stik "%s"'%STTNGS['stik']
-		if STTNGS.has_key('TVShowName'):
-			prms += ' --TVShowName "%s"'%STTNGS['TVShowName']
-			prms += ' --album "%s"'%STTNGS['TVShowName']
-			prms += ' --artist "%s"'%STTNGS['TVShowName']
-		if STTNGS.has_key('TVSeasonNum'):
-			prms += ' --TVSeasonNum "%s"'%STTNGS['TVSeasonNum']
-		(track, tracks) = tagTrackInfo(fn)
+		info = tagTrackInfo(fn)
+		prms = __add_param(info, '--artwork', 'artwork', prms)
+		prms = __add_param(info, '--stik', 'stik', prms)
+		prms = __add_param(info, '--TVShowName', 'show', prms)
+		prms = __add_param(info, '--album', 'show', prms)
+		prms = __add_param(info, '--artist', 'show', prms)
+		prms = __add_param(info, '--TVSeasonNum', 'season', prms)
+		prms = __add_param(info, '--description', 'description', prms)
+		prms = __add_param(info, '--year', 'year', prms)
+		if prms.find(' --artist ')==-1:
+			prms = __add_param(info, '--artist', 'artist', prms)
+
+		(track, tracks) = (info['track'], info['tracks'])
 		if track!=None:
 			print track, tracks
 			if tracks!=None:
@@ -561,12 +591,6 @@ def iTagger(fn):
 				prms += ' --title "%s"'%STTNGS['episodes_titles'][track-1]
 			else:
 				prms += ' --TVEpisode "%s"'%fn
-		if STTNGS.has_key('description'):
-			prms += ' --description "%s"'%STTNGS['description']
-		if STTNGS.has_key('year'):
-			prms += ' --year "%s"'%STTNGS['year']
-		if prms.find(' --artist ')==-1 and STTNGS.has_key('artist'):
-			prms += ' --artist "%s"'%STTNGS['artist']
 	prms += ' --encodingTool "2iDevice.py (http://derand.blogspot.com)" --overWrite'
 	cmd = 'AtomicParsley "%s" %s'%(unicode(fn,'UTF-8'), prms)
 	printCmd(cmd)
@@ -577,7 +601,8 @@ def buildFN(baseFN, convertFN):
 	if rv.find('[NAME]')>-1:
 		nm = '.'.join(os.path.basename(baseFN).split('.')[:-1])
 		rv = rv.replace('[NAME]', nm)
-	(track, tracks) = tagTrackInfo(baseFN)
+	info = tagTrackInfo(baseFN)
+	(track, tracks) = (info['track'], info['tracks'])
 	if rv.find('[2EID]')>-1:
 		if track!=None:
 			rv = rv.replace('[2EID]', '%02d'%track)
@@ -590,7 +615,8 @@ def rename(fn):
 	if not STTNGS.has_key('rename2'):
 		return None
 	name = STTNGS['rename2']
-	(tr, trs) = tagTrackInfo(fn)
+	info =  tagTrackInfo(fn)
+	(tr, trs) = (info['track'], info['tracks'])
 	if name.find('[SEASON]')>-1:
 		if STTNGS.has_key('TVSeasonNum'):
 			name = name.replace('[SEASON]', STTNGS['TVSeasonNum'])
