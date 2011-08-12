@@ -587,8 +587,8 @@ def iTagger(fn):
 			else:
 				prms += ' --tracknum %d --TVEpisodeNum %d'%(track, track)
 			if STTNGS.has_key('episodes_titles') and len(STTNGS['episodes_titles'])>(track-1):
-				prms += ' --TVEpisode "%s"'%STTNGS['episodes_titles'][track-1]
-				prms += ' --title "%s"'%STTNGS['episodes_titles'][track-1]
+				prms += ' --TVEpisode "%s"'%STTNGS['episodes_titles'][track-1].replace("`", '_')
+				prms += ' --title "%s"'%STTNGS['episodes_titles'][track-1].replace("`", '_')
 			else:
 				prms += ' --TVEpisode "%s"'%fn
 	prms += ' --encodingTool "2iDevice.py (http://derand.blogspot.com)" --overWrite'
