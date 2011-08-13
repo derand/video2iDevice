@@ -605,7 +605,7 @@ class subConverter:
 			idx = min_pos+line[min_pos:].find('>')+1
 			b = []
 			if tag=='font':
-				srch = re.compile('\s+color\s*=\s*[\'\"](\#[a-fA-F0-9]{6})[\'\"]').search(line[min_pos:idx])
+				srch = re.compile('\s+color\s*=\s*[\'\"]{0,1}(\#[a-fA-F0-9]{6})[\'\"]{0,1}').search(line[min_pos:idx])
 				if srch==None:
 					print 'Error on line: "%s"'%line
 					sys.exit(1)
@@ -1007,7 +1007,7 @@ class subConverter:
 
 if __name__=='__main__':
 	#sc = subConverter(STTNGS)
-	#print sc.stylesFromSrtLine(unicode('<i><font color=\"#b9d4b5\">На</font><font color=\"#101010\">зад обернувшись, смотрю пред собою:\n\"Кто там стоит?\"</font></i>', 'utf-8'))
+	#print sc.stylesFromSrtLine(unicode('''<font color=#6BCBE6> Ты же был моим охранником.\nРазве ты не предан своей работе?!''', 'utf-8'))
 	#sys.exit(0)
 	if len(sys.argv)==2:
 		sc = subConverter(STTNGS)
