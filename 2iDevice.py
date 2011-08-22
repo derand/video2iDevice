@@ -14,12 +14,6 @@
 
 
 #####################  #########################
-#valid
-#cabac=0 / ref=5 / deblock=1:0:0 / analyse=0x1:0x131 / me=umh / subme=6 / psy=1 / psy_rd=0.0:0.0 / mixed_ref=0 / me_range=16 / chroma_me=1 / trellis=0 / 8x8dct=0 / cqm=0 / deadzone=21,11 / chroma_qp_offset=0 / threads=1 / nr=0 / decimate=1 / mbaff=0 / constrained_intra=0 / bframes=0 / wpredp=0 / keyint=240 / keyint_min=24 / scenecut=40 / rc_lookahead=40 / rc=crf / mbtree=1 / crf=12.8 / qcomp=0.60 / qpmin=10 / qpmax=51 / qpstep=4 / vbv_maxrate=1500 / vbv_bufsize=2000 / ip_ratio=1.40 / aq=1:1.00
-
-#invalid
-#cabac=0 / ref=5 / deblock=1:0:0 / analyse=0x1:0x111 / me=dia / subme=5 / psy=1 / psy_rd=0.00:0.00 / mixed_ref=0 / me_range=16 / chroma_me=1 / trellis=0 / 8x8dct=0 / cqm=0 / deadzone=21,11 / fast_pskip=1 / chroma_qp_offset=0 / threads=3 / sliced_threads=0 / nr=0 / decimate=1 / interlaced=0 / constrained_intra=0 / bframes=0 / weightp=0 / keyint=300 / keyint_min=25 / scenecut=40 / intra_refresh=0 / rc_lookahead=40 / rc=2pass / mbtree=1 / bitrate=650 / ratetol=6.2 / qcomp=0.60 / qpmin=15 / qpmax=51 / qpstep=4 / cplxblur=20.0 / qblur=0.5 / vbv_maxrate=650 / vbv_bufsize=600 / ip_ratio=1.41 / aq=1:1.00 / nal_hrd=none
-
 #at first pass add ref=1:subme=2:me=dia:analyse=none:trellis=0:no-fast-pskip=0:8x8dct=0:weightb=0
 # -flags2 +dct8x8-fastpskip-dct8x8-wpred -subq 6
 
@@ -134,6 +128,7 @@ Options
 	-addTimeDiff [int] add time(ms) diff to subs (last sub stream)
 	-vcopy			copy video stream
 	-acopy			copy audio stream
+	-avol	[int]	change audio volume (def 256=100%), only for 'afile' params
 	
 Author
 	Writen by Andrew Derevyagin (2derand+2idevice@gmail.com)
@@ -244,6 +239,10 @@ def getSettings():
 				tmp = STTNGS['fadd']
 				if tmp[-1][0]==2:
 					tmp[-1][-1]['addTimeDiff'] = int(el)
+			elif ckey=='avol':
+				tmp = STTNGS['fadd']
+				if len(tmp)>0:
+					tmp[-1][-1]['vol'] = el
 			else:
 				if STTNGS.has_key(ckey):
 					if type(STTNGS[ckey])==type([]):
@@ -695,6 +694,7 @@ def cVideo(iFile, stream, oFile):
 			p.close()
 
 def cAudio(iFile, stream, oFile):
+	add_params = ''
 	ar = STTNGS['ar']
 	ab = STTNGS['ab']
 	if stream[3].has_key('extended'):
@@ -706,12 +706,14 @@ def cAudio(iFile, stream, oFile):
 		ar = stream[3]['frequency']
 	if stream[3].has_key('bitrate') and ab>stream[3]['bitrate']:
 		ab = stream[3]['bitrate']
+	if stream[3].has_key('vol'):
+		add_params = '%s -vol %s'%(add_params, stream[3]['vol'])
 
 	cmd = None
 	if STTNGS['acopy'] or (stream[3].has_key('codec') and stream[3]['codec']=='aac' and stream[3].has_key('channels') and stream[3]['channels']=='2' and stream[3].has_key('bitrate') and stream[3]['bitrate']==ab and stream[3].has_key('frequency') and stream[3]['frequency']==ar):
 		cmd = 'ffmpeg -y -i "%s" -map %s -vn -acodec copy "%s"'%(iFile, stream[1], oFile)
 	else:
-		cmd = 'ffmpeg -y -i "%s" -map %s -vn -acodec libfaac -ab %dk -ac 2 -ar %d -threads %d -strict experimental "%s"'%(iFile, stream[1], ab, ar, STTNGS['threads'], oFile)
+		cmd = 'ffmpeg -y -i "%s" -map %s -vn -acodec libfaac -ab %dk -ac 2 -ar %d -threads %d %s -strict experimental "%s"'%(iFile, stream[1], ab, ar, STTNGS['threads'], add_params, oFile)
 
 	#cmd = 'ffmpeg -y -i "%s" -map %s -vn -acodec copy -strict experimental "%s"'%(iFile, stream[1], oFile)
 	printCmd(cmd)
@@ -723,7 +725,7 @@ def cAudio(iFile, stream, oFile):
 			p = os.popen(cmd)
 			p.close()
 					
-			cmd = 'ffmpeg -y -i ./tmp.ac3 -vn -acodec libfaac -ab %dk  -ar %d  -ac 2 -threads %d "%s"'%(ab, ar, STTNGS['threads'], oFile)
+			cmd = 'ffmpeg -y -i ./tmp.ac3 -vn -acodec libfaac -ab %dk  -ar %d  -ac 2 -threads %d %s "%s"'%(ab, ar, STTNGS['threads'], add_params, oFile)
 			printCmd(cmd)
 			p = os.popen(cmd)
 			p.close()

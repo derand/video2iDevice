@@ -607,9 +607,13 @@ class subConverter:
 			if tag=='font':
 				srch = re.compile('\s+color\s*=\s*[\'\"]{0,1}(\#[a-fA-F0-9]{6})[\'\"]{0,1}').search(line[min_pos:idx])
 				if srch==None:
-					print 'Error on line: "%s"'%line
-					sys.exit(1)
-				b.append(srch.groups()[0])
+					srch = re.compile('\s+size').search(line[min_pos:idx])
+					if srch==None:
+						print 'Error on line: "%s"'%line
+						sys.exit(1)
+					b.append('#ffffff')
+				else:
+					b.append(srch.groups()[0])
 			else:
 				b.append(tag)
 			
