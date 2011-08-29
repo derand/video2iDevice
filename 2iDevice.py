@@ -190,6 +190,8 @@ def getSettings():
 				saveP = True
 			if ckey=='addTimeDiff':
 				waitParam = True
+			if ckey=='add2TrackIdx':
+				waitParam = True
 			if ckey=='h':
 				print help
 				sys.exit(0)
