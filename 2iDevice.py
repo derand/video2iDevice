@@ -71,6 +71,7 @@ STTNGS = {
 	'vcopy':	False,
 	'acopy':	False,
 	'vr':		23.976,
+	'ctf':		True,
 }
 
 help = '''
@@ -129,6 +130,7 @@ Options
 	-vcopy			copy video stream
 	-acopy			copy audio stream
 	-avol	[int]	change audio volume (def 256=100%), only for 'afile' params
+	-ctf	[0/1]	clear temp files after converting
 	
 Author
 	Writen by Andrew Derevyagin (2derand+2idevice@gmail.com)
@@ -245,6 +247,8 @@ def getSettings():
 				tmp = STTNGS['fadd']
 				if len(tmp)>0:
 					tmp[-1][-1]['vol'] = el
+			elif ckey=='ctf':
+				STTNGS['ctf']=(int(el)!=0)
 			else:
 				if STTNGS.has_key(ckey):
 					if type(STTNGS[ckey])==type([]):
@@ -760,6 +764,8 @@ def cSubs(iFile, stream, informer, prms, oFile):
 					p.close()
 					sConverter = subConverter(STTNGS)
 					sConverter.ass2ttxt(tmpName, oFile, prms)
+					if STTNGS['ctf']:
+						os.unlink(tmpName)
 			else:
 				strFileName = re.compile('\\.ttxt$').sub('.srt', oFile)
 				cmd = 'mkvextract tracks "%s" %s:"%s"'%(fi['filename'], stream[3]['mkvinfo_trackNumber'], strFileName)
@@ -769,6 +775,8 @@ def cSubs(iFile, stream, informer, prms, oFile):
 					p.close()
 					sConverter = subConverter(STTNGS)
 					sConverter.srt2ttxt(strFileName, oFile)
+					if STTNGS['ctf']:
+						os.unlink(strFileName)
 		else:
 			tmpName = iFile.split('/')[-1]+'_%s.srt'%stream[1]
 			cmd = 'ffmpeg -y -i "%s" -map %s -an -vn -sbsf mov2textsub -scodec copy "%s"'%(fi['filename'], stream[1], tmpName)
@@ -778,6 +786,8 @@ def cSubs(iFile, stream, informer, prms, oFile):
 				p.close()
 				sConverter = subConverter(STTNGS)
 				sConverter.ass2ttxt(tmpName, oFile)
+				if STTNGS['ctf']:
+					os.unlink(tmpName)
 
 
 def encodeStreams(fi):
@@ -949,6 +959,12 @@ def encodeStreams(fi):
 		mpeg4fixer().setTrackNames(name, trackNames) 
 
 	rename(name)
+
+	if STTNGS['ctf']:
+		for f in files:
+			os.unlink(f[1])
+
+
 
 #print sys.argv
 #print sys.platform
