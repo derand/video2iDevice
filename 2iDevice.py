@@ -708,6 +708,11 @@ def cAudio(iFile, stream, oFile):
 			ar = stream[3]['extended']['ar']
 		if stream[3]['extended'].has_key('ab'):
 			ar = stream[3]['extended']['ab']
+		if stream[3]['extended'].has_key('vol'):
+			add_params = '%s -vol %s'%(add_params, stream[3]['extended']['vol'])
+		else:
+			if stream[3].has_key('vol'):
+				add_params = '%s -vol %s'%(add_params, stream[3]['vol'])
 	if stream[3].has_key('frequency') and ar>stream[3]['frequency']:
 		ar = stream[3]['frequency']
 	if stream[3].has_key('bitrate') and ab>stream[3]['bitrate']:
