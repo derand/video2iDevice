@@ -43,6 +43,7 @@ import glob
 import string
 import json
 import os.path
+import time
 
 from subConverter import subConverter
 from mpeg4fixer import mpeg4fixer
@@ -71,7 +72,7 @@ STTNGS = {
 	'vcopy':	False,
 	'acopy':	False,
 	'vr':		23.976,
-	'ctf':		True,
+	'ctf':		False,
 }
 
 help = '''
@@ -114,6 +115,7 @@ Options
 	-description	[str]	set deascription
 	-year		[str]	set year
 	-artwork	[str]	set artwork filename
+	-movie_name	[srt]	set movie name
 	-TRACK_REGEX	[srt]	set regular exeption for select track from filename
 	-TRACKS_REGEX	[srt]	set regular exeption for select tracks from filename
 	-vq		[int]	(deprecated: use -s) video quality (1 - 480x*,   2 - *x320, 3 - max)
@@ -130,7 +132,7 @@ Options
 	-vcopy			copy video stream
 	-acopy			copy audio stream
 	-avol	[int]	change audio volume (def 256=100%), only for 'afile' params
-	-ctf	[0/1]	clear temp files after converting
+	-ctf			clear temp files after converting
 	
 Author
 	Writen by Andrew Derevyagin (2derand+2idevice@gmail.com)
@@ -182,13 +184,20 @@ def getSettings():
 				STTNGS['vcopy'] = True
 				saveP = True
 			if ckey=='acopy':
-				STTNGS['acopy'] = True
+				tmp = STTNGS['fadd']
+				if len(tmp)>0:
+					tmp[-1][-1]['acopy'] = True
+				else:
+					STTNGS['acopy'] = True
 				saveP = True
 			if ckey=='tn' or ckey=='mn':
 				STTNGS[ckey] = True
 				saveP = True
 			if ckey=='fd':
 				STTNGS['fd'] = True
+				saveP = True
+			elif ckey=='ctf':
+				STTNGS['ctf']=True
 				saveP = True
 			if ckey=='addTimeDiff':
 				waitParam = True
@@ -247,8 +256,6 @@ def getSettings():
 				tmp = STTNGS['fadd']
 				if len(tmp)>0:
 					tmp[-1][-1]['vol'] = el
-			elif ckey=='ctf':
-				STTNGS['ctf']=(int(el)!=0)
 			else:
 				if STTNGS.has_key(ckey):
 					if type(STTNGS[ckey])==type([]):
@@ -525,6 +532,7 @@ def tagTrackInfo(fn):
 		tr = int(STTNGS['track'])
 	if STTNGS.has_key('TRACK_REGEX'):
 		for p in STTNGS['TRACK_REGEX']:
+			print p, fn
 			srch = re.compile(p).search(fn)
 			if srch!=None:
 				break
@@ -570,8 +578,8 @@ def iTagger(fn):
 			return prms + ' %s "%s"'%(name, info[_id])
 		return prms
 
-	prms = ' --copyright "derand"'
 	if not STTNGS['tn']:
+		prms = ' --copyright "derand"'
 		info = tagTrackInfo(fn)
 		prms = __add_param(info, '--artwork', 'artwork', prms)
 		prms = __add_param(info, '--stik', 'stik', prms)
@@ -583,6 +591,7 @@ def iTagger(fn):
 		prms = __add_param(info, '--year', 'year', prms)
 		if prms.find(' --artist ')==-1:
 			prms = __add_param(info, '--artist', 'artist', prms)
+		prms = __add_param(info, '--title', 'movie_name', prms)
 
 		(track, tracks) = (info['track'], info['tracks'])
 		if track!=None:
@@ -596,10 +605,11 @@ def iTagger(fn):
 				prms += ' --title "%s"'%STTNGS['episodes_titles'][track-1].replace("`", '_')
 			else:
 				prms += ' --TVEpisode "%s"'%fn
-	prms += ' --encodingTool "2iDevice.py (http://derand.blogspot.com)" --overWrite'
-	cmd = 'AtomicParsley "%s" %s'%(unicode(fn,'UTF-8'), prms)
-	printCmd(cmd)
-	os.system(cmd.encode('utf-8'))
+
+		prms += ' --encodingTool "2iDevice.py (http://derand.blogspot.com)" --overWrite'
+		cmd = 'AtomicParsley "%s" %s'%(unicode(fn,'UTF-8'), prms)
+		printCmd(cmd)
+		os.system(cmd.encode('utf-8'))
 
 def buildFN(baseFN, convertFN):
 	rv = convertFN
@@ -703,6 +713,7 @@ def cAudio(iFile, stream, oFile):
 	add_params = ''
 	ar = STTNGS['ar']
 	ab = STTNGS['ab']
+	copyFlag = False
 	if stream[3].has_key('extended'):
 		if stream[3]['extended'].has_key('ar'):
 			ar = stream[3]['extended']['ar']
@@ -713,6 +724,10 @@ def cAudio(iFile, stream, oFile):
 		else:
 			if stream[3].has_key('vol'):
 				add_params = '%s -vol %s'%(add_params, stream[3]['vol'])
+		if stream[3]['extended'].has_key('acopy'):
+			copyFlag = stream[3]['extended']['acopy']
+	else:
+		copyFlag = STTNGS['acopy']
 	if stream[3].has_key('frequency') and ar>stream[3]['frequency']:
 		ar = stream[3]['frequency']
 	if stream[3].has_key('bitrate') and ab>stream[3]['bitrate']:
@@ -721,7 +736,7 @@ def cAudio(iFile, stream, oFile):
 		add_params = '%s -vol %s'%(add_params, stream[3]['vol'])
 
 	cmd = None
-	if STTNGS['acopy'] or (stream[3].has_key('codec') and stream[3]['codec']=='aac' and stream[3].has_key('channels') and stream[3]['channels']=='2' and stream[3].has_key('bitrate') and stream[3]['bitrate']==ab and stream[3].has_key('frequency') and stream[3]['frequency']==ar):
+	if copyFlag or (stream[3].has_key('codec') and stream[3]['codec']=='aac' and stream[3].has_key('channels') and stream[3]['channels']=='2' and stream[3].has_key('bitrate') and stream[3]['bitrate']==ab and stream[3].has_key('frequency') and stream[3]['frequency']==ar):
 		cmd = 'ffmpeg -y -i "%s" -map %s -vn -acodec copy "%s"'%(iFile, stream[1], oFile)
 	else:
 		cmd = 'ffmpeg -y -i "%s" -map %s -vn -acodec libfaac -ab %dk -ac 2 -ar %d -threads %d %s -strict experimental "%s"'%(iFile, stream[1], ab, ar, STTNGS['threads'], add_params, oFile)
@@ -977,6 +992,7 @@ def encodeStreams(fi):
 #sys.exit(1)
 
 if __name__=='__main__':
+	startTime = time.time()
 	yep = False
 	for el in sys.argv[1:]:
 		if yep:
@@ -1007,5 +1023,7 @@ if __name__=='__main__':
 		encodeStreams(fi)
 
 	os.system('date')
+	tm = time.time()-startTime;
+	print 'time %02d:%02d:%02d'%(tm/60/60, tm%(60*60)/60, tm%60)
 
 
