@@ -325,20 +325,49 @@ def stringToNumber(prm):
 	return int(prm)
 
 def fileInfoUsingFFMPEG(filename):
+	'''
+		Stream #0.0: Video: msmpeg4, yuv420p, 512x384, 23.98 tbr, 23.98 tbn, 23.98 tbc
+		Stream #0.0(und): Video: h264 (High), yuv420p, 1280x720 [PAR 1:1 DAR 16:9], 1346 kb/s, 25.46 fps, 24 tbr, 1001 tbn, 2002 tbc
+		Stream #0.2(jpn): Audio: aac, 48000 Hz, stereo, s16
+		Stream #0.1(rus): Audio: aac, 48000 Hz, stereo, s16 (default)
+		Stream #0.4(rus): Subtitle: ass
+	'''
 	rv = {}
 	searchString = 'Stream #'
 	rv['filename'] = filename
 	rv['informer'] = 'ffmpeg'
 	streams = []
 	p = os.popen('ffmpeg -i "%s" 2>&1'%filename)
-	print 'ffmpeg -i "%s" 2>&1'%filename
+	#print 'ffmpeg -i "%s" 2>&1'%filename
+	streamTypes = ['Video:', 'Audio:', 'Subtitle:']
 	for line in p.readlines():
 		if line.find(searchString)>-1:
 			l = line[line.find(searchString)+len(searchString):-1]
-			i=0
+			tp = -1
+			for i in range(len(streamTypes)):
+				_type = streamTypes[i] 
+				pos = l .find(_type)
+				if pos>0:
+					tp = i
+					name =  l[:pos]
+					l = l[pos+len(_type):]
+					break
+			
+			name = name[:name.rfind(':')]
+			name = re.sub(r'\[[^\]]*\]', '', name)
+			lng = None
+			if l[i]=='(':
+				while l[i]!=')':
+					i+=1
+				lng = l[len(name)+1:i]
+				i+=1
+
+			'''
+			i=1
 			while i<len(l) and l[i]!=':' and l[i]!='(':
 				i+=1
 			name = l[:i]
+			print l
 			name = re.sub(r'\[[^\]]*\]', '', name)
 			lng = None
 			if l[i]=='(':
@@ -352,9 +381,9 @@ def fileInfoUsingFFMPEG(filename):
 			t = l[:i]
 			l = l[i+2:]
 			tp = -1
+			'''
 			prms = {}
-			if t == 'Video':
-				tp = 0
+			if tp == 0: #'Video':
 				info = l.split(', ')
 				prms['codec'] = info[0]
 				prms['colorFormat'] = info[1]
@@ -373,8 +402,7 @@ def fileInfoUsingFFMPEG(filename):
 				#if len(prms['codec']>4) and prms['codec'][:4]=='h264':
 				#	prms['bitrate'] = stringToNumber(info[3])
 				#	prms['fps'] = stringToNumber(info[4])
-			elif t == 'Audio':
-				tp = 1
+			elif tp == 1: # 'Audio':
 				info = l.split(', ')
 				prms['codec'] = info[0]
 				frequency = info[1]
@@ -390,8 +418,7 @@ def fileInfoUsingFFMPEG(filename):
 					if bitrate.find(' '):
 						bitrate = bitrate[:bitrate.find(' ')]
 					prms['bitrate'] = int(bitrate)
-			elif t == 'Subtitle':
-				tp = 2
+			elif tp == 2: #  == 'Subtitle':
 				info = l.split(', ')
 				prms['codec'] = info[0]
 			else:
@@ -399,6 +426,7 @@ def fileInfoUsingFFMPEG(filename):
 			
 			streams.append([tp, name, lng, prms, ])
 			print line[:-1]
+	p.close()
 	rv['streams'] = streams
 	return rv
 
@@ -408,7 +436,20 @@ def fileInfoUsingMKV(filename):
 		if len(tmp)==1:
 			return (tmp[0].strip(), None)
 		return (tmp[0].strip(), ':'.join(tmp[1:]).strip())
+	def mapStreamSeparatedSymbol(filename):
+		searchString = 'Stream #'
+		p = os.popen('ffmpeg -i "%s" 2>&1'%filename)
+		rv = '+'
+		for line in p.readlines():
+			if line.find(searchString)>-1:
+				#l = line[line.find(searchString)+len(searchString):-1]
+				rv = line[line.find(searchString)+len(searchString)+1]
+				break
+		p.close()
+		return rv
 
+
+	ffmpegMapSeparatedSymbol = mapStreamSeparatedSymbol(filename)
 	rv = {}
 	rv['filename'] = filename
 	rv['informer'] = 'mkvinfo'
@@ -441,7 +482,7 @@ def fileInfoUsingMKV(filename):
 				(key, val) =  mkvInfoKeyValue(tmp)
 				if key=='Track number':
 					#trackID = '0.%d'%(int(val)-1)
-					trackID = '0.%d'%trackNumber
+					trackID = '0%s%d'%(ffmpegMapSeparatedSymbol, trackNumber)
 					trackNumber = trackNumber+1
 					prms['mkvinfo_trackNumber'] = val
 				elif key=='Track type':
@@ -475,6 +516,7 @@ def fileInfoUsingMKV(filename):
 					prms['dwidth'] = int(val)
 				elif key=='Display height':
 					prms['dheight'] = int(val)
+	p.close()
 	if streamType!=None:
 		if lang==None:
 			lang = 'und'
