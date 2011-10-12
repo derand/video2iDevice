@@ -349,7 +349,6 @@ def fileInfoUsingFFMPEG(filename):
 	streamTypes = ['Video:', 'Audio:', 'Subtitle:']
 	for line in p.readlines():
 		if line.find(searchString)>-1:
-			line = 'Stream #0.1[0x1100](rus): Audio: dca (DTS), 48000 Hz, 5.1, s16, 768 kb/s'
 			l = line[line.find(searchString)+len(searchString):-1]
 			tp = -1
 			for i in range(len(streamTypes)):
