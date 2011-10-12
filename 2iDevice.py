@@ -331,7 +331,14 @@ def fileInfoUsingFFMPEG(filename):
 		Stream #0.2(jpn): Audio: aac, 48000 Hz, stereo, s16
 		Stream #0.1(rus): Audio: aac, 48000 Hz, stereo, s16 (default)
 		Stream #0.4(rus): Subtitle: ass
-	'''
+    	Stream #0.0[0x1011]: Video: h264 (High), yuv420p, 1920x1080 [PAR 1:1 DAR 16:9], 23.98 fps, 23.98 tbr, 90k tbn, 47.95 tbc
+    	Stream #0.1[0x1100](rus): Audio: dca (DTS), 48000 Hz, 5.1, s16, 768 kb/s
+    	Stream #0.3[0x1102](rus): Audio: ac3, 48000 Hz, stereo, s16, 192 kb/s
+    	Stream #0.4[0x1103](jpn): Audio: dca (DTS-HD MA), 48000 Hz, 7 channels (FL|FR|FC|LFE|BC|SL|SR), s16, 1536 kb/s
+    	Stream #0.5[0x1104](jpn): Audio: truehd, 48000 Hz, 7 channels (FL|FR|FC|LFE|BC|SL|SR), s32
+    	Stream #0.6[0x1104]: Audio: ac3, 48000 Hz, 5.1, s16, 640 kb/s
+    	Stream #0:1[0x1100](rus): Audio: dts (DTS) ([130][0][0][0] / 0x0082), 48000 Hz, 5.1(side), s16, 768 kb/s
+    '''
 	rv = {}
 	searchString = 'Stream #'
 	rv['filename'] = filename
@@ -342,6 +349,7 @@ def fileInfoUsingFFMPEG(filename):
 	streamTypes = ['Video:', 'Audio:', 'Subtitle:']
 	for line in p.readlines():
 		if line.find(searchString)>-1:
+			line = 'Stream #0.1[0x1100](rus): Audio: dca (DTS), 48000 Hz, 5.1, s16, 768 kb/s'
 			l = line[line.find(searchString)+len(searchString):-1]
 			tp = -1
 			for i in range(len(streamTypes)):
@@ -356,11 +364,10 @@ def fileInfoUsingFFMPEG(filename):
 			name = name[:name.rfind(':')]
 			name = re.sub(r'\[[^\]]*\]', '', name)
 			lng = None
-			if l[i]=='(':
-				while l[i]!=')':
-					i+=1
-				lng = l[len(name)+1:i]
-				i+=1
+			i = name.find('(')
+			if i>0:
+				lng = name[i+1:name.find(')')]
+				name = name[:i]
 
 			'''
 			i=1
@@ -397,8 +404,6 @@ def fileInfoUsingFFMPEG(filename):
 				prms['width'] = stringToNumber(w)
 				prms['height'] = stringToNumber(h)
 				
-				#    Stream #0.0: Video: msmpeg4, yuv420p, 512x384, 23.98 tbr, 23.98 tbn, 23.98 tbc
-				#    Stream #0.0(und): Video: h264 (High), yuv420p, 1280x720 [PAR 1:1 DAR 16:9], 1346 kb/s, 25.46 fps, 24 tbr, 1001 tbn, 2002 tbc
 				#if len(prms['codec']>4) and prms['codec'][:4]=='h264':
 				#	prms['bitrate'] = stringToNumber(info[3])
 				#	prms['fps'] = stringToNumber(info[4])
@@ -425,7 +430,7 @@ def fileInfoUsingFFMPEG(filename):
 				continue
 			
 			streams.append([tp, name, lng, prms, ])
-			print line[:-1]
+			print streams[-1]
 	p.close()
 	rv['streams'] = streams
 	return rv
