@@ -610,6 +610,8 @@ def tagTrackInfo(fn):
 		rv['year'] = STTNGS['year']
 	if STTNGS.has_key('artist'):
 		rv['artist'] = STTNGS['artist']
+	if STTNGS.has_key('movie_name'):
+		rv['movie_name'] = STTNGS['movie_name']
 	if tr==None and not rv.has_key('season'):
 		srch = re.compile('[sS](\d{2})[eE](\d{2})').search(fn)
 		if srch!=None:
