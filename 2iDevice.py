@@ -745,10 +745,18 @@ def cVideo(iFile, stream, oFile):
 		if STTNGS['vcopy']:
 			cmd = 'ffmpeg -y -i "%s" -map %s -an -vcodec copy -threads %d'%(iFile, stream[1], STTNGS['threads'] )
 		else:
+			'''
 			vProfile = 'main'
 			if _h<=320 or _w<=480:
 				vProfile = 'baseline'
 			cmd = 'ffmpeg -y -i "%s" -pass %d -map %s -an  -vcodec "libx264" -b "%d k" -s "%dx%d" -flags "+loop" -cmp "+chroma" -partitions "+parti4x4+partp8x8+partb8x8" -subq 6  -trellis 0  -refs %d  -coder 0  -me_range 16  -g 240   -keyint_min 25  -sc_threshold 40 -i_qfactor 0.71 -maxrate  "%d k" -bufsize "1000 k" -rc_eq "blurCplx^(1-qComp)" -qcomp 0.6 -qmin 15 -qmax 51 -qdiff 4 -flags2 "+bpyramid-mixed_refs+wpred-dct8x8+fastpskip" -me_method full -directpred 2 -b_strategy 1 -level 30 -threads %d -profile %s '%(iFile, _pass, stream[1], STTNGS['b'], _w,_h, STTNGS['refs'], STTNGS['b'], STTNGS['threads'], vProfile)
+			'''
+			if _h<=320 or _w<=480:
+				''' LOW QUALITY '''
+				cmd = 'ffmpeg -y -i "%s" -pass %d -map %s -an  -vcodec "libx264" -b "%d k" -s "%dx%d" -flags "+loop" -cmp "+chroma" -partitions "+parti4x4+partp8x8+partb8x8" -subq 6  -trellis 0  -refs %d  -coder 0  -me_range 16  -g 240   -keyint_min 25  -sc_threshold 40 -i_qfactor 0.71 -maxrate  "%d k" -bufsize "1000 k" -rc_eq "blurCplx^(1-qComp)" -qcomp 0.6 -qmin 15 -qmax 51 -qdiff 4 -flags2 "+bpyramid-mixed_refs+wpred-dct8x8+fastpskip" -me_method full -directpred 2 -b_strategy 1 -level 30 -threads %d -profile baseline '%(iFile, _pass, stream[1], STTNGS['b'], _w,_h, STTNGS['refs'], STTNGS['b'], STTNGS['threads'])
+			else:
+				''' HIGHT QUALITY '''
+				cmd = 'ffmpeg -y -i "%s" -pass %d -map %s -an  -vcodec "libx264" -b "%d k" -s "%dx%d" -flags "+loop" -cmp "+chroma" -partitions "+parti4x4+partp8x8+partb8x8" -subq 12  -trellis 0  -refs %d  -coder 1  -me_range 32  -g 240   -keyint_min 25  -sc_threshold 40 -i_qfactor 0.71 -maxrate  "%d k" -bufsize "1000 k" -rc_eq "blurCplx^(1-qComp)" -qcomp 0.6 -qmin 15 -qmax 51 -qdiff 4 -flags2 "+bpyramid-mixed_refs+wpred-dct8x8+fastpskip" -me_method full -directpred 2 -b_strategy 1 -level 4.1 -threads %d -profile main '%(iFile, _pass, stream[1], STTNGS['b'], _w,_h, STTNGS['refs'], STTNGS['b'], STTNGS['threads'])
 			if STTNGS.has_key('vr'):
 				cmd = '%s -r %.3f'%(cmd, STTNGS['vr'])
 		cmd = '%s "%s"'%(cmd, oFile)
