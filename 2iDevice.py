@@ -73,6 +73,7 @@ STTNGS = {
 	'acopy':	False,
 	'vr':		23.976,
 	'ctf':		False,
+	'rn':		False,
 }
 
 help = '''
@@ -133,6 +134,7 @@ Options
 	-acopy			copy audio stream
 	-avol	[int]	change audio volume (def 256=100%), only for 'afile' params
 	-ctf			clear temp files after converting
+	-rn				don't resize video
 	
 Author
 	Writen by Andrew Derevyagin (2derand+2idevice@gmail.com)
@@ -179,6 +181,9 @@ def getSettings():
 				saveP = True
 			if ckey=='sn':
 				STTNGS['sc'] = False
+				saveP = True
+			if ckey=='rn':
+				STTNGS['rn'] = True
 				saveP = True
 			if ckey=='vcopy':
 				STTNGS['vcopy'] = True
@@ -711,24 +716,27 @@ def cVideo(iFile, stream, oFile):
 	if stream[3].has_key('dwidth'): w = stream[3]['dwidth']
 	if stream[3].has_key('dheight'): h = stream[3]['dheight']
 	
-	if STTNGS.has_key('s'):
-		res = STTNGS['s'].split('x')
-		if res[0]=='*':
-			(_h, _w) = sizeConvert(h, w, int(res[1]))
-		elif res[1]=='*':
-			(_w, _h) = sizeConvert(w, h, int(res[0]))
+	if not STTNGS['rn']:
+		if STTNGS.has_key('s'):
+			res = STTNGS['s'].split('x')
+			if res[0]=='*':
+				(_h, _w) = sizeConvert(h, w, int(res[1]))
+			elif res[1]=='*':
+				(_w, _h) = sizeConvert(w, h, int(res[0]))
+			else:
+				_w = int(res[0])
+				_h = int(res[1])
 		else:
-			_w = int(res[0])
-			_h = int(res[1])
-	else:
-		if STTNGS['vq']==1:
-			(_w, _h) = sizeConvert(w, h, 480)
-		elif STTNGS['vq']==2:
-			(_h, _w) = sizeConvert(h, w, 320)
-		else:
-			(_w, _h) = sizeConvert(w, h, 480)
-			if _h<320:
+			if STTNGS['vq']==1:
+				(_w, _h) = sizeConvert(w, h, 480)
+			elif STTNGS['vq']==2:
 				(_h, _w) = sizeConvert(h, w, 320)
+			else:
+				(_w, _h) = sizeConvert(w, h, 480)
+				if _h<320:
+					(_h, _w) = sizeConvert(h, w, 320)
+	else:
+		(_w, _h) = (w, h)
 
 	print '\033[1;33m %dx%d  ==> %dx%d \033[00m'%(w,h, _w,_h)
 
@@ -753,10 +761,10 @@ def cVideo(iFile, stream, oFile):
 			'''
 			if _h<=320 or _w<=480:
 				''' LOW QUALITY '''
-				cmd = 'ffmpeg -y -i "%s" -pass %d -map %s -an  -vcodec "libx264" -b "%d k" -s "%dx%d" -flags "+loop" -cmp "+chroma" -partitions "+parti4x4+partp8x8+partb8x8" -subq 6  -trellis 0  -refs %d  -coder 0  -me_range 16  -g 240   -keyint_min 25  -sc_threshold 40 -i_qfactor 0.71 -maxrate  "%d k" -bufsize "1000 k" -rc_eq "blurCplx^(1-qComp)" -qcomp 0.6 -qmin 15 -qmax 51 -qdiff 4 -flags2 "+bpyramid-mixed_refs+wpred-dct8x8+fastpskip" -me_method full -directpred 2 -b_strategy 1 -level 30 -threads %d -profile baseline '%(iFile, _pass, stream[1], STTNGS['b'], _w,_h, STTNGS['refs'], STTNGS['b'], STTNGS['threads'])
+				cmd = 'ffmpeg -y -i "%s" -pass %d -map %s -an  -vcodec "libx264" -b "%d k" -s "%dx%d" -flags "+loop" -cmp "+chroma" -partitions "+parti4x4+partp8x8+partb8x8" -subq 6  -trellis 0  -refs %d  -coder 0  -me_range 16  -g 240   -keyint_min 25  -sc_threshold 40 -i_qfactor 0.71 -maxrate  "%d k" -bufsize "%d k" -rc_eq "blurCplx^(1-qComp)" -qcomp 0.6 -qmin 15 -qmax 51 -qdiff 4 -flags2 "+bpyramid-mixed_refs+wpred-dct8x8+fastpskip" -me_method full -directpred 2 -b_strategy 1 -level 30 -threads %d -profile baseline '%(iFile, _pass, stream[1], STTNGS['b'], _w,_h, STTNGS['refs'], STTNGS['b'], STTNGS['b']*2.5, STTNGS['threads'])
 			else:
 				''' HIGHT QUALITY '''
-				cmd = 'ffmpeg -y -i "%s" -pass %d -map %s -an  -vcodec "libx264" -b "%d k" -s "%dx%d" -flags "+loop" -cmp "+chroma" -partitions "+parti4x4+partp8x8+partb8x8" -subq 12  -trellis 0  -refs %d  -coder 1  -me_range 32  -g 240   -keyint_min 25  -sc_threshold 40 -i_qfactor 0.71 -maxrate  "%d k" -bufsize "1000 k" -rc_eq "blurCplx^(1-qComp)" -qcomp 0.6 -qmin 15 -qmax 51 -qdiff 4 -flags2 "+bpyramid-mixed_refs+wpred-dct8x8+fastpskip" -me_method full -directpred 2 -b_strategy 1 -level 4.1 -threads %d -profile main '%(iFile, _pass, stream[1], STTNGS['b'], _w,_h, STTNGS['refs'], STTNGS['b'], STTNGS['threads'])
+				cmd = 'ffmpeg -y -i "%s" -pass %d -map %s -an  -vcodec "libx264" -b "%d k" -s "%dx%d" -flags "+loop" -cmp "+chroma" -partitions "+parti4x4+partp8x8+partb8x8" -subq 12  -trellis 0  -refs %d  -coder 1  -me_range 32  -g 240   -keyint_min 25  -sc_threshold 40 -i_qfactor 0.71 -maxrate  "%d k" -bufsize "%d k" -rc_eq "blurCplx^(1-qComp)" -qcomp 0.6 -qmin 15 -qmax 51 -qdiff 4 -flags2 "+bpyramid-mixed_refs+wpred-dct8x8+fastpskip" -me_method full -directpred 2 -b_strategy 1 -level 4.1 -threads %d -profile high '%(iFile, _pass, stream[1], STTNGS['b'], _w,_h, STTNGS['refs'], STTNGS['b'], STTNGS['b']*2, STTNGS['threads'])
 			if STTNGS.has_key('vr'):
 				cmd = '%s -r %.3f'%(cmd, STTNGS['vr'])
 		cmd = '%s "%s"'%(cmd, oFile)
