@@ -737,6 +737,7 @@ def cVideo(iFile, stream, oFile):
 					(_h, _w) = sizeConvert(h, w, 320)
 	else:
 		(_w, _h) = (w, h)
+	if w == 480 and (h == 368 or h == 352): h = 360
 
 	print '\033[1;33m %dx%d  ==> %dx%d \033[00m'%(w,h, _w,_h)
 
@@ -782,7 +783,7 @@ def cAudio(iFile, stream, oFile):
 		if stream[3]['extended'].has_key('ar'):
 			ar = stream[3]['extended']['ar']
 		if stream[3]['extended'].has_key('ab'):
-			ar = stream[3]['extended']['ab']
+			ab = stream[3]['extended']['ab']
 		if stream[3]['extended'].has_key('vol'):
 			add_params = '%s -vol %s'%(add_params, stream[3]['extended']['vol'])
 		else:
@@ -1006,6 +1007,7 @@ def encodeStreams(fi):
 		else:
 			(l, addIdx) = getLang(addIdx)
 		addCmd2 += ' -add "%s":lang=%s'%(f[1], l,)
+		#addCmd2 += ' -add "%s":lang=%s'%(string.replace(f[1], '0.0', '0:0'), l,)
 		if f[0]>0:
 			addCmd2 += ':group=%d'%f[0]
 		#if f[2][3].has_key('name'):
