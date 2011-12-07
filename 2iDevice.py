@@ -58,7 +58,7 @@ STTNGS = {
 	'lang':		'',
 	'ar':		48000,
 	'ab':		128,
-	'b':		640,
+	'b':		960,
 	'refs':		2,
 	'tn':		False,
 	'streams':	'',
@@ -94,7 +94,7 @@ Options
 	-sn			disable convert subtitles
 	-ar		[int]	audio rate (def 48000)
 	-ab		[int]	audio bitrate (def 128k)
-	-b		[int]	video bitrate (def 640)
+	-b		[int]	video bitrate (def 960)
 	-refs		[int]	ref frames for coding video
 	-tn			disable sets tags
 	-mn			disable merge
@@ -127,20 +127,21 @@ Options
 	-add2TrackIdx	[int]	add to track (def: 0)
 	-s		[int]x[int]	result resolution, can looks like ('*x320', '960x*')
 	-v			script version
-	-passes    [str] video passes coding separeted ':'
-	-vr        [str] frame rate
-	-addTimeDiff [int] add time(ms) diff to subs (last sub stream)
+	-passes  	[str]	video passes coding separeted ':'
+	-vr        	[str]	frame rate
+	-addTimeDiff 	[int]	add time(ms) diff to subs (last sub stream)
 	-vcopy			copy video stream
 	-acopy			copy audio stream
-	-avol	[int]	change audio volume (def 256=100%), only for 'afile' params
+	-avol		[int]	change audio volume (def 256=100%), only for 'afile' params
 	-ctf			clear temp files after converting
-	-rn				don't resize video
+	-rn			don't resize video
+	-crop	[int]:[int]:[int]:[int]	crop video (width:height:x:y)
 	
 Author
 	Writen by Andrew Derevyagin (2derand+2idevice@gmail.com)
 
 Copyright
-	Copyright © 2010 Andrey Derevyagin
+	Copyright © 2010-2011 Andrey Derevyagin
   
 Bugs
 	If you feel you have found a bug in "2iDevice", please email me 2derand+2idevice@gmail.com
@@ -632,7 +633,8 @@ def iTagger(fn):
 		return prms
 
 	if not STTNGS['tn']:
-		prms = ' --copyright "derand"'
+		#prms = ' --copyright "derand"'
+		prms = ''
 		info = tagTrackInfo(fn)
 		prms = __add_param(info, '--artwork', 'artwork', prms)
 		prms = __add_param(info, '--stik', 'stik', prms)
@@ -762,12 +764,14 @@ def cVideo(iFile, stream, oFile):
 			'''
 			if _h<=320 or _w<=480:
 				''' LOW QUALITY '''
-				cmd = 'ffmpeg -y -i "%s" -pass %d -map %s -an  -vcodec "libx264" -b "%d k" -s "%dx%d" -flags "+loop" -cmp "+chroma" -partitions "+parti4x4+partp8x8+partb8x8" -subq 6  -trellis 0  -refs %d  -coder 0  -me_range 16  -g 240   -keyint_min 25  -sc_threshold 40 -i_qfactor 0.71 -maxrate  "%d k" -bufsize "%d k" -rc_eq "blurCplx^(1-qComp)" -qcomp 0.6 -qmin 15 -qmax 51 -qdiff 4 -flags2 "+bpyramid-mixed_refs+wpred-dct8x8+fastpskip" -me_method full -directpred 2 -b_strategy 1 -level 30 -threads %d -profile baseline '%(iFile, _pass, stream[1], STTNGS['b'], _w,_h, STTNGS['refs'], STTNGS['b'], STTNGS['b']*2.5, STTNGS['threads'])
+				cmd = 'ffmpeg -y -i "%s" -pass %d -map %s -an  -vcodec "libx264" -b "%d k" -s "%dx%d" -flags "+loop" -cmp "+chroma" -partitions "+parti4x4+partp8x8+partb8x8" -subq 6  -trellis 0  -refs %d  -coder 0  -me_range 16  -g 240   -keyint_min 25  -sc_threshold 40 -i_qfactor 0.71 -maxrate  "%d k" -bufsize "%d k" -rc_eq "blurCplx^(1-qComp)" -qcomp 0.6 -qmin 15 -qmax 51 -qdiff 4 -flags2 "+bpyramid-mixed_refs+wpred-dct8x8+fastpskip" -me_method full -directpred 2 -b_strategy 1 -level 3.1 -threads %d -profile baseline '%(iFile, _pass, stream[1], STTNGS['b'], _w,_h, STTNGS['refs'], STTNGS['b'], STTNGS['b']*2.5, STTNGS['threads'])
 			else:
 				''' HIGHT QUALITY '''
-				cmd = 'ffmpeg -y -i "%s" -pass %d -map %s -an  -vcodec "libx264" -b "%d k" -s "%dx%d" -flags "+loop" -cmp "+chroma" -partitions "+parti4x4+parti8x8+partp4x4+partp8x8+partb8x8" -subq 12  -trellis 0  -refs %d  -coder 1  -me_range 32  -g 240   -keyint_min 25  -sc_threshold 40 -i_qfactor 0.71 -maxrate  "%d k" -bufsize "%d k" -rc_eq "blurCplx^(1-qComp)" -qcomp 0.6 -qmin 15 -qmax 51 -qdiff 4 -flags2 "+bpyramid-mixed_refs+wpred+dct8x8+fastpskip" -me_method full -directpred 2 -b_strategy 1 -level 4.1 -threads %d -profile high '%(iFile, _pass, stream[1], STTNGS['b'], _w,_h, STTNGS['refs'], STTNGS['b'], STTNGS['b']*2, STTNGS['threads'])
+				cmd = 'ffmpeg -y -i "%s" -pass %d -map %s -an  -vcodec "libx264" -b "%d k" -s "%dx%d" -flags "+loop" -cmp "+chroma" -partitions "+parti4x4+parti8x8+partp4x4+partp8x8+partb8x8" -subq 12  -trellis 0  -refs %d  -coder 1  -me_range 32  -g 240   -keyint_min 25  -sc_threshold 40 -i_qfactor 0.71 -maxrate  "%d k" -bufsize "%d k" -rc_eq "blurCplx^(1-qComp)" -qcomp 0.6 -qmin 15 -qmax 51 -qdiff 4 -flags2 "+bpyramid-mixed_refs+wpred+dct8x8+fastpskip" -me_method full -directpred 2 -b_strategy 1 -level 4.1 -threads %d -profile high -bf 10 '%(iFile, _pass, stream[1], STTNGS['b'], _w,_h, STTNGS['refs'], STTNGS['b'], STTNGS['b']*2, STTNGS['threads'])
 			if STTNGS.has_key('vr'):
 				cmd = '%s -r %.3f'%(cmd, STTNGS['vr'])
+			if STTNGS.has_key('crop'):
+				cmd = '%s -vf crop=%s'%(cmd, STTNGS['crop'])
 		cmd = '%s "%s"'%(cmd, oFile)
 		printCmd(cmd)
 		if STTNGS['vc']:
@@ -892,6 +896,10 @@ def encodeStreams(fi):
 		for s in tmp.split(':'):
 			strms.append(int(s))
 	sConverter = subConverter(STTNGS)
+	### replece '.' to ':' on map
+	#for i in strms:
+	#	stream = fi['streams'][i]
+	#	stream[1] = string.replace(stream[1], '.', ':')
 	for i in strms:
 		stream = fi['streams'][i]
 		print stream

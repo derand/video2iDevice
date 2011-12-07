@@ -858,6 +858,14 @@ class subConverter:
 				val = (['', ''], ttt[0].strip(), ttt[1].strip(), txt.encode('utf-8'), subStyle)
 				self.__insert(lines, val)
 		fi.close()
+
+		# join lines in sub if lines > 2
+		for i in range(len(lines)):
+			val = lines[i]
+			if len(val[3].split('\n'))>2:
+				tmp = string.join(val[3].split('\n'), ' ')
+				val = (val[0], val[1], val[2], tmp, val[4])
+				lines[i] = val
 		
 		for i in range(len(lines)):
 			val = lines[i]
