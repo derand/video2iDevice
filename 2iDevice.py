@@ -440,23 +440,24 @@ def fileInfoUsingFFMPEG(filename):
 	rv['streams'] = streams
 	return rv
 
+def mapStreamSeparatedSymbol(filename):
+	searchString = 'Stream #'
+	p = os.popen('ffmpeg -i "%s" 2>&1'%filename)
+	rv = '+'
+	for line in p.readlines():
+		if line.find(searchString)>-1:
+			#l = line[line.find(searchString)+len(searchString):-1]
+			rv = line[line.find(searchString)+len(searchString)+1]
+			break
+	p.close()
+	return rv
+
 def fileInfoUsingMKV(filename):
 	def mkvInfoKeyValue(line):
 		tmp = line.split(':')
 		if len(tmp)==1:
 			return (tmp[0].strip(), None)
 		return (tmp[0].strip(), ':'.join(tmp[1:]).strip())
-	def mapStreamSeparatedSymbol(filename):
-		searchString = 'Stream #'
-		p = os.popen('ffmpeg -i "%s" 2>&1'%filename)
-		rv = '+'
-		for line in p.readlines():
-			if line.find(searchString)>-1:
-				#l = line[line.find(searchString)+len(searchString):-1]
-				rv = line[line.find(searchString)+len(searchString)+1]
-				break
-		p.close()
-		return rv
 
 
 	ffmpegMapSeparatedSymbol = mapStreamSeparatedSymbol(filename)
@@ -558,11 +559,11 @@ def fileInfo(filename):
 	rv = {}
 	if ext=='mkv' or ext=='mka':
 		rv = fileInfoUsingMKV(filename)
-	elif ext=='ass':
+	elif ext=='ass' or ext=='srt' or ext=='ttxt':
 		rv = {
-			'informer': 'ffmpeg',
+			'informer': 'none',
 			'filename': filename,
-			'streams' : [[2, '0.0', None, {'codec': 'ass'}]]
+			'streams' : [[2, '0.0', None, {'codec': ext}]]
 			}
 	else:
 		rv = fileInfoUsingFFMPEG(filename)
@@ -929,6 +930,7 @@ def encodeStreams(fi):
 			sys.exit(1)
 		print add[0], ext, nn
 		_fi = fileInfo(nn)
+		print _fi
 		title = None
 		if add[-1].has_key('title'):
 			title = add[-1]['title']
@@ -978,6 +980,9 @@ def encodeStreams(fi):
 					if stream[0]==add[0]:
 						break
 			tmp_fn = '%s.ttxt'%os.path.basename(nn)
+			if stream==None:
+				print "Can't get stream info: ", add
+				sys.exit(0)
 			stream[3]['extended'] = add[-1]
 			if title and title!='':
 				stream[3]['name'] = title
