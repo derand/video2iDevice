@@ -450,6 +450,7 @@ def mapStreamSeparatedSymbol(filename):
 			rv = line[line.find(searchString)+len(searchString)+1]
 			break
 	p.close()
+	if rv=='+': rv = ':'
 	return rv
 
 def fileInfoUsingMKV(filename):
@@ -563,7 +564,7 @@ def fileInfo(filename):
 		rv = {
 			'informer': 'none',
 			'filename': filename,
-			'streams' : [[2, '0.0', None, {'codec': ext}]]
+			'streams' : [[2, '0%s0'%mapStreamSeparatedSymbol(filename), None, {'codec': ext}]]
 			}
 	else:
 		rv = fileInfoUsingFFMPEG(filename)
