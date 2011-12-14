@@ -76,6 +76,8 @@ STTNGS = {
 	'rn':		False,
 }
 
+atomicParsleyOptions = ('artist', 'title', 'album', 'genre', 'tracknum', 'disk', 'comment', 'year', 'lyrics', 'lyricsFile', 'composer', 'copyright', 'grouping', 'artwork', 'bpm', 'albumArtist', 'compilation', 'hdvideo', 'advisory', 'stik', 'description', 'longdesc', 'storedesc', 'TVNetwork', 'TVShowName', 'TVEpisode', 'TVSeasonNum', 'TVEpisodeNum', 'podcastFlag', 'category', 'keyword', 'podcastURL', 'podcastGUID', 'purchaseDate', 'encodedBy', 'apID', 'cnID', 'geID', 'xID', 'gapless', 'contentRating')
+
 help = '''
 converter video for iPhone/iPod Touch/iPad
 for work script you should install ffmpeg with x264 codec (http://derand.blogspot.com/2009/06/ffmpeg-x264.html),
@@ -136,6 +138,10 @@ Options
 	-ctf			clear temp files after converting
 	-rn			don't resize video
 	-crop	[int]:[int]:[int]:[int]	crop video (width:height:x:y)
+
+For tagging you can use AtomicParsley long-option params (see "AtomicParsley -h"), in param use one '-' symbol like:
+	./2iDevice.py <filename> -contentRating Unrated
+for AtomicParsley --contentRating option.
 	
 Author
 	Writen by Andrew Derevyagin (2derand+2idevice@gmail.com)
@@ -638,6 +644,7 @@ def iTagger(fn):
 		#prms = ' --copyright "derand"'
 		prms = ''
 		info = tagTrackInfo(fn)
+		'''
 		prms = __add_param(info, '--artwork', 'artwork', prms)
 		prms = __add_param(info, '--stik', 'stik', prms)
 		prms = __add_param(info, '--TVShowName', 'show', prms)
@@ -649,6 +656,9 @@ def iTagger(fn):
 		if prms.find(' --artist ')==-1:
 			prms = __add_param(info, '--artist', 'artist', prms)
 		prms = __add_param(info, '--title', 'movie_name', prms)
+		'''
+		for option in atomicParsleyOptions:
+			prms = __add_param(STTNGS, '--%s'%option, option, prms)
 
 		(track, tracks) = (info['track'], info['tracks'])
 		if track!=None:
