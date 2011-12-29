@@ -873,7 +873,7 @@ class subConverter:
 			if len(tmp[1]):
 				val = (val[0], val[1], val[2], tmp[0].encode('utf-8'), tmp[1])
 				lines[i] = val
-			print '%s %s'%(val[4], val[3])
+			#print '%s %s'%(val[4], val[3])
 
 		return lines
 	
@@ -1032,9 +1032,9 @@ if __name__=='__main__':
 			#fname_ttxt = os.path.basename(re.compile('\\.ass$').sub('.ttxt', sys.argv[1]))
 			#print sys.argv[1], fname_ttxt
 			#sc.ass2ttxt(sys.argv[1], fname_ttxt)
-			fname_ttxt = os.path.basename(re.compile('\\.ass$').sub('.srt', sys.argv[1]))
+			fname_ttxt = os.path.basename(re.compile('\\.ass$').sub('.ttxt', sys.argv[1]))
 			print sys.argv[1], fname_ttxt
-			sc.ass2srt(sys.argv[1], fname_ttxt)
+			sc.ass2ttxt(sys.argv[1], fname_ttxt)
 	elif len(sys.argv)>2:
 		if sys.argv[1]=='-styles':
 			sc = subConverter(STTNGS)

@@ -138,6 +138,7 @@ Options
 	-ctf			clear temp files after converting
 	-rn			don't resize video
 	-crop	[int]:[int]:[int]:[int]	crop video (width:height:x:y)
+	-delay		[int]	sets track start delay in ms.
 
 For tagging you can use AtomicParsley long-option params (see "AtomicParsley -h"), in param use one '-' symbol like:
 	./2iDevice.py <filename> -contentRating Unrated
@@ -268,6 +269,10 @@ def getSettings():
 				tmp = STTNGS['fadd']
 				if len(tmp)>0:
 					tmp[-1][-1]['vol'] = el
+			elif ckey=='delay':
+				tmp = STTNGS['fadd']
+				if len(tmp)>0:
+					tmp[-1][-1]['delay'] = int(el)
 			else:
 				if STTNGS.has_key(ckey):
 					if type(STTNGS[ckey])==type([]):
@@ -1018,7 +1023,8 @@ def encodeStreams(fi):
 				sConverter.ass2ttxt('%s%s.ssa'%(path,nm), files[-1][1])
 	
 			
-	print 'files: ',files
+	#print 'files: ',files
+	print
 
 	addCmd2=''
 	ve = ''
@@ -1032,6 +1038,9 @@ def encodeStreams(fi):
 			(l, addIdx) = getLang(addIdx)
 		addCmd2 += ' -add "%s":lang=%s'%(f[1], l,)
 		#addCmd2 += ' -add "%s":lang=%s'%(string.replace(f[1], '0.0', '0:0'), l,)
+		if f[-1][-1].has_key('extended'):
+			if f[-1][-1]['extended'].has_key('delay'):
+				addCmd2 += ':delay=%d'%f[-1][-1]['extended']['delay']
 		if f[0]>0:
 			addCmd2 += ':group=%d'%f[0]
 		#if f[2][3].has_key('name'):
