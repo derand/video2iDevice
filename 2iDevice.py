@@ -123,7 +123,6 @@ Options
 	-TRACKS_REGEX	[srt]	set regular exeption for select tracks from filename
 	-vq		[int]	(deprecated: use -s) video quality (1 - 480x*,   2 - *x320, 3 - max)
 	-format		[str]	output format (default: 'm4v')
-	-flexibleTime	[str]	flex time subtitles (format:'0:22:03.58->0:21:10.00;0:02:28.69->0:02:22.85')
 	-stream		[int]	stream idx from appending files (vfile, afile, sfile)
 	-title		[srt]	stream title from appending files (vfile, afile, sfile)
 	-add2TrackIdx	[int]	add to track (def: 0)
@@ -233,20 +232,6 @@ def getSettings():
 				STTNGS['fadd'].append((tt, el, {}))
 			elif ckey=='episodes_titles' or ckey=='TRACK_REGEX' or ckey=='TRACKS_REGEX':
 				STTNGS[ckey] = el.split(';')
-			elif ckey=='flexibleTime':
-				'''
-					format '0:22:03.58->0:21:10.00;0:02:28.69->0:02:22.85'
-				'''
-				tmp = re.search('(\d{1,2}:\d{2}:\d{2}.\d{2})\s*\-\>\s*(\d{1,2}:\d{2}:\d{2}.\d{2})\s*\;(\d{1,2}:\d{2}:\d{2}.\d{2})\s*\-\>\s*(\d{1,2}:\d{2}:\d{2}.\d{2})', el)
-				if tmp:
-					t = [(tmp.group(1), tmp.group(2)), (tmp.group(3), tmp.group(4))]
-					tmp = STTNGS['fadd']
-					if len(tmp)>0:
-						if tmp[-1][0]==2:
-							tmp[-1][-1]['flexibleTime'] = t
-					else:
-						# parametr before [v,a,s]file parametr 
-						pass
 			elif ckey=='stream':
 				tmp = STTNGS['fadd']
 				if len(tmp)>0:
@@ -577,7 +562,8 @@ def fileInfo(filename):
 			'filename': filename,
 			'streams' : [[2, '0%s0'%mapStreamSeparatedSymbol(filename), None, {'codec': ext}]]
 			}
-	else:
+	#else: or mkvinfo exit with error
+	if not rv.has_key('streams') or (rv.has_key('streams') and len(rv['streams'])==0):
 		rv = fileInfoUsingFFMPEG(filename)
 	return rv
 
@@ -647,7 +633,10 @@ def iTagger(fn):
 
 	if not STTNGS['tn']:
 		#prms = ' --copyright "derand"'
-		prms = ''
+		prms = {
+			'encodingTool': '"2iDevice.py (http://derand.blogspot.com)"',
+			#'overWrite': ''
+		}
 		info = tagTrackInfo(fn)
 		'''
 		prms = __add_param(info, '--artwork', 'artwork', prms)
@@ -663,23 +652,44 @@ def iTagger(fn):
 		prms = __add_param(info, '--title', 'movie_name', prms)
 		'''
 		for option in atomicParsleyOptions:
-			prms = __add_param(STTNGS, '--%s'%option, option, prms)
+			if STTNGS.has_key(option):
+				prms[option] = ' "%s"'%STTNGS[option]
+			#prms = __add_param(STTNGS, '--%s'%option, option, prms)
 
 		(track, tracks) = (info['track'], info['tracks'])
 		if track!=None:
 			print track, tracks
 			if tracks!=None:
-				prms += ' --tracknum %d/%d --TVEpisodeNum %d'%(track, tracks, track)
+				#prms += ' --tracknum %d/%d --TVEpisodeNum %d'%(track, tracks, track)
+				prms['tracknum'] = '%d/%d'%(track, tracks)
+				prms['TVEpisodeNum'] = '%d'%track
 			else:
-				prms += ' --tracknum %d --TVEpisodeNum %d'%(track, track)
+				#prms += ' --tracknum %d --TVEpisodeNum %d'%(track, track)
+				prms['tracknum'] = '%d'%track
+				prms['TVEpisodeNum'] = '%d'%track
 			if STTNGS.has_key('episodes_titles') and len(STTNGS['episodes_titles'])>(track-1):
-				prms += ' --TVEpisode "%s"'%STTNGS['episodes_titles'][track-1].replace("`", '_')
-				prms += ' --title "%s"'%STTNGS['episodes_titles'][track-1].replace("`", '_')
-			else:
-				prms += ' --TVEpisode "%s"'%fn
+				title = '"%s"'%STTNGS['episodes_titles'][track-1].replace("`", '_')
+				#prms += ' --TVEpisode %s'%title
+				#prms += ' --title %s'%title
+				prms['TVEpisode'] = title
+				prms['title'] = title
+			elif STTNGS.has_key('episodes') and len(STTNGS['episodes'])>(track-1):
+				epInfo = STTNGS['episodes'][track-1]
+				for option in atomicParsleyOptions:
+					if epInfo.has_key(option):
+						if option=='title':
+							prms['TVEpisode'] = ' "%s"'%epInfo[option]
+						prms[option] = ' "%s"'%epInfo[option]
 
-		prms += ' --encodingTool "2iDevice.py (http://derand.blogspot.com)" --overWrite'
-		cmd = 'AtomicParsley "%s" %s'%(unicode(fn,'UTF-8'), prms)
+			else:
+				#prms += ' --TVEpisode "%s"'%fn
+				prms['TVEpisode'] = '"%s"'%fn
+
+		#prms += ' --encodingTool "2iDevice.py (http://derand.blogspot.com)" --overWrite'
+		prms_str = ''
+		for p in prms.keys():
+			prms_str += ' --%s %s'%(p, prms[p])
+		cmd = 'AtomicParsley "%s" %s --overWrite'%(unicode(fn,'UTF-8'), prms_str)
 		printCmd(cmd)
 		os.system(cmd.encode('utf-8'))
 
@@ -1115,6 +1125,7 @@ if __name__=='__main__':
 	
 	if not STTNGS.has_key('threads'):
 		STTNGS['threads'] = os.sysconf('SC_NPROCESSORS_CONF')
+
 
 	for fn in STTNGS['files']:
 		print '\n------------------------ %s ------------------------'%fn
