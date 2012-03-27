@@ -44,6 +44,7 @@ import string
 import json
 import os.path
 import time
+import shutil
 
 from subConverter import subConverter
 from mpeg4fixer import mpeg4fixer
@@ -779,6 +780,7 @@ def cVideo(iFile, stream, oFile):
 	if STTNGS['vcopy']:
 		passes = [1]
 
+	items2Delete = []
 	for _pass in passes:
 		if STTNGS['vcopy']:
 			cmd = 'ffmpeg -y -i "%s" -map %s -an -vcodec copy -threads %d'%(iFile, stream[1], STTNGS['threads'] )
@@ -804,6 +806,32 @@ def cVideo(iFile, stream, oFile):
 		if STTNGS['vc']:
 			p = os.popen(cmd)
 			p.close()
+
+			if not STTNGS['vcopy']:
+				d = 'pass%d'%_pass
+				if not os.path.exists(d):
+					os.makedirs(d)
+				shutil.copyfile(oFile, '%s/%s'%(d, oFile))
+				items2Delete.append('%s/%s'%(d, oFile))
+				shutil.copyfile('x264_2pass.log', '%s/x264_2pass.log'%d)
+				items2Delete.append('%s/x264_2pass.log'%d)
+				items2Delete.append(d)
+				#shutil.copyfile('ffmpeg2pass-0.log', '%s/ffmpeg2pass-0.log'%d)
+				#shutil.copyfile('x264_2pass.log.temp', '%s/x264_2pass.log.temp'%d)
+	for itm in items2Delete:
+		d = 'pass%d'%_pass
+		try:
+			if os.path.isdir(itm):
+				os.rmdir(itm)
+			else:
+				os.remove(itm)
+		except Exception, e:
+			pass
+		else:
+			pass
+		finally:
+			pass
+
 
 def cAudio(iFile, stream, oFile):
 	add_params = ''
@@ -927,8 +955,10 @@ def encodeStreams(fi):
 	#for i in strms:
 	#	stream = fi['streams'][i]
 	#	stream[1] = string.replace(stream[1], '.', ':')
+	currentTrack = 0
 	for i in strms:
 		stream = fi['streams'][i]
+		stream[-1]['GlobalTrackNum'] = currentTrack
 		print stream
 		if stream[0]==0:
 			files.append((0,name+'_%s.mp4'%stream[1], stream))
@@ -944,6 +974,8 @@ def encodeStreams(fi):
 			cSubs(fi['filename'], stream, fi['informer'], {}, files[-1][1])
 			findSubs = False
 		addIdx+=1
+		print '----------------------------------------', currentTrack
+		currentTrack+=1
 	
 	# add subs
 	path = os.path.dirname(fi['filename'])+'/'
@@ -957,6 +989,8 @@ def encodeStreams(fi):
 		print add[0], ext, nn
 		_fi = fileInfo(nn)
 		print _fi
+		_fi['streams'][0][-1]['GlobalTrackNum'] = currentTrack
+		print _fi['streams'][0]
 		title = None
 		if add[-1].has_key('title'):
 			title = add[-1]['title']
@@ -1017,7 +1051,9 @@ def encodeStreams(fi):
 			files.append((2,tmp_fn, stream))
 			cSubs(nn, stream, _fi['informer'], add[2], files[-1][1])
 			findSubs = False
-	
+		print '----------------------------------------', currentTrack
+		currentTrack+=1
+
 	if findSubs:
 		if os.path.exists('%s%s.srt'%(path,nm)):
 			files.append((2,'./%s.srt'%nm, None))
@@ -1041,16 +1077,36 @@ def encodeStreams(fi):
 	ae = ''
 	se = ''
 	addIdx = 0
+	trackID = 0
+	print
+	info =  tagTrackInfo(name)
 	for f in files:
+		def trackDelay(trackID):
+			key = 'delay%d'%trackID	
+			rv = 0		
+			if STTNGS.has_key(key):
+				rv = STTNGS[key]
+			if STTNGS.has_key('episodes') and info.has_key('track') and type(info['track'])==type(1):
+				eid = info['track']-1
+				if STTNGS['episodes'][eid].has_key(key):
+					rv = STTNGS['episodes'][eid][key]
+			return rv
+
+		delay = trackDelay(trackID)
+
+		print delay,f
 		if f[2]!=None:
 			(l, addIdx) = getLang(addIdx, f[2][2])
 		else:
 			(l, addIdx) = getLang(addIdx)
 		addCmd2 += ' -add "%s":lang=%s'%(f[1], l,)
 		#addCmd2 += ' -add "%s":lang=%s'%(string.replace(f[1], '0.0', '0:0'), l,)
-		if f[-1][-1].has_key('extended'):
-			if f[-1][-1]['extended'].has_key('delay'):
-				addCmd2 += ':delay=%d'%f[-1][-1]['extended']['delay']
+		if delay!=0:
+			addCmd2 += ':delay=%d'%delay
+		else:
+			if f[-1][-1].has_key('extended'):
+				if f[-1][-1]['extended'].has_key('delay'):
+					addCmd2 += ':delay=%d'%f[-1][-1]['extended']['delay']
 		if f[0]>0:
 			addCmd2 += ':group=%d'%f[0]
 		#if f[2][3].has_key('name'):
@@ -1064,6 +1120,7 @@ def encodeStreams(fi):
 		elif f[0]==2:
 			addCmd2 += se
 			se = ':disable'
+		trackID+=1
 
 	name = './'+'.'.join(os.path.basename(fi['filename']).split('.')[:-1])+'.'+STTNGS['format']
 	cmd = 'MP4Box %s "%s" -new'%(addCmd2, name)

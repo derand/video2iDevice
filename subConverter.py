@@ -876,40 +876,6 @@ class subConverter:
 			#print '%s %s'%(val[4], val[3])
 
 		return lines
-	
-	def flexibleTiming(self, lines, t):
-		"""
-			Fixing times on subs
-							  source        shuld be        source       shuld be    
-			t have format [('0:22:03.58', '0:21:10.00'), ('0:02:28.69', '0:02:22.85')]
-			
-			for Serial Experiments Lain
-				el01 = [('0:22:03.58', '0:21:10.00'), ('0:02:28.69', '0:02:22.85')]
-				el02 = [('0:20:53.80', '0:20:03.90'), ('0:02:09.00', '0:02:05.00')]
-				el03 = [('0:21:33.37', '0:20:42.10'), ('0:02:28.27', '0:02:23.85')]
-				el04 = [('0:21:42.35', '0:20:50.70'), ('0:02:28.55', '0:02:24.10')]
-				el05 = [('0:21:06.85', '0:20:13.70'), ('0:02:30.55', '0:02:23.17')]
-				el06 = [('0:21:45.90', '0:20:53.50'), ('0:02:28.80', '0:02:23.80')]
-				el07 = [('0:21:30.10', '0:20:37.80'), ('0:02:29.60', '0:02:23.80')]
-				el08 = [('0:21:55.90', '0:21:02.10'), ('0:02:30.00', '0:02:23.45')]
-				el09 = [('0:21:24.33', '0:20:32.80'), ('0:02:29.03', '0:02:23.95')]
-				el10 = [('0:21:21.15', '0:20:28.60'), ('0:02:29.45', '0:02:23.00')]
-				el11 = [('0:22:08.96', '0:21:14.35'), ('0:02:30.36', '0:02:23.00')]
-				el12 = [('0:21:30.10', '0:20:38.00'), ('0:02:29.40', '0:02:23.30')]
-				el13 = [('0:21:02.61', '0:20:36.00'), ('0:02:32.31', '0:02:50.95')]
-		"""
-		rv = []
-		i = self.time2int(self.timesrt(t[0][0]))-self.time2int(self.timesrt(t[1][0]))
-		o = self.time2int(self.timesrt(t[0][1]))-self.time2int(self.timesrt(t[1][1]))
-		x1 = self.time2int(self.timesrt(t[1][0]))
-		x2 = self.time2int(self.timesrt(t[1][1]))
-		print i, o, self.int2time(i), self.int2time(o)
-		for l in lines:
-			t1 = self.int2time((self.time2int(l[1])-x1)*o/i+x2)
-			t2 = self.int2time((self.time2int(l[2])-x1)*o/i+x2)
-			val = l[0], t1, t2, l[3]
-			rv.append(val)
-		return rv
 
 	def timeAdd(self, lines, time):
 		tmp = []
@@ -930,9 +896,6 @@ class subConverter:
 		if sttngs.has_key('addTimeDiff'):
 			lines = self.timeAdd(lines, sttngs['addTimeDiff'])
 
-		if sttngs.has_key('flexibleTime'):
-			lines = self.flexibleTiming(lines, sttngs['flexibleTime'] )
-
 		self.writeOut2srt(fname_srt, lines)
 		return fname_srt
 
@@ -951,9 +914,6 @@ class subConverter:
 		if sttngs.has_key('addTimeDiff'):
 			lines = self.timeAdd(lines, sttngs['addTimeDiff'])
 
-		if sttngs.has_key('flexibleTime'):
-			lines = self.flexibleTiming(lines, sttngs['flexibleTime'] )
-
 		self.writeOut2ttxt(fname_ttxt, lines)
 		return fname_ttxt
 
@@ -962,9 +922,6 @@ class subConverter:
 
 		if sttngs.has_key('addTimeDiff'):
 			lines = self.timeAdd(lines, sttngs['addTimeDiff'])
-
-		if sttngs.has_key('flexibleTime'):
-			lines = self.flexibleTiming(lines, sttngs['flexibleTime'] )
 
 		self.writeOut2ttxt(fname_ttxt, lines)
 		return fname_ttxt
@@ -978,9 +935,6 @@ class subConverter:
 
 		if sttngs.has_key('addTimeDiff'):
 			lines = self.timeAdd(lines, sttngs['addTimeDiff'])
-
-		if sttngs.has_key('flexibleTime'):
-			lines = self.flexibleTiming(lines, sttngs['flexibleTime'] )
 
 		self.writeOut2srt(tmp_fn, lines)
 
