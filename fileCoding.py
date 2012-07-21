@@ -3,17 +3,25 @@
 
 import sys
 import os
-import chardet
+#import chardet
 import codecs
 
 def code_detecter(filename):
-	with open(filename) as codefile:
-		data = codefile.read()
-		#print data
-    	print chardet.detect(data)
-    
-	return chardet.detect(data)['encoding']
+		data = open(filename).read()
+		#with open(filename) as codefile:
+		#data = codefile.read()
+		try:
+			import chardet
+			return chardet.detect(data)['encoding']
+		except ImportError:
+			sys.path.append('chardet')
+			import universaldetector
+			u = universaldetector.UniversalDetector()
+			u.reset()
+			u.feed(data)
+			u.close()
+			return u.result['encoding']
     
 if __name__=='__main__':
 	if len(sys.argv)==2:
-		code_detecter(sys.argv[1])
+		print code_detecter(sys.argv[1])

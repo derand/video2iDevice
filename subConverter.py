@@ -683,7 +683,7 @@ class subConverter:
 					line = line[8:]
 					elems = line.split(',')
 					linetext = ",".join(elems[9:])
-					linetext = unicode( linetext, fCoding )
+					linetext = unicode(linetext, fCoding)
 
 					#if len(linetext)>12 and ((linetext[:7]=='{\\bord3') or (linetext[:5]=='{\\be1')) and (len(elems[3])>3 and elems[3][:3]=="ed_"):
 					#	linetext=''
