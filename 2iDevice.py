@@ -1004,7 +1004,7 @@ class Video2iDevice(object):
 		else:
 			for i in range(len(_fi.streams)):
 				tmp_stream = _fi.streams[i]
-				if tmp_stream[0]==fadd[0]:
+				if tmp_stream.type==fadd[0]:
 					stream = tmp_stream
 					break
 		if stream<>None:
@@ -1055,7 +1055,7 @@ class Video2iDevice(object):
 
 			if stream.type==0:
 				if len(hardsub_streams)>0:
-					stream[3]['hardsub_streams'] = hardsub_streams
+					stream.params['hardsub_streams'] = hardsub_streams
 					hardsub_streams = []
 				files.append((0, out_fn+'_%s.mp4'%stream.trackID, stream))
 				self.cVideo(fi.filename, stream, files[-1][1])
