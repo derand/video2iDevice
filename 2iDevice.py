@@ -498,7 +498,9 @@ class Video2iDevice(object):
 							prms[option] = ' "%s"'%epInfo[option]
 				else:
 					#prms += ' --TVEpisode "%s"'%fn
-					prms['TVEpisode'] = '"%s"'%fn
+					title = os.path.basename(fn)
+					title = os.path.splitext(title)[0]
+					prms['TVEpisode'] = '"%s"'%title
 
 			#prms += ' --encodingTool "2iDevice.py (http://blog.derand.net)" --overWrite'
 			prms_str = ''
