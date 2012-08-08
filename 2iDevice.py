@@ -66,7 +66,7 @@ STTNGS = {
 	'ctf':		False,
 	'rn':		False,
 	'vv':		False,
-	'web_optimization': False,
+	'web_optimization': True,
 	'temp_dir': '.',
 	'encodingTool': '2iDevice.py (http://blog.derand.net)',
 }
@@ -144,7 +144,7 @@ Options
 	-hardsub		set stream as hurdsub (for ass format only)
 	-ffmpeg_coding_params	[str]	add ffmpeg params for video/audio coding (set's for selected stream)
 	-json_pipe		set all params by JSON array [] in pipe, this should be only param on parameters
-	-web_optimization	optimization result file to streaming
+	-web_optimization	[int]	optimization result file to streaming (0 - disabled, another - enabled(default))
 	-tagging_mode		set tags only
 
 For tagging you can use AtomicParsley long-option params (see "AtomicParsley -h"), in param use one '-' symbol like:
@@ -248,7 +248,7 @@ class Video2iDevice(object):
 					waitParam = True
 				if ckey=='add2TrackIdx':
 					waitParam = True
-				if ckey=='info' or ckey=='vv' or ckey=='web_optimization' or ckey=='tagging_mode':
+				if ckey=='info' or ckey=='vv' or ckey=='tagging_mode':
 					STTNGS[ckey] = True
 					saveP = True
 				if ckey=='h' or ckey=='json_pipe':
@@ -317,6 +317,8 @@ class Video2iDevice(object):
 					tmp = STTNGS['fadd']
 					if len(tmp)>0:
 						tmp[-1][-1][ckey] = shlex.split(el)
+				elif ckey=='web_optimization':
+					STTNGS[ckey] = el<>'0'
 				else:
 					if STTNGS.has_key(ckey):
 						if type(STTNGS[ckey])==type([]):
