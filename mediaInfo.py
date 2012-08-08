@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+# writed by derand
+
 
 import sys
 import os
@@ -13,6 +15,9 @@ from constants import LANGUAGES_DICT
 
 
 def add_separator_to_filepath(filepath):
+	'''
+		I feel this function can be looks better
+	'''
 	return filepath.replace('\\', '\\\\').replace(' ', '\\ ').replace('(', '\\(').replace(')', '\\)').replace('[', '\\[').replace(']',
 							      '\\]').replace('&', '\\&').replace("\"", "\\\"")
 

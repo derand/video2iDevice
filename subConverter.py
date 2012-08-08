@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# writed by derand (2derand@gmail.com)
+# writed by derand
 # - Sorry for horrible code -
 
 import re

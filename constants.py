@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# writed by derand (2derand@gmail.com)
+# writed by derand
 
-
-LANGUAGES_DICT = {
+#source table http://en.wikipedia.org/wiki/List_of_ISO_639-2_codes
+LANGUAGES_DICT = { 
 "Abkhazian":             "abk",
 "Acehnese":              "ace",
 "Achinese":              "ace",
