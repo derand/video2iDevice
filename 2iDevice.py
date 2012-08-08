@@ -67,6 +67,7 @@ STTNGS = {
 	'ctf':		False,
 	'rn':		False,
 	'vv':		False,
+	'web_optimization': False,
 	'temp_dir': '.',
 	'encodingTool': '2iDevice.py (http://blog.derand.net)',
 }
@@ -145,10 +146,11 @@ Options
 	-hardsub		set stream as hurdsub (for ass format only)
 	-ffmpeg_coding_params	[str]	add ffmpeg params for video/audio coding (set's for selected stream)
 	-json_pipe			set all params by JSON array [] in pipe, this should be only param on parameters
+	-web_optimization	optimization result file to streaming
 
 For tagging you can use AtomicParsley long-option params (see "AtomicParsley -h"), in param use one '-' symbol like:
 	./2iDevice.py <filename> -contentRating Unrated
-for AtomicParsley --contentRating option.
+for AtomicParsley --contentRating Unrated.
 	
 Author
 	Writen by Andrey Derevyagin (2derand+2idevice@gmail.com)
@@ -247,7 +249,7 @@ class Video2iDevice(object):
 					waitParam = True
 				if ckey=='add2TrackIdx':
 					waitParam = True
-				if ckey=='info' or ckey=='vv':
+				if ckey=='info' or ckey=='vv' or ckey=='web_optimization':
 					STTNGS[ckey] = True
 					saveP = True
 				if ckey=='h' or ckey=='json_pipe':
@@ -1217,6 +1219,15 @@ class Video2iDevice(object):
 			trackNames.append(n)
 		if need:
 			mpeg4fixer().setTrackNames(name, trackNames) 
+
+		
+		if STTNGS['web_optimization']:
+			cmd = mp4box_path + ' -inter 500 "%s"'%name
+			self.__printCmd(cmd)
+			if not STTNGS['mn']:
+				p = os.popen(cmd)
+				p.close()
+
 
 		self.rename(name)
 
