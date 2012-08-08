@@ -145,8 +145,9 @@ Options
 	-temp_dir	[str]	path to temporary directory
 	-hardsub		set stream as hurdsub (for ass format only)
 	-ffmpeg_coding_params	[str]	add ffmpeg params for video/audio coding (set's for selected stream)
-	-json_pipe			set all params by JSON array [] in pipe, this should be only param on parameters
+	-json_pipe		set all params by JSON array [] in pipe, this should be only param on parameters
 	-web_optimization	optimization result file to streaming
+	-tagging_mode		set tags only
 
 For tagging you can use AtomicParsley long-option params (see "AtomicParsley -h"), in param use one '-' symbol like:
 	./2iDevice.py <filename> -contentRating Unrated
@@ -249,7 +250,7 @@ class Video2iDevice(object):
 					waitParam = True
 				if ckey=='add2TrackIdx':
 					waitParam = True
-				if ckey=='info' or ckey=='vv' or ckey=='web_optimization':
+				if ckey=='info' or ckey=='vv' or ckey=='web_optimization' or ckey=='tagging_mode':
 					STTNGS[ckey] = True
 					saveP = True
 				if ckey=='h' or ckey=='json_pipe':
@@ -1020,7 +1021,10 @@ class Video2iDevice(object):
 		return stream
 
 
-	def encodeStreams(self, fi):
+	def encodeMedia(self, fi):
+		'''
+			convert media
+		'''
 		name = os.path.basename(fi.filename)
 		files = []
 		addCmd = ''
@@ -1220,20 +1224,30 @@ class Video2iDevice(object):
 		if need:
 			mpeg4fixer().setTrackNames(name, trackNames) 
 
-		
-		if STTNGS['web_optimization']:
-			cmd = mp4box_path + ' -inter 500 "%s"'%name
-			self.__printCmd(cmd)
-			if not STTNGS['mn']:
-				p = os.popen(cmd)
-				p.close()
-
-
-		self.rename(name)
-
 		if STTNGS['ctf']:
 			for f in files:
 				os.unlink(f[1])
+
+		return name
+
+
+	def fileProcessing(self, fi):
+		'''
+			Processing one media file
+		'''
+		filename = fi.filename
+		if STTNGS.has_key('tagging_mode'):
+			self.iTagger(filename)
+		else:
+			filename = self.encodeMedia(fi)
+
+		if STTNGS['web_optimization']:
+			cmd = mp4box_path + ' -inter 500 "%s"'%filename
+			self.__printCmd(cmd)
+			p = os.popen(cmd)
+			p.close()
+
+		self.rename(filename)
 
 
 	def correct_profile(self, video, **kwargs):
@@ -1334,7 +1348,7 @@ if __name__=='__main__':
 				fi = cMediaInfo('no need', fn)
 			else:
 				fi = converter.mediainformer.fileInfo(fn)
-			converter.encodeStreams(fi)
+			converter.fileProcessing(fi)
 
 	#os.system('date')
 	tm = time.time()-startTime
