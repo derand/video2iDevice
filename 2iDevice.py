@@ -44,7 +44,6 @@ STTNGS = {
 	'version' : '0.5.4',
 #	'threads':	3,
 	'files':	[],
-	'mn':		False,
 	'ac':		True,
 	'vc':		True,
 	'sc':		True,
@@ -100,7 +99,6 @@ Options
 	-crf 		[int]	one pass coding, crf param
 	-refs		[int]	ref frames for coding video
 	-tn			disable sets tags
-	-mn			disable merge
 	-streams	[str]	select streams numbers or 'none' for none (first index 0 separated ':', default 'all')
 	-tfile		[str]	set tags file
 	-track		[int]	track
@@ -237,7 +235,7 @@ class Video2iDevice(object):
 					tmp = STTNGS['fadd']
 					if len(tmp)>0:
 						tmp[-1][-1]['copy'] = True
-				if ckey=='tn' or ckey=='mn':
+				if ckey=='tn':
 					STTNGS[ckey] = True
 					saveP = True
 				if ckey=='fd':
@@ -1205,9 +1203,8 @@ class Video2iDevice(object):
 		name = STTNGS['temp_dir']+'/'+'.'.join(os.path.basename(fi.filename).split('.')[:-1])+'.'+STTNGS['format']
 		cmd = mp4box_path + ' %s "%s" -new'%(addCmd2, name)
 		self.__printCmd(cmd)
-		if not STTNGS['mn']:
-			p = os.popen(cmd)
-			p.close()
+		p = os.popen(cmd)
+		p.close()
 
 		self.iTagger(name)
 
