@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# writed by derand (http://blog.derand.net)
+# writed by derand
 # - Sorry for horrible code -
 
 # thanks:
@@ -37,11 +37,11 @@ from mpeg4fixer import mpeg4fixer
 import select
 import shlex
 
-from mediaInfo import cStream, cMediaInfo, cChapter, MediaInformer, add_separator_to_filepath
+from mediaInfo import cStream, cMediaInfo, cChapter, MediaInformer, add_separator_to_filepath, isMatroshkaMedia
 
 
 STTNGS = {
-	'version' : '0.5.3',
+	'version' : '0.5.4',
 #	'threads':	3,
 	'files':	[],
 	'mn':		False,
@@ -67,12 +67,14 @@ STTNGS = {
 	'ctf':		False,
 	'rn':		False,
 	'vv':		False,
-	'mInfo':	False,
 	'temp_dir': '.',
 	'encodingTool': '2iDevice.py (http://blog.derand.net)',
 }
 
-atomicParsleyOptions = ('artist', 'title', 'album', 'genre', 'tracknum', 'disk', 'comment', 'year', 'lyrics', 'lyricsFile', 'composer', 'copyright', 'grouping', 'artwork', 'bpm', 'albumArtist', 'compilation', 'hdvideo', 'advisory', 'stik', 'description', 'longdesc', 'storedesc', 'TVNetwork', 'TVShowName', 'TVEpisode', 'TVSeasonNum', 'TVEpisodeNum', 'podcastFlag', 'category', 'keyword', 'podcastURL', 'podcastGUID', 'purchaseDate', 'encodedBy', 'apID', 'cnID', 'geID', 'xID', 'gapless', 'contentRating')
+atomicParsleyOptions = ('artist', 'title', 'album', 'genre', 'tracknum', 'disk', 'comment', 'year', 'lyrics', 'lyricsFile', 'composer',
+ 'copyright', 'grouping', 'artwork', 'bpm', 'albumArtist', 'compilation', 'hdvideo', 'advisory', 'stik', 'description', 'longdesc',
+ 'storedesc', 'TVNetwork', 'TVShowName', 'TVEpisode', 'TVSeasonNum', 'TVEpisodeNum', 'podcastFlag', 'category', 'keyword', 'podcastURL',
+ 'podcastGUID', 'purchaseDate', 'encodedBy', 'apID', 'cnID', 'geID', 'xID', 'gapless', 'contentRating', 'Rating')
 
 help = '''
 Converter video for iPhone/iPod Touch/iPad
@@ -138,7 +140,6 @@ Options
 	-crop	[int]:[int]:[int]:[int]	crop video (width:height:x:y)
 	-delay		[int]	sets track start delay in ms.
 	-info 			show media file info
-	-mInfo 			set mediaInfo for get media information
 	-vv			verbose mode
 	-temp_dir	[str]	path to temporary directory
 	-hardsub		set stream as hurdsub (for ass format only)
@@ -246,7 +247,7 @@ class Video2iDevice(object):
 					waitParam = True
 				if ckey=='add2TrackIdx':
 					waitParam = True
-				if ckey=='info' or ckey=='vv' or ckey=='mInfo':
+				if ckey=='info' or ckey=='vv':
 					STTNGS[ckey] = True
 					saveP = True
 				if ckey=='h' or ckey=='json_pipe':
@@ -618,14 +619,13 @@ class Video2iDevice(object):
 		if file_ext=='.ass' or file_ext=='.ssa':
 			ass_fn = '%s/%s'%(STTNGS['temp_dir'], os.path.basename(fn))
 			shutil.copyfile(fn, ass_fn)
-		elif file_ext=='.mkv':
-			if hardsub_stream.params['informer']=='mkvinfo':
-				if hardsub_stream.params['codec']=='S_TEXT/ASS':
-					ass_fn = '%s/%s.ass'%(STTNGS['temp_dir'], os.path.basename(fn))
-					cmd = mkvtoolnix_path + 'mkvextract tracks "%s" %s:"%s"'%(fn, hardsub_stream.params['mkvinfo_trackNumber'], ass_fn)
-					self.__printCmd(cmd)
-					p = os.popen(cmd)
-					p.close()
+		elif isMatroshkaMedia(fn) and hardsub_stream.params.has_key('mkvinfo_trackNumber'):
+			if hardsub_stream.format().upper()=='ASS' or hardsub_stream.format().upper()=='SSA':
+				ass_fn = '%s/%s.ass'%(STTNGS['temp_dir'], os.path.basename(fn), hardsub_stream.format().lower())
+				cmd = mkvtoolnix_path + 'mkvextract tracks "%s" %s:"%s"'%(fn, hardsub_stream.params['mkvinfo_trackNumber'], ass_fn)
+				self.__printCmd(cmd)
+				p = os.popen(cmd)
+				p.close()
 		else:
 			# TODO: there can be added other subtitle format
 			return None
@@ -635,6 +635,7 @@ class Video2iDevice(object):
 
 
 	def cVideo(self, iFile, stream, oFile):
+		print stream.params
 		w = stream.params['width']
 		h = stream.params['height']
 		if stream.params.has_key('dwidth') and stream.params.has_key('dheight'):
@@ -859,7 +860,7 @@ class Video2iDevice(object):
 		cmd = None
 		ffmpeg_params = []
 		ffmpeg_params_add = []
-		if copyFlag or (stream.params.has_key('codec') and stream.params['codec']=='aac' and stream.params.has_key('channels') and stream.params['channels']=='2' and stream.params.has_key('bitrate') and stream.params['bitrate']==ab and stream.params.has_key('frequency') and stream.params['frequency']==ar):
+		if copyFlag or (stream.format().lower()=='aac' and stream.params.has_key('channels') and stream.params['channels']=='2' and stream.params.has_key('bitrate') and stream.params['bitrate']==ab and stream.params.has_key('frequency') and stream.params['frequency']==ar):
 			#cmd = ffmpeg_path + ' -y -i "%s" -map %s -vn -acodec copy "%s"'%(iFile, stream[1], oFile)
 			ffmpeg_params = self.__audioFfmpegParamsCopy(iFile, stream.trackID)
 		else:
@@ -927,6 +928,9 @@ class Video2iDevice(object):
 		elif ext=='ttxt':
 			copyfile(iFile, oFile)
 		elif ext=='mp4' or ext=='m4v':
+			if stream.params['extended'].has_key('copy'):
+				print 'subtitle from .mp4 files allways copy'
+
 			# TODO: extract or copy subtitles on ttxt format
 			track_id = (int)(stream.trackID.split(self.mediainformer.mapStreamSeparatedSymbol(iFile))[1])+1
 
@@ -942,12 +946,10 @@ class Video2iDevice(object):
 
 			fileName, fileExtension = os.path.splitext(tmpFile)
 			tmpFile = fileName + '_track%d'%track_id + fileExtension
-			#tmpFile = fileName + '_track%d.tx3g'%track_id
 			return tmpFile
 		else:
-			if informer=='mkvinfo':
-				if stream.params['codec']=='S_TEXT/ASS':
-					#tmpName = '%s_%s.ass'%(iFile.split('/')[-1], stream[1])
+			if isMatroshkaMedia(iFile) and stream.params.has_key('mkvinfo_trackNumber'):
+				if stream.format().upper()=='ASS' or stream.format().upper()=='SSA':
 					assFileName = oFile+'.ass'
 					cmd = mkvtoolnix_path + 'mkvextract tracks "%s" %s:"%s"'%(iFile, stream.params['mkvinfo_trackNumber'], assFileName)
 					self.__printCmd(cmd)
@@ -958,8 +960,7 @@ class Video2iDevice(object):
 						sConverter.ass2ttxt(assFileName, oFile, prms)
 						if STTNGS['ctf']:
 							os.unlink(assFileName)
-				else:
-					#strFileName = re.compile('\\.ttxt$').sub('.srt', oFile)
+				else: # TODO: on mkv-files can be and other type's of subtitile
 					strFileName = oFile+'.srt'
 					cmd = mkvtoolnix_path + 'mkvextract tracks "%s" %s:"%s"'%(iFile, stream.params['mkvinfo_trackNumber'], strFileName)
 					self.__printCmd(cmd)
@@ -993,7 +994,7 @@ class Video2iDevice(object):
 		if not os.path.exists(nn):
 			print 'file "%s" not exist'%nn
 			sys.exit(1)
-		_fi = self.mediainformer.fileInfo(nn, STTNGS['mInfo'])
+		_fi = self.mediainformer.fileInfo(nn)
 		_fi.streams[0].params['GlobalTrackNum'] = currentTrack
 		title = None
 		if fadd[-1].has_key('title'):
@@ -1067,8 +1068,8 @@ class Video2iDevice(object):
 				self.cAudio(fi.filename, stream, files[-1][1])
 
 			elif stream.type==2:
-				ttxtName = out_fn+'_%s.ttxt'%stream[1]
-				tmpFile = self.cSubs(fi['filename'], stream, fi.informer, {}, ttxtName)
+				ttxtName = out_fn+'_%s.ttxt'%stream.trackID
+				tmpFile = self.cSubs(fi.filename, stream, fi.informer, {}, ttxtName)
 				if tmpFile<>None:
 					files.append((2, tmpFile, stream))
 					findSubs = False
@@ -1211,7 +1212,7 @@ class Video2iDevice(object):
 		for f in files:
 			n = None
 			if f[2]!=None and f[2].params.has_key('name'):
-				n = unicode(f[2][3]['name'], 'utf-8').encode('utf-8')
+				n = unicode(f[2].params['name'], 'utf-8').encode('utf-8')
 				need = True
 			trackNames.append(n)
 		if need:
@@ -1295,7 +1296,7 @@ if __name__=='__main__':
 					STTNGS[key] = val
 	#print STTNGS['subStyleColors']
 	converter.getSettings(argv)
-	
+
 	if not STTNGS.has_key('threads'):
 		STTNGS['threads'] = os.sysconf('SC_NPROCESSORS_CONF')
 
@@ -1311,7 +1312,7 @@ if __name__=='__main__':
 		if STTNGS['vv']:
 			print '\n------------------------ %s ------------------------'%fn
 		if STTNGS.has_key('info'):
-			fi = converter.mediainformer.fileInfo(fn, STTNGS['mInfo'])
+			fi = converter.mediainformer.fileInfo(fn)
 			#fi.streams = map(lambda x: [x.type, x.trackID[x.trackID.index(converter.mediainformer.mapStreamSeparatedSymbol(fi.filename))+1:], x.language, x.params], fi.streams)
 			#print type(fi['streams'][2][1])
 			#sys.exit()
@@ -1321,7 +1322,7 @@ if __name__=='__main__':
 				#fi = {'filename': fn, 'informer': 'no need'}
 				fi = cMediaInfo('no need', fn)
 			else:
-				fi = converter.mediainformer.fileInfo(fn, STTNGS['mInfo'])
+				fi = converter.mediainformer.fileInfo(fn)
 			converter.encodeStreams(fi)
 
 	#os.system('date')

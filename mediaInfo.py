@@ -9,10 +9,17 @@ import re
 import fileCoding
 import math
 
+from constants import LANGUAGES_DICT
+
 
 def add_separator_to_filepath(filepath):
 	return filepath.replace('\\', '\\\\').replace(' ', '\\ ').replace('(', '\\(').replace(')', '\\)').replace('[', '\\[').replace(']',
 							      '\\]').replace('&', '\\&').replace("\"", "\\\"")
+
+def isMatroshkaMedia(file_name):
+	_, file_ext = os.path.splitext(file_name)
+	file_ext = file_ext.lower()
+	return file_ext in ['.mkv', '.mk3d', '.mka', '.mks']
 
 
 class cStream(object):
@@ -63,6 +70,14 @@ class cStream(object):
 			'language': self.language,
 			'params': self.params
 			}
+
+	def format(self):
+		rv = ''
+		if self.params.has_key('Format'):
+			rv = self.params['Format']
+		if self.params.has_key('codec'):
+			rv = self.params['codec']
+		return rv
 
 class cMediaInfo(object):
 	"""docstring for cMediaInfo"""
@@ -240,6 +255,9 @@ class MediaInformer:
 					h = res
 					prms['width'] = self.__stringToNumber(w)
 					prms['height'] = self.__stringToNumber(h)
+
+					if prms['codec']=='mjpeg':
+						tp = 3
 				
 					#if len(prms['codec']>4) and prms['codec'][:4]=='h264':
 					#	prms['bitrate'] = self.__stringToNumber(info[3])
@@ -268,6 +286,13 @@ class MediaInformer:
 
 				#streams.append([tp, name, lng, prms, ])
 				streams.append(cStream(tp, name, lng, prms))
+		i = len(streams)
+		while i>0:
+			if streams[i-1].type<>3:# or streams[i-1].params['codec']!='mjpeg':
+				break
+			i = i-1
+		if i>0 and i<>len(streams):
+			streams = streams[:i]
 		p.close()
 		#rv['streams'] = streams
 		rv.streams = streams
@@ -500,17 +525,28 @@ class MediaInformer:
 				if minTrackID>tid:
 					minTrackID = tid
 
+		tmp, ext = os.path.splitext(filename)
+		ext = ext.lower()
 		for stream in curr_el['streams']:
 			#fix track id's
 			if stream.params.has_key('ID'):
 				stream.trackID = '0%s%d'%(self.mapStreamSeparatedSymbol(filename), int(stream.params['ID'])-minTrackID)
 
+			if stream.params.has_key('Language') and LANGUAGES_DICT.has_key(stream.params['Language']):
+				stream.language = LANGUAGES_DICT[stream.params['Language']]
+
+
 			if stream.type==0 and stream.params.has_key('Display_aspect_ratio'):
 				try:
 					width = int(stream.params['Width'].replace('pixels', '').replace(' ', ''))
-					height = int(stream.params['Height'][:stream.params['Height'].index(' ')])
-					drx = int(stream.params['Display_aspect_ratio'][:stream.params['Display_aspect_ratio'].index(':')])
-					dry = int(stream.params['Display_aspect_ratio'][stream.params['Display_aspect_ratio'].index(':')+1:])
+					height = int(stream.params['Height'].replace('pixels', '').replace(' ', ''))
+					display_aspect_ratio = stream.params['Display_aspect_ratio']
+					if display_aspect_ratio.find(':')==-1:
+						drx = float(display_aspect_ratio)
+						dry = 1.0
+					else:
+						drx = float(stream.params['Display_aspect_ratio'][:stream.params['Display_aspect_ratio'].index(':')])
+						dry = float(stream.params['Display_aspect_ratio'][stream.params['Display_aspect_ratio'].index(':')+1:])
 					#print width, height, drx, dry
 					stream.params['width'] = width
 					stream.params['height'] = height
@@ -530,7 +566,7 @@ class MediaInformer:
 		return rv
 
 
-	def fileInfo(self, filename, mediainfo_priority=False):
+	def fileInfo(self, filename):
 		'''
 			input: video file name
 			output:
@@ -553,38 +589,31 @@ class MediaInformer:
 					}
 				}
 		'''
-		#print filename.split('.')[-1].lower()
-		#sys.exit(0)
-		ext = filename.split('.')[-1].lower()
+
 		rv = cMediaInfo('error', filename)
-		if ext=='ass' or ext=='srt' or ext=='ttxt' or ext=='ssa':
-			'''
-			rv = {
-				'informer': 'none',
-				'filename': filename,
-				#'streams' : [[2, '0%s0'%self.mapStreamSeparatedSymbol(filename), None, {'codec': ext, 'encoding': fileCoding.code_detecter(filename)}]]
-				'streams' : [cStream(2, '0%s0'%self.mapStreamSeparatedSymbol(filename), None, {'codec': ext, 'encoding': fileCoding.code_detecter(filename)}), ]
-				}
-			'''
+		tmp, ext = os.path.splitext(filename)
+		ext = ext.lower()
+		if ext=='.ass' or ext=='.srt' or ext=='.ttxt' or ext=='.ssa':
 			rv.informer = 'none'
-			rv.stream_add(cStream(2, '0%s0'%self.mapStreamSeparatedSymbol(filename), None, {'codec': ext, 'encoding': fileCoding.code_detecter(filename)}))
-		elif mediainfo_priority:
-			rv = self.fileInfoUsingMediaInfo(filename)
-			#print rv['streams']
-			if (ext=='mkv' or ext=='mka') and len(rv.streams)==0:
-				rv = self.fileInfoUsingMKV(filename)
-		elif ext=='mkv' or ext=='mka':
-			rv = self.fileInfoUsingMKV(filename)
+			rv.stream_add(cStream(2, '0%s0'%self.mapStreamSeparatedSymbol(filename), None, {'codec': ext[1:], 'encoding': fileCoding.code_detecter(filename)}))
 		else:
-			pass
+			rv = self.fileInfoUsingMediaInfo(filename)
+			if isMatroshkaMedia(filename):
+				tmp = self.fileInfoUsingMKV(filename)
+				if len(rv.streams)==len(tmp.streams):
+					for stream in rv.streams:
+						for i in range(len(tmp.streams)):
+							if stream.trackID==tmp.streams[i].trackID and stream.type==tmp.streams[i].type and tmp.streams[i].params.has_key('mkvinfo_trackNumber'):
+								stream.params['mkvinfo_trackNumber'] = tmp.streams[i].params['mkvinfo_trackNumber']
 
-		#else: or mkvinfo exit with error
-		if len(rv.streams)==0:
-			rv = self.fileInfoUsingFFMPEG(filename)
+			if len(rv.streams)==0:
+				rv = self.fileInfoUsingFFMPEG(filename)
 
-		if ext=='mp4' or ext=='m4v':
+		if ext=='.mp4' or ext=='.m4v':
 			rv.tags = self.__readTags(filename)
+
 		return rv
+
 
 	def __readTags(self, filename):
 		rv = {}
@@ -693,6 +722,6 @@ if __name__=='__main__':
 
 	mi = MediaInformer(ffmpeg_path, mkvtoolnix_path, mediainfo_path, atomicParsley_path, os.getenv('HOME')+'/Desktop')
 	for arg in sys.argv[1:]:
-		fi = mi.fileInfo(arg, True)
+		fi = mi.fileInfo(arg)
 		print fi.dump()
 
