@@ -64,7 +64,6 @@ STTNGS = {
 	'acopy':	False,
 	'vr':		23.976,
 	'ctf':		False,
-	'rn':		False,
 	'vv':		False,
 	'web_optimization': True,
 	'temp_dir': '.',
@@ -135,7 +134,6 @@ Options
 	-copy			copy selected stream	
 	-avol		[int]	change audio volume (def 256=100%), only for 'afile' params
 	-ctf			clear temp files after converting
-	-rn			don't resize video
 	-crop	[int]:[int]:[int]:[int]	crop video (width:height:x:y)
 	-delay		[int]	sets track start delay in ms.
 	-info 			show media file info
@@ -143,7 +141,7 @@ Options
 	-temp_dir	[str]	path to temporary directory
 	-hardsub		set stream as hurdsub (for ass format only)
 	-ffmpeg_coding_params	[str]	add ffmpeg params for video/audio coding (set's for selected stream)
-	-json_pipe		set all params by JSON array [] in pipe, this should be only param on parameters
+	-json_pipe		set all params by JSON array [] in pipe, this should be only one param on parameters
 	-web_optimization	[int]	optimization result file to streaming (0 - disabled, another - enabled(default))
 	-tagging_mode		set tags only
 
@@ -218,9 +216,6 @@ class Video2iDevice(object):
 				if ckey=='sn':
 					STTNGS['sc'] = False
 					saveP = True
-				if ckey=='rn':
-					STTNGS['rn'] = True
-					saveP = True
 				if ckey=='vcopy':
 					STTNGS['vcopy'] = True
 					saveP = True
@@ -241,12 +236,10 @@ class Video2iDevice(object):
 				if ckey=='fd':
 					STTNGS['fd'] = True
 					saveP = True
-				elif ckey=='ctf':
+				if ckey=='ctf':
 					STTNGS['ctf']=True
 					saveP = True
-				if ckey=='addTimeDiff':
-					waitParam = True
-				if ckey=='add2TrackIdx':
+				if ckey=='addTimeDiff' or ckey=='add2TrackIdx' or ckey=='ffmpeg_coding_params':
 					waitParam = True
 				if ckey=='info' or ckey=='vv' or ckey=='tagging_mode':
 					STTNGS[ckey] = True
@@ -257,13 +250,11 @@ class Video2iDevice(object):
 				if ckey=='v':
 					print "Version: %s"%STTNGS['version']
 					sys.exit(0)
-				elif ckey=='hardsub':
+				if ckey=='hardsub':
 					tmp = STTNGS['fadd']
 					if len(tmp)>0:
 						tmp[-1][-1][ckey] = True
 					saveP = True
-				elif ckey=='ffmpeg_coding_params':
-					waitParam = True
 			else:
 				waitParam = False
 				if saveP:
@@ -645,32 +636,19 @@ class Video2iDevice(object):
 			w = stream.params['dwidth']
 			h = stream.params['dheight']
 	
-		if not STTNGS['rn']:
-			if STTNGS.has_key('s'):
-				res = STTNGS['s'].split('x')
-				if res[0]=='*':
-					(_h, _w) = self.sizeConvert(h, w, int(res[1]))
-				elif res[1]=='*':
-					(_w, _h) = self.sizeConvert(w, h, int(res[0]))
-				else:
-					_w = int(res[0])
-					_h = int(res[1])
+		if STTNGS.has_key('s'):
+			res = STTNGS['s'].split('x')
+			if res[0]=='*':
+				(_h, _w) = self.sizeConvert(h, w, int(res[1]))
+			elif res[1]=='*':
+				(_w, _h) = self.sizeConvert(w, h, int(res[0]))
 			else:
-				(_w, _h) = (w, h)
-				#(_w, _h) = self.sizeConvert(w, h, w)
-				#(_h, _w) = self.sizeConvert(_h, _w, _h)
-				'''
-				if STTNGS['vq']==1:
-					(_w, _h) = self.sizeConvert(w, h, 480)
-				elif STTNGS['vq']==2:
-					(_h, _w) = self.sizeConvert(h, w, 320)
-				else:
-					(_w, _h) = self.sizeConvert(w, h, 480)
-					if _h<320:
-						(_h, _w) = self.sizeConvert(h, w, 320)
-				'''
+				_w = int(res[0])
+				_h = int(res[1])
 		else:
 			(_w, _h) = (w, h)
+			#(_w, _h) = self.sizeConvert(w, h, w)
+			#(_h, _w) = self.sizeConvert(_h, _w, _h)
 		if _w == 480 and (_h == 368 or _h == 352): _h = 360
 
 		print '\033[1;33m %dx%d  ==> %dx%d \033[00m'%(w,h, _w,_h)
@@ -1340,6 +1318,7 @@ if __name__=='__main__':
 			#fi.streams = map(lambda x: [x.type, x.trackID[x.trackID.index(converter.mediainformer.mapStreamSeparatedSymbol(fi.filename))+1:], x.language, x.params], fi.streams)
 			#print type(fi['streams'][2][1])
 			#sys.exit()
+			#print fi.dump()
 			print json.write(fi.dump('dict'))
 		else:
 			if STTNGS['streams']=='none':
