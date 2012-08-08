@@ -129,14 +129,14 @@ Options
 	-passes  	[str]	video passes coding separeted ':'
 	-vr        	[float]	frame rate (default 23.976)
 	-addTimeDiff 	[int]	add time(ms) diff to subs (last sub stream)
-	-vcopy			(deprecated: use -copy) copy video stream
-	-acopy			(deprecated: use -copy) copy audio stream
+	-vcopy			copy video stream
+	-acopy			copy audio stream
 	-copy			copy selected stream	
 	-avol		[int]	change audio volume (def 256=100%), only for 'afile' params
 	-ctf			clear temp files after converting
 	-crop	[int]:[int]:[int]:[int]	crop video (width:height:x:y)
 	-delay		[int]	sets track start delay in ms.
-	-info 			show media file info
+	-info 		[str]	show media file info, value is format (can be blank), 'json' - JSON format, default - human format
 	-vv			verbose mode
 	-temp_dir	[str]	path to temporary directory
 	-hardsub		set stream as hurdsub (for ass format only)
@@ -216,45 +216,38 @@ class Video2iDevice(object):
 				if ckey=='sn':
 					STTNGS['sc'] = False
 					saveP = True
-				if ckey=='vcopy':
-					STTNGS['vcopy'] = True
-					saveP = True
-				if ckey=='acopy':
+				# stream and global single params
+				if ckey=='vcopy' or ckey=='acopy':
 					tmp = STTNGS['fadd']
 					if len(tmp)>0:
 						tmp[-1][-1]['copy'] = True
 					else:
-						STTNGS['acopy'] = True
+						STTNGS[ckey] = True
 					saveP = True
-				if ckey=='copy':
-					tmp = STTNGS['fadd']
-					if len(tmp)>0:
-						tmp[-1][-1]['copy'] = True
-				if ckey=='tn':
-					STTNGS[ckey] = True
-					saveP = True
-				if ckey=='fd':
-					STTNGS['fd'] = True
-					saveP = True
-				if ckey=='ctf':
-					STTNGS['ctf']=True
-					saveP = True
-				if ckey=='addTimeDiff' or ckey=='add2TrackIdx' or ckey=='ffmpeg_coding_params':
-					waitParam = True
-				if ckey=='info' or ckey=='vv' or ckey=='tagging_mode':
-					STTNGS[ckey] = True
-					saveP = True
-				if ckey=='h' or ckey=='json_pipe':
-					print help
-					sys.exit(0)
-				if ckey=='v':
-					print "Version: %s"%STTNGS['version']
-					sys.exit(0)
-				if ckey=='hardsub':
+				# stream single params
+				if ckey=='copy' or ckey=='hardsub':
 					tmp = STTNGS['fadd']
 					if len(tmp)>0:
 						tmp[-1][-1][ckey] = True
 					saveP = True
+				# global single params
+				if ckey=='tn' or ckey=='fd' or ckey=='ctf' or ckey=='vv' or ckey=='tagging_mode':
+					STTNGS[ckey] = True
+					saveP = True
+				# params that can be started from '-' symbol
+				if ckey=='addTimeDiff' or ckey=='add2TrackIdx' or ckey=='ffmpeg_coding_params':
+					waitParam = True
+				# help param or wrong
+				if ckey=='h' or ckey=='json_pipe':
+					print help
+					sys.exit(0)
+				# version param
+				if ckey=='v':
+					print "Version: %s"%STTNGS['version']
+					sys.exit(0)
+				# single or not param 
+				if ckey=='info':
+					STTNGS[ckey] = None
 			else:
 				waitParam = False
 				if saveP:
@@ -1319,7 +1312,10 @@ if __name__=='__main__':
 			#print type(fi['streams'][2][1])
 			#sys.exit()
 			#print fi.dump()
-			print json.write(fi.dump('dict'))
+			if STTNGS['info']=='json':
+				print json.write(fi.dump('dict'))
+			else:
+				print fi.dump()
 		else:
 			if STTNGS['streams']=='none':
 				#fi = {'filename': fn, 'informer': 'no need'}
