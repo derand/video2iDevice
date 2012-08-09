@@ -57,7 +57,6 @@ STTNGS = {
 	'tfile':	'',
 	'fd':		False,
 	'fadd':		[],
-	'vq':		3,
 	'format':	'm4v',
 	'add2TrackIdx': 0,
 	'vcopy':	False,
@@ -84,70 +83,80 @@ mkvtoolnix (http://www.bunkus.org/videotools/mkvtoolnix/downloads.html)
 Usage
   ./2iDevice.py [options] inputFile[s]
 
-Options
+Global options:
 	-h			this help
 	-th		[int]	using threads for coding
 	-lang		[str]	languages of srteams separated ':' (also can set for each track like 'stream' param)
-	-cn			disable converting step, merge streams files to .m4v file
-	-vn			disable convert video
-	-an			disable convert audio
-	-sn			disable convert subtitles
-	-ar		[int]	audio frequency (def 48000)
-	-ab		[int]	audio bitrate (def 128k)
+	-cn			disable converting step (files converted yet from another script run), merge streams files to .m4v file
+	-streams	[str]	select streams numbers or 'none' for none (first index 0 separated ':', default 'all')
+	-tfile		[str]	set tags file
+	-TRACK_REGEX	[srt]	set regular exeption for select track number from filename
+	-TRACKS_REGEX	[srt]	set regular exeption for select tracks count from filename
+	-out_file	[str]	save result to this file. supports tags: [SEASON], [EPISODE_ID]
+	-format		[str]	output format (default: 'm4v')
+	-stream		[int]	stream idx from appending files (vfile, afile, sfile)
+	-ctf			clear temp files after converting
+	-v			script version
+	-addTimeDiff 	[int]	add time(ms) diff to subs (last sub stream)
+	-copy			copy selected stream from source
+	-delay		[int]	sets track start delay in ms.
+	-info 		[str]	show media file info, value is format (can be blank), 'json' - JSON format, default - human format
+	-vv			verbose mode
+	-temp_dir	[str]	path to temporary directory
+	-ffmpeg_coding_params	[str]	add ffmpeg params for video/audio coding (set's for selected stream)
+	-json_pipe		set all params by JSON array [] in pipe, this should be only one param on parameters
+	-web_optimization	[int]	optimization result file to streaming (0 - disabled, another - enabled(default))
+
+Video options:
+	-vfile		[str]	set video filename. If not set try search in current dir. 
+				Can be format:
+					[NAME] - origin name of file
+					[2EID] - episode id (evaluate from regext in tfile)
+					[2EC] - episode count
 	-b		[int]	video bitrate (def 960)
 	-crf 		[int]	one pass coding, crf param
 	-refs		[int]	ref frames for coding video
-	-tn			disable sets tags
-	-streams	[str]	select streams numbers or 'none' for none (first index 0 separated ':', default 'all')
-	-tfile		[str]	set tags file
-	-track		[int]	track
-	-tracks		[int]	tracks count
+	-fd			fix video duration
+	-s		[int]x[int]	result resolution, can looks like ('*x320', '960x*')
+	-passes  	[str]	video passes coding separeted ':' (use for non crf mode)
+	-vr        	[float]	frame rate (default 23.976)
+	-crop	[int]:[int]:[int]:[int]	crop video (width:height:x:y)
+	-vcopy			copy video stream from source
+	-vn			disable convert video
+
+Audio options:
+	-afile		[str]	set audio filename. If not set try search in current dir. 
+				Can be format:
+					[NAME] - origin name of file
+					[2EID] - episode id (evaluate from regext in tfile)
+					[2EC] - episode count
+	-ar		[int]	audio frequency (def 48000)
+	-ab		[int]	audio bitrate (def 128k)
+	-avol		[int]	change audio volume (def 256=100%), only for 'afile' params
+	-acopy			copy audio stream from source
+	-an			disable convert audio
+
+Subtitle options:
 	-sfile		[str]	set subtitle filename. If not set try search in current dir. 
 				Can be format:
 					[NAME] - origin name of file
 					[2EID] - episode id (evaluate from regext in tfile)
 					[2EC] - episode count
-	-out_file	[str]	save result to this file. supports tags: [SEASON], [EPISODE_ID]
-	-fd			fix video duration
-	-et		[str]	set episodes titles separated ';'
-	-stik		[str]	set iTunes stick. can be 'Movie', 'Music Video', 'TV Show' ... (see: AtomicParsley --stik-list)
-	-TVShowName	[str]	set showname tag
-	-TVSeasonNum	[str]	set season num
-	-description	[str]	set deascription
-	-year		[str]	set year
-	-artwork	[str]	set artwork filename
-	-movie_name	[srt]	set movie name
-	-TRACK_REGEX	[srt]	set regular exeption for select track from filename
-	-TRACKS_REGEX	[srt]	set regular exeption for select tracks from filename
-	-vq		[int]	(deprecated: use -s) video quality (1 - 480x*,   2 - *x320, 3 - max)
-	-format		[str]	output format (default: 'm4v')
-	-stream		[int]	stream idx from appending files (vfile, afile, sfile)
+	-hardsub		set stream as hurdsub (for ass format only)
+	-sn			disable convert subtitles
+
+Tagging options:
+	-tagging_mode		set tags only
+	-track		[int]	track
+	-tracks		[int]	tracks count
+	-et		[str]	set episodes titles separated ';' (for TV Shows)
 	-title		[srt]	stream title from appending files (vfile, afile, sfile)
 	-add2TrackIdx	[int]	add to track (def: 0)
-	-s		[int]x[int]	result resolution, can looks like ('*x320', '960x*')
-	-v			script version
-	-passes  	[str]	video passes coding separeted ':'
-	-vr        	[float]	frame rate (default 23.976)
-	-addTimeDiff 	[int]	add time(ms) diff to subs (last sub stream)
-	-vcopy			copy video stream
-	-acopy			copy audio stream
-	-copy			copy selected stream	
-	-avol		[int]	change audio volume (def 256=100%), only for 'afile' params
-	-ctf			clear temp files after converting
-	-crop	[int]:[int]:[int]:[int]	crop video (width:height:x:y)
-	-delay		[int]	sets track start delay in ms.
-	-info 		[str]	show media file info, value is format (can be blank), 'json' - JSON format, default - human format
-	-vv			verbose mode
-	-temp_dir	[str]	path to temporary directory
-	-hardsub		set stream as hurdsub (for ass format only)
-	-ffmpeg_coding_params	[str]	add ffmpeg params for video/audio coding (set's for selected stream)
-	-json_pipe		set all params by JSON array [] in pipe, this should be only one param on parameters
-	-web_optimization	[int]	optimization result file to streaming (0 - disabled, another - enabled(default))
-	-tagging_mode		set tags only
-
+	-tn			disable sets tags
 For tagging you can use AtomicParsley long-option params (see "AtomicParsley -h"), in param use one '-' symbol like:
 	./2iDevice.py <filename> -contentRating Unrated
 for AtomicParsley --contentRating Unrated.
+
 	
 Author
 	Writen by Andrey Derevyagin (2derand+2idevice@gmail.com)
@@ -1311,7 +1320,6 @@ if __name__=='__main__':
 			#fi.streams = map(lambda x: [x.type, x.trackID[x.trackID.index(converter.mediainformer.mapStreamSeparatedSymbol(fi.filename))+1:], x.language, x.params], fi.streams)
 			#print type(fi['streams'][2][1])
 			#sys.exit()
-			#print fi.dump()
 			if STTNGS['info']=='json':
 				print json.write(fi.dump('dict'))
 			else:
