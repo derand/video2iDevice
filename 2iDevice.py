@@ -967,7 +967,7 @@ class Video2iDevice(object):
 		else:
 			for i in range(len(_fi.streams)):
 				#tmp_stream = _fi.streams[i]
-				stream = self.__streamById(i, _fi.streams)
+				tmp_stream = self.__streamById(i, _fi.streams)
 				if tmp_stream.type==fadd[0]:
 					stream = tmp_stream
 					break
