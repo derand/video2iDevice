@@ -414,22 +414,6 @@ class Video2iDevice(object):
 			if srch!=None:
 				trs = int(srch.groups()[0])
 		rv['tracks'] = trs
-		if STTNGS.has_key('artwork'):
-			rv['artwork'] = STTNGS['artwork']
-		if STTNGS.has_key('stik'):
-			rv['stik'] = STTNGS['stik']
-		if STTNGS.has_key('TVShowName'):
-			rv['show'] = STTNGS['TVShowName']
-		if STTNGS.has_key('TVSeasonNum'):
-			rv['season'] = STTNGS['TVSeasonNum']
-		if STTNGS.has_key('description'):
-			rv['description'] = STTNGS['description']
-		if STTNGS.has_key('year'):
-			rv['year'] = STTNGS['year']
-		if STTNGS.has_key('artist'):
-			rv['artist'] = STTNGS['artist']
-		if STTNGS.has_key('movie_name'):
-			rv['movie_name'] = STTNGS['movie_name']
 		if tr==None and not rv.has_key('season'):
 			srch = re.compile('[sS](\d{2})[eE](\d{2})').search(fn)
 			if srch!=None:
@@ -439,11 +423,6 @@ class Video2iDevice(object):
 		return rv
 
 	def iTagger(self, fn):
-		def __add_param(info, name, _id, prms):
-			if info.has_key(_id):
-				return prms + ' %s "%s"'%(name, info[_id])
-			return prms
-
 		if not STTNGS['tn']:
 			#prms = ' --copyright "derand"'
 			prms = {
@@ -451,19 +430,6 @@ class Video2iDevice(object):
 				#'overWrite': ''
 			}
 			info = self.tagTrackInfo(fn)
-			'''
-			prms = __add_param(info, '--artwork', 'artwork', prms)
-			prms = __add_param(info, '--stik', 'stik', prms)
-			prms = __add_param(info, '--TVShowName', 'show', prms)
-			prms = __add_param(info, '--album', 'show', prms)
-			prms = __add_param(info, '--artist', 'show', prms)
-			prms = __add_param(info, '--TVSeasonNum', 'season', prms)
-			prms = __add_param(info, '--description', 'description', prms)
-			prms = __add_param(info, '--year', 'year', prms)
-			if prms.find(' --artist ')==-1:
-				prms = __add_param(info, '--artist', 'artist', prms)
-			prms = __add_param(info, '--title', 'movie_name', prms)
-			'''
 			for option in atomicParsleyOptions:
 				if STTNGS.has_key(option):
 					#prms[option] = ' "%s"'%STTNGS[option]
@@ -968,6 +934,16 @@ class Video2iDevice(object):
 		return oFile
 
 
+	def __streamById(self, streamId, streams):
+		separator = self.mediainformer.mapStreamSeparatedSymbol()
+		for s in streams:
+			currStreamId = s.trackID.split(separator)[-1]
+			if currStreamId==str(streamId):
+				return s
+		print 'Can\'t found stream #%d'%streamId
+		sys.exit(1)
+		return streams[streamId]
+
 	def __streamFromFAdd(self, fadd, fi, currentTrack=0):
 		path = os.path.dirname(fi.filename)+'/'
 		nn = self.buildFN(fi.filename, fadd[1])
@@ -986,10 +962,12 @@ class Video2iDevice(object):
 		# get stream info
 		stream = None
 		if fadd[2].has_key('stream'):
-			stream = _fi.streams[fadd[2]['stream']]
+			#stream = _fi.streams[fadd[2]['stream']]
+			stream = self.__streamById(fadd[2]['stream'], _fi.streams)
 		else:
 			for i in range(len(_fi.streams)):
-				tmp_stream = _fi.streams[i]
+				#tmp_stream = _fi.streams[i]
+				stream = self.__streamById(i, _fi.streams)
 				if tmp_stream.type==fadd[0]:
 					stream = tmp_stream
 					break
@@ -1024,7 +1002,8 @@ class Video2iDevice(object):
 		# chech hardsub
 		hardsub_streams = []
 		for i in strms:
-			stream = fi.streams[i]
+			#stream = fi.streams[i]
+			stream = self.__streamById(i, fi.streams)
 			if stream.params.has_key('extended') and stream.params['extended'].has_key('hardsub'):
 				stream.params['filename'] = fi.filename
 				hardsub_stream.append(stream)
@@ -1037,7 +1016,8 @@ class Video2iDevice(object):
 		currentTrack = 0
 		out_fn = '%s/%s'%(STTNGS['temp_dir'], name)
 		for i in strms:
-			stream = fi.streams[i]
+			#stream = fi.streams[i]
+			stream = self.__streamById(i, fi.streams)
 			stream.params['GlobalTrackNum'] = currentTrack
 			if STTNGS['vv']:
 				print stream
