@@ -29,7 +29,7 @@ import fileCoding
 import os.path
 
 import xml.parsers.expat
-from subprocess import Popen, PIPE
+from subprocess import Popen, PIPE, STDOUT
 
 from subConverter import subConverter
 from mpeg4fixer import mpeg4fixer
@@ -172,7 +172,7 @@ Bugs
 
 
 if sys.platform == 'darwin':
-	script_dir = add_separator_to_filepath(os.path.dirname(os.path.realpath(__file__)))
+	script_dir = os.path.dirname(os.path.realpath(__file__))
 	ffmpeg_path = script_dir + '/binary/ffmpeg'
 	mp4box_path = script_dir + '/binary/MP4Box'
 	AtomicParsley_path = script_dir + '/binary/AtomicParsley'
@@ -303,9 +303,9 @@ class Video2iDevice(object):
 				elif ckey=='crf':
 					tmp = STTNGS['fadd']
 					if len(tmp)>0:
-						tmp[-1][-1]['crf'] = int(el)
+						tmp[-1][-1]['crf'] = el
 					else:
-						STTNGS[ckey] = int(el)
+						STTNGS[ckey] = el
 				elif ckey=='ffmpeg_coding_params':
 					tmp = STTNGS['fadd']
 					if len(tmp)>0:
@@ -381,6 +381,109 @@ class Video2iDevice(object):
 	def __printCmd(self, cmd):
 		print ': \033[1;32m%s\033[00m'%cmd
 
+	def __exeFfmpegCmd(self, params):
+		def timeToMs(hoursMinsSecMs_array):
+			hours = int(hoursMinsSecMs_array[0])
+			mins = int(hoursMinsSecMs_array[1])
+			secs = int(hoursMinsSecMs_array[2])
+			ms = int(hoursMinsSecMs_array[3])
+			return ((hours*60 + mins)*60 + secs)*100 + ms
+
+		cmd = [ffmpeg_path, ]
+		#cmd[len(cmd):] = params
+		for prm in params:
+			if prm[0]=='"' and prm[-1]=='"':
+				cmd.append(prm[1:-1])
+			else:
+				cmd.append(prm)
+		#cmd = ['/Users/maliy/work/Video to iDevice/video2iDevice/binary/ffmpeg', '-y', '-i', '/Users/maliy/Movies/Ga-Rei Zero/Ga-Rei Zero - 04 (BDRip H264 1280x720)_0_30.mp4', '-map', '0:0', '-an', '-vcodec', 'libx264', '-crf', '18.2', '-s', '1280x720', '-refs', '6', '-threads', '4', '-partitions', '+parti4x4+parti8x8+partp4x4+partp8x8+partb8x8', '-subq', '12', '-trellis', '1', '-coder', '1', '-me_range', '32', '-level', '4.1', '-profile:v', 'high', '-bf', '12', '-r', '23.976', '/tmp/VideoToIDevice/Ga-Rei Zero - 04 (BDRip H264 1280x720)_0_30.mp4_0:0.mp4']
+		#cmd = ['/Users/maliy/work/Video to iDevice/video2iDevice/binary/ffmpeg', '-y', '-i', '/Users/maliy/Movies/Hatsune Miku & Megurine Luka – 39′s Giving Day.m4v', '-map', '0:0', '-an', '-vcodec', 'libx264', '-crf', '18', '-s', '1280x720', '-refs', '6', '-threads', '4', '-partitions', '+parti4x4+parti8x8+partp4x4+partp8x8+partb8x8', '-subq', '12', '-trellis', '1', '-coder', '1', '-me_range', '32', '-level', '4.1', '-profile:v', 'high', '-bf', '12', '-r', '23.976', '/tmp/VideoToIDevice/Ga-Rei Zero - 04 (BDRip H264 1280x720)_0_30.mp4_0:0.mp4']
+		p = Popen(cmd, stdout=PIPE, stderr=STDOUT)
+		retcode = 0
+		line = ''
+		duration = None
+		duration_re_compiled = re.compile('Duration:\s*(\d{2}):(\d{2}):(\d{2})\.(\d{2})')
+		time = 0
+		time_re_compiled = re.compile('.*time=\s*(\d{2}):(\d{2}):(\d{2})\.(\d{2})')
+		libx264_log_settings = []
+		libx264_log = []
+		while True:
+			retcode = p.poll() #returns None while subprocess is running
+			#print p.stdout, p.stderr
+			ch = p.stdout.read(1)
+			if ch=='\r' or ch=='\n':
+				line = line.strip()
+				process_catched = False
+				if duration==None:
+					duration_re =  duration_re_compiled.search(line)
+					if duration_re:
+						duration = float(timeToMs(duration_re.groups()))
+				else:
+					#frame=  491 fps= 20 q=23.0 size=    2228kB time=00:00:18.01 bitrate=1013.0kbits/s dup=2 drop=0
+					time_re =  time_re_compiled.search(line)
+					process_catched = time_re<>None
+					if time_re:
+						time = timeToMs(time_re.groups()[0:4])
+						try:
+							if time>duration:
+								time = duration
+						except Exception, e:
+							p.kill()
+							raise e
+					if line[:len('[libx264')]=='[libx264':
+						if time==0:
+							libx264_log_settings.append(line)
+						else:
+							libx264_log.append(line)
+				s = ''
+				if STTNGS['vv']:
+					s = line
+				else:
+					if process_catched:
+						s = '  %.2f%% %s   '%(float(time)*100.0/float(duration), line)
+				if len(s):
+					sys.stdout.write(s+ch)
+				sys.stdout.flush()
+
+				#print line
+				line = ''
+			else:
+				line += ch
+			if retcode is not None and not STTNGS['vv']:
+				print
+				for l in libx264_log_settings:
+					print l
+				if len(libx264_log_settings)>0 and len(libx264_log):
+	 				print '--- h264 log ---'
+				for l in libx264_log:
+					print l
+				break
+		if retcode<>0:
+			print cmd
+			sys.exit()
+		return (retcode, libx264_log, libx264_log_settings)
+
+	def __exeCmd(self, cmd):
+		p = Popen(cmd, stdout=PIPE, stderr=STDOUT)
+		line = ''
+		retcode = 0
+		while True:
+			retcode = p.poll()
+			ch = p.stdout.read(1)
+			if ch=='\r' or ch=='\n':
+				#line = line.strip()
+				sys.stdout.write(line+ch)
+				line = ''
+			else:
+				line += ch
+			if retcode is not None and len(ch)==0:
+				break
+		if retcode<>0:
+			print cmd
+			sys.exit()
+		return retcode
+
+
 	def getLang(self, i, lng=None):
 		langs = STTNGS['lang'].split(':')
 		if len(langs)>i and langs[i]!='':
@@ -447,7 +550,7 @@ class Video2iDevice(object):
 					prms['tracknum'] = '%d'%track
 					prms['TVEpisodeNum'] = '%d'%track
 				if STTNGS.has_key('episodes_titles') and len(STTNGS['episodes_titles'])>(track-1):
-					title = '"%s"'%STTNGS['episodes_titles'][track-1].replace("`", '_')
+					title = '%s'%STTNGS['episodes_titles'][track-1].replace("`", '_')
 					#prms += ' --TVEpisode %s'%title
 					#prms += ' --title %s'%title
 					prms['TVEpisode'] = title
@@ -457,24 +560,30 @@ class Video2iDevice(object):
 					for option in atomicParsleyOptions:
 						if epInfo.has_key(option):
 							if option=='title':
-								prms['TVEpisode'] = ' "%s"'%epInfo[option]
-							prms[option] = ' "%s"'%epInfo[option]
+								prms['TVEpisode'] = '%s'%epInfo[option]
+							prms[option] = '%s'%epInfo[option]
 				else:
 					#prms += ' --TVEpisode "%s"'%fn
 					title = os.path.basename(fn)
 					title = os.path.splitext(title)[0]
-					prms['TVEpisode'] = '"%s"'%title
+					prms['TVEpisode'] = '%s'%title
 
-			#prms += ' --encodingTool "2iDevice.py (http://blog.derand.net)" --overWrite'
-			prms_str = ''
+			cmd = [AtomicParsley_path, fn, ]
 			for p in prms.keys():
-				if prms[p].find(' ')==-1 or (prms[p][0]=='\"' and prms[p][-1]=='\"' and prms[p].count('\"')==2):
-					prms_str += ' --%s %s'%(p, prms[p])
-				else:
-					prms_str += ' --%s "%s"'%(p, prms[p])
-			cmd = AtomicParsley_path + ' "%s" %s --overWrite'%(unicode(fn,'UTF-8'), unicode(prms_str, 'UTF-8'))
-			self.__printCmd(cmd.encode('utf-8'))
-			os.system(cmd.encode('utf-8'))
+				cmd.append('--%s'%p)
+				cmd.append(prms[p])
+			cmd.append('--overWrite')
+			self.__exeCmd(cmd)
+			###prms += ' --encodingTool "2iDevice.py (http://blog.derand.net)" --overWrite'
+			#prms_str = ''
+			#for p in prms.keys():
+			#	if prms[p].find(' ')==-1 or (prms[p][0]=='\"' and prms[p][-1]=='\"' and prms[p].count('\"')==2):
+			#		prms_str += ' --%s %s'%(p, prms[p])
+			#	else:
+			#		prms_str += ' --%s "%s"'%(p, prms[p])
+			#cmd = AtomicParsley_path + ' "%s" %s --overWrite'%(unicode(fn,'UTF-8'), unicode(prms_str, 'UTF-8'))
+			#self.__printCmd(cmd.encode('utf-8'))
+			#os.system(cmd.encode('utf-8'))
 
 	def buildFN(self, baseFN, convertFN):
 		rv = convertFN
@@ -510,9 +619,10 @@ class Video2iDevice(object):
 			if tr!=None:
 				if STTNGS.has_key('episodes_titles') and len(STTNGS['episodes_titles'])>(tr-1):
 					name = name.replace('[NAME]', STTNGS['episodes_titles'][tr-1])
-		cmd = 'mv "%s" "%s"'%(fn, name)
-		self.__printCmd(cmd)
-		os.system(cmd)
+		#cmd = 'mv "%s" "%s"'%(fn, name)
+		#self.__printCmd(cmd)
+		#os.system(cmd)
+		shutil.move(fn, name)
 
 	def sizeConvert(self, real1, real2, out1):
 		out2 = (real2*out1)/real1
@@ -546,7 +656,7 @@ class Video2iDevice(object):
 	def __videoFfmpegParamsCRF(self, fileName, _map, crf):
 		rv = self.__videoFfmpegParamsBase(fileName, _map)
 		add = ['-vcodec', 'libx264',
-			   '-crf', '%d'%crf]
+			   '-crf', '%s'%crf]
 		rv[len(rv):] = add
 		return rv
 
@@ -584,15 +694,18 @@ class Video2iDevice(object):
 		elif isMatroshkaMedia(fn) and hardsub_stream.params.has_key('mkvinfo_trackNumber'):
 			if hardsub_stream.format().upper()=='ASS' or hardsub_stream.format().upper()=='SSA':
 				ass_fn = '%s/%s.ass'%(STTNGS['temp_dir'], os.path.basename(fn), hardsub_stream.format().lower())
-				cmd = mkvtoolnix_path + 'mkvextract tracks "%s" %s:"%s"'%(fn, hardsub_stream.params['mkvinfo_trackNumber'], ass_fn)
-				self.__printCmd(cmd)
-				p = os.popen(cmd)
-				p.close()
+				#cmd = mkvtoolnix_path + 'mkvextract tracks "%s" %s:"%s"'%(fn, hardsub_stream.params['mkvinfo_trackNumber'], ass_fn)
+				#self.__printCmd(cmd)
+				#p = os.popen(cmd)
+				#p.close()
+				cmd = [mkvtoolnix_path + 'mkvextract', fn, '%s:%s'%(hardsub_stream.params['mkvinfo_trackNumber'], ass_fn)]
+				self.__exeCmd(cmd)
 		else:
 			# TODO: there can be added other subtitle format
 			return None
 
 		ass_fn = add_separator_to_filepath(ass_fn)
+		#ass_fn = ass_fn.replace('(', '\\(').replace(')', '\\)').replace(' ', '\\ ').replace('[', '\\[').replace(']', '\\]')
 		return ass_fn
 
 
@@ -641,7 +754,7 @@ class Video2iDevice(object):
 		else:
 			if stream.params.has_key('extended'):
 				if stream.params['extended'].has_key('crf'):
-					crf = int(stream.params['extended']['crf'])
+					crf = stream.params['extended']['crf']
 		if crf<>0:
 			passes = [0]
 
@@ -662,14 +775,14 @@ class Video2iDevice(object):
 				if  crf<>0:
 					'CRF mode'
 					ffmpeg_params = self.__videoFfmpegParamsCRF(iFile, stream.trackID, crf)
-					ffmpeg_params_add = ['-s', '"%dx%d"'%(_w,_h),
+					ffmpeg_params_add = ['-s', '%dx%d'%(_w,_h),
 										 '-refs', '%d'%STTNGS['refs'],
 										 '-threads', '%d'%STTNGS['threads']]
 				else:
 					'PASSES mode'
 					ffmpeg_params = self.__videoFfmpegParamsPasses(iFile, stream.trackID, _pass)
 					ffmpeg_params_add = ['-b:v', '"%d k"'%STTNGS['b'],
-										 '-s', '"%dx%d"'%(_w,_h),
+										 '-s', '%dx%d'%(_w,_h),
 										 '-maxrate', '"%d k"'%STTNGS['b'],
 										 '-bufsize', '"%d k"'%int(STTNGS['b']*2.5),
 										 '-refs', '%d'%STTNGS['refs'],
@@ -702,10 +815,9 @@ class Video2iDevice(object):
 				#	ffmpeg_params_add[len(ffmpeg_params_add):] = os_ffmpeg_prms
 				if len(hardsub_streams)==1:
 					hardsub_stream = hardsub_streams[0]
-					print hardsub_stream
 					ass_fn = self.__prepareHardsubFile(hardsub_stream)
 					if ass_fn!=None:
-						ffmpeg_params_add[len(ffmpeg_params_add):] = ['-vf', 'ass="%s"'%ass_fn]
+						ffmpeg_params_add[len(ffmpeg_params_add):] = ['-vf', 'ass=%s'%ass_fn]
 					else:
 						print 'Can\'t set stream', hardsub_stream, 'as hardsub.'
 						sys.exit(1)
@@ -726,8 +838,9 @@ class Video2iDevice(object):
 			cmd = ffmpeg_path + ' ' + ' '.join(ffmpeg_params)
 			self.__printCmd(cmd)
 			if STTNGS['vc']:
-				p = os.popen(cmd)
-				p.close()
+				self.__exeFfmpegCmd(ffmpeg_params)
+				#p = os.popen(cmd)
+				#p.close()
 
 				if not copyFlag and len(passes)>1:
 					d = 'pass%d'%_pass
@@ -774,7 +887,7 @@ class Video2iDevice(object):
 		return rv
 
 	def __audioFfmpegParamsTmpAc3(self, filename, _map, _ab, _ar, _threads):
-		rv = self.__audioFfmpegParamsBase(fileName, _map)
+		rv = self.__audioFfmpegParamsBase(filename, _map)
 		rv[len(rv):] = ['-acodec', 'ac3',
 						'-ac', '6',
 						'-ab', '%dk'%_ab,
@@ -830,22 +943,30 @@ class Video2iDevice(object):
 		cmd = ffmpeg_path + ' ' + ' '.join(ffmpeg_params)
 		self.__printCmd(cmd)
 		if STTNGS['ac']:
-			p = os.popen(cmd)
-			if p.close() is not None:
+			#p = os.popen(cmd)
+			#if p.close() is not None:
+			if self.__exeFfmpegCmd(ffmpeg_params)[0]<>0:
 				#cmd = ffmpeg_path + ' -y -i "%s" -map %s -vn -acodec ac3 -ab 448k  -ar %d  -ac 6 -threads %d ./tmp.ac3'%(iFile, stream[1], ar, STTNGS['threads'])
 				tmp_fn = '%s/tmp.ac3'%STTNGS['temp_dir']
 				ffmpeg_params = self.__audioFfmpegParamsTmpAc3(iFile, stream.trackID, 448, ar, STTNGS['threads'])
 				ffmpeg_params.append('"%s"'%tmp_fn)
 				cmd = ffmpeg_path + ' ' + ' '.join(ffmpeg_params)
 				self.__printCmd(cmd)
-				p = os.popen(cmd)
-				p.close()
+				#p = os.popen(cmd)
+				#p.close()
+				self.__exeFfmpegCmd(ffmpeg_params)
 					
 				#cmd = ffmpeg_path + ' -y -i ./tmp.ac3 -vn -acodec libfaac -ab %dk  -ar %d  -ac 2 -threads %d %s "%s"'%(ab, ar, STTNGS['threads'], add_params, oFile)
 				ffmpeg_params = ffmpeg_params_add
-				idx = ffmpeg_params.index('-i')
+				try:
+					idx = ffmpeg_params.index('-i')
+				except Exception, e:
+					raise e
 				ffmpeg_params[idx+1] = '"%s"'%tmp_fn
-				idx = ffmpeg_params.index('-map')
+				try:
+					idx = ffmpeg_params.index('-map')
+				except Exception, e:
+					raise e
 				del ffmpeg_params[idx:idx+2]
 				ffmpeg_params.append('"%s"'%oFile)
 
@@ -854,8 +975,9 @@ class Video2iDevice(object):
 
 				cmd = ffmpeg_path + ' ' + ' '.join(ffmpeg_params)
 				self.__printCmd(cmd)
-				p = os.popen(cmd)
-				p.close()
+				#p = os.popen(cmd)
+				#p.close()
+				self.__exeFfmpegCmd(ffmpeg_params)
 					
 				os.remove(tmp_fn)
 
@@ -889,8 +1011,8 @@ class Video2iDevice(object):
 			#cmd = mp4box_path + ' -raw %d \"%s\"'%(track_id, tmpFile) # or can use -single instead of -raw
 			cmd = mp4box_path + ' -single %d \"%s\"'%(track_id, tmpFile) # or can use -single instead of -raw
 			self.__printCmd(cmd)
-			p = os.popen(cmd)
-			p.close()
+			cmd = [mp4box_path, '-single', '%d'%track_id, tmpFile]
+			self.__exeCmd(cmd)
 			os.unlink(tmpFile)
 
 			fileName, fileExtension = os.path.splitext(tmpFile)
@@ -900,33 +1022,47 @@ class Video2iDevice(object):
 			if isMatroshkaMedia(iFile) and stream.params.has_key('mkvinfo_trackNumber'):
 				if stream.format().upper()=='ASS' or stream.format().upper()=='SSA':
 					assFileName = oFile+'.ass'
-					cmd = mkvtoolnix_path + 'mkvextract tracks "%s" %s:"%s"'%(iFile, stream.params['mkvinfo_trackNumber'], assFileName)
-					self.__printCmd(cmd)
+					#cmd = mkvtoolnix_path + 'mkvextract tracks "%s" %s:"%s"'%(iFile, stream.params['mkvinfo_trackNumber'], assFileName)
+					#self.__printCmd(cmd)
 					if STTNGS['sc']:
-						p = os.popen(cmd)
-						p.close()
+						#p = os.popen(cmd)
+						#p.close()
+						cmd = [mkvtoolnix_path + 'mkvextract', 'tracks', iFile, '%s:%s'%(stream.params['mkvinfo_trackNumber'], assFileName)]
+						self.__exeCmd(cmd)
 						sConverter = subConverter(STTNGS)
 						sConverter.ass2ttxt(assFileName, oFile, prms)
 						if STTNGS['ctf']:
 							os.unlink(assFileName)
 				else: # TODO: on mkv-files can be and other type's of subtitile
 					strFileName = oFile+'.srt'
-					cmd = mkvtoolnix_path + 'mkvextract tracks "%s" %s:"%s"'%(iFile, stream.params['mkvinfo_trackNumber'], strFileName)
-					self.__printCmd(cmd)
+					#cmd = mkvtoolnix_path + 'mkvextract tracks "%s" %s:"%s"'%(iFile, stream.params['mkvinfo_trackNumber'], strFileName)
+					#self.__printCmd(cmd)
 					if STTNGS['sc']:
-						p = os.popen(cmd)
-						p.close()
+						#p = os.popen(cmd)
+						#p.close()
+						cmd = [mkvtoolnix_path + 'mkvextract', 'tracks', iFile, '%s:%s'%(stream.params['mkvinfo_trackNumber'], strFileName)]
+						self.__exeCmd(cmd)
 						sConverter = subConverter(STTNGS)
 						sConverter.srt2ttxt(strFileName, oFile)
 						if STTNGS['ctf']:
 							os.unlink(strFileName)
 			else:
 				tmpName = iFile.split('/')[-1]+'_%s.srt'%stream.trackID
-				cmd = ffmpeg_path + ' -y -i "%s" -map %s -an -vn -sbsf mov2textsub -scodec copy "%s"'%(iFile, stream.trackID, tmpName)
+				#cmd = ffmpeg_path + ' -y -i "%s" -map %s -an -vn -sbsf mov2textsub -scodec copy "%s"'%(iFile, stream.trackID, tmpName)
+				ffmpeg_params = ['-y',
+								'-i', '"%s"'%iFile,
+								'-map', stream.trackID,
+								'-an',
+								'-vn',
+								'-sbsf', 'mov2textsub',
+								'-scodec', 'copy',
+								tmpName]
+				cmd = ffmpeg_path + ' ' + ' '.join(ffmpeg_params)
 				self.__printCmd(cmd)
 				if STTNGS['sc']:
-					p = os.popen(cmd)
-					p.close()
+					#p = os.popen(cmd)
+					#p.close()
+					self.__exeFfmpegCmd(ffmpeg_params)
 					sConverter = subConverter(STTNGS)
 					sConverter.ass2ttxt(tmpName, oFile)
 					if STTNGS['ctf']:
@@ -1115,6 +1251,7 @@ class Video2iDevice(object):
 		if STTNGS['vv']:
 			print
 		info =  self.tagTrackInfo(name)
+		cmd = [mp4box_path, ]
 		for f in files:
 			def trackDelay(trackID):
 				key = 'delay%d'%trackID	
@@ -1143,7 +1280,7 @@ class Video2iDevice(object):
 					(l, currentTrackIdx) = self.getLang(currentTrackIdx, stream.language)
 			else:
 				(l, currentTrackIdx) = self.getLang(currentTrackIdx)
-			addCmd2 += ' -add "%s":lang=%s'%(f[1], l,)
+			addCmd2 = '%s:lang=%s'%(f[1], l,)
 			#addCmd2 += ' -add "%s":lang=%s'%(string.replace(f[1], '0.0', '0:0'), l,)
 			if delay!=0:
 				addCmd2 += ':delay=%d'%delay
@@ -1161,12 +1298,17 @@ class Video2iDevice(object):
 				addCmd2 += se
 				se = ':disable'
 			trackID+=1
+			cmd.append('-add')
+			cmd.append(addCmd2)
 
 		name = STTNGS['temp_dir']+'/'+'.'.join(os.path.basename(fi.filename).split('.')[:-1])+'.'+STTNGS['format']
-		cmd = mp4box_path + ' %s "%s" -new'%(addCmd2, name)
-		self.__printCmd(cmd)
-		p = os.popen(cmd)
-		p.close()
+		cmd.append(name)
+		cmd.append('-new')
+		#cmd = mp4box_path + ' %s "%s" -new'%(addCmd2, name)
+		#self.__printCmd(cmd)
+		#p = os.popen(cmd)
+		#p.close()
+		self.__exeCmd(cmd)
 
 		self.iTagger(name)
 
@@ -1201,10 +1343,12 @@ class Video2iDevice(object):
 			filename = self.encodeMedia(fi)
 
 		if STTNGS['web_optimization']:
-			cmd = mp4box_path + ' -inter 500 "%s"'%filename
-			self.__printCmd(cmd)
-			p = os.popen(cmd)
-			p.close()
+			#cmd = mp4box_path + ' -inter 500 "%s"'%filename
+			#self.__printCmd(cmd)
+			#p = os.popen(cmd)
+			#p.close()
+			cmd = [mp4box_path, '-inter', '500', filename]
+			self.__exeCmd(cmd)
 
 		self.rename(filename)
 

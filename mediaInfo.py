@@ -10,6 +10,7 @@ import xml.parsers.expat
 import re
 import fileCoding
 import math
+from subprocess import Popen, PIPE, STDOUT
 
 from constants import LANGUAGES_DICT
 
@@ -19,7 +20,7 @@ def add_separator_to_filepath(filepath):
 		I feel this function can be looks better
 	'''
 	return filepath.replace('\\', '\\\\').replace(' ', '\\ ').replace('(', '\\(').replace(')', '\\)').replace('[', '\\[').replace(']',
-							      '\\]').replace('&', '\\&').replace("\"", "\\\"")
+							      '\\]').replace('&', '\\&').replace('"', '\\"')
 
 def isMatroshkaMedia(file_name):
 	_, file_ext = os.path.splitext(file_name)
@@ -222,10 +223,13 @@ class MediaInformer:
 		#rv['informer'] = 'ffmpeg'
 		searchString = 'Stream #'
 		streams = []
-		arr = [self.__ffmpeg_path, '-i', filename, '2>&1']
-		p = os.popen(self.__ffmpeg_path + ' -i \"%s\" 2>&1'%filename)
+		cmd = [self.__ffmpeg_path, '-i', filename]
+		#p = os.popen(self.__ffmpeg_path + ' -i \"%s\" 2>&1'%filename)
+		p = Popen(cmd, stdout=PIPE, stderr=STDOUT)
 		streamTypes = ['Video:', 'Audio:', 'Subtitle:']
-		for line in p.readlines():
+		while True:
+			retcode = p.poll()
+			line = p.stdout.readline()
 			if line.find(searchString)>-1:
 				l = line[line.find(searchString)+len(searchString):-1]
 				tp = -1
@@ -287,10 +291,14 @@ class MediaInformer:
 					info = l.split(', ')
 					prms['codec'] = info[0]
 				else:
-					continue
+					#continue
+					pass
 
 				#streams.append([tp, name, lng, prms, ])
-				streams.append(cStream(tp, name, lng, prms))
+				if tp in range(4):
+					streams.append(cStream(tp, name, lng, prms))
+			if retcode is not None and len(line)==0:
+				break
 		i = len(streams)
 		while i>0:
 			if streams[i-1].type<>3:# or streams[i-1].params['codec']!='mjpeg':
@@ -298,7 +306,7 @@ class MediaInformer:
 			i = i-1
 		if i>0 and i<>len(streams):
 			streams = streams[:i]
-		p.close()
+		#p.close()
 		#rv['streams'] = streams
 		rv.streams = streams
 		return rv
@@ -309,14 +317,19 @@ class MediaInformer:
 
 		if filename!=None:
 			searchString = 'Stream #'
-			p = os.popen(self.__ffmpeg_path + ' -i "%s" 2>&1'%filename)
+			#p = os.popen(self.__ffmpeg_path + ' -i "%s" 2>&1'%filename)
+			cmd = [self.__ffmpeg_path, '-i', filename]
+			p = Popen(cmd, stdout=PIPE, stderr=STDOUT)
 			rv = '+'
-			for line in p.readlines():
+			while True:
+				retcode = p.poll()
+				line = p.stdout.readline()
 				if line.find(searchString)>-1:
 					#l = line[line.find(searchString)+len(searchString):-1]
 					rv = line[line.find(searchString)+len(searchString)+1]
 					break
-			p.close()
+				if retcode is not None and len(line)==0:
+					break
 			if rv=='+': rv = ':'
 			self.__map_stream_separated_symbol = rv
 		return self.__map_stream_separated_symbol
@@ -341,9 +354,12 @@ class MediaInformer:
 		lang = None
 		prms = {}
 		trackNumber = 0
-		p = os.popen(self.__mkvtoolnix_path + 'mkvinfo "%s" 2>&1'%filename)
-		for line in p.readlines():
-			line = line[:-1]
+		#p = os.popen(self.__mkvtoolnix_path + 'mkvinfo "%s" 2>&1'%filename)
+		cmd = [self.__mkvtoolnix_path + 'mkvinfo', filename]
+		p = Popen(cmd, stdout=PIPE, stderr=STDOUT)
+		while True:
+			retcode = p.poll()
+			line = p.stdout.readline()
 			if len(line)>2 and line[:2]=='|+':
 				val = line[2:].strip()
 				inTrackSegment = (val=='Segment tracks')
@@ -401,7 +417,9 @@ class MediaInformer:
 						prms['dwidth'] = int(val)
 					elif key=='Display height':
 						prms['dheight'] = int(val)
-		p.close()
+
+			if retcode is not None and len(line)==0:
+				break
 		if streamType!=None:
 			if lang==None:
 				lang = 'und'
@@ -499,11 +517,16 @@ class MediaInformer:
 
 		#print self.__mediainfo_path + ' "%s" --Output=XML'%filename
 		#os.environ['PYTHONIOENCODING'] = 'utf-8'
-		p = os.popen(self.__mediainfo_path + ' "%s" --Output=XML'%filename)
+		#p = os.popen(self.__mediainfo_path + ' "%s" --Output=XML'%filename)
+		cmd = [self.__mediainfo_path, filename, '--Output=XML']
+		p = Popen(cmd, stdout=PIPE)
 		data = ''
-		for line in p.readlines():
+		while True:
+			retcode = p.poll()
+			line = p.stdout.readline()
 			data = data + line
-		p.close()
+			if retcode is not None and len(line)==0:
+				break
 
 		#print '---start---'
 		#print data
@@ -622,11 +645,14 @@ class MediaInformer:
 
 	def __readTags(self, filename):
 		rv = {}
-		p = os.popen(self.__atomicParsley_path + ' \"%s\" -t'%filename)
+		#p = os.popen(self.__atomicParsley_path + ' \"%s\" -t'%filename)
+		cmd = [self.__atomicParsley_path, filename, '-t']
+		p = Popen(cmd, stdout=PIPE, stderr=STDOUT)
 		key = None
 		val = ''
-		for line in p.readlines():
-			line = line
+		while True:
+			retcode = p.poll()
+			line = p.stdout.readline()
 			srch = re.compile('Atom \"(.{4,5})\"').search(line)
 			if srch!=None:
 				if key!=None:
@@ -639,9 +665,10 @@ class MediaInformer:
 						key = srch.groups()[0]
 			else:
 				val += line
+			if retcode is not None and len(line)==0 and len(line)==0:
+				break
 		if key!=None:
 			rv[key] = val[:-1]
-		p.close()
 
 		convert_dictionary = {
 		'©art': 'artist',
@@ -702,12 +729,18 @@ class MediaInformer:
 		if ap_params.has_key('artwork'):
 			name = '.'.join(os.path.basename(filename).split('.')[:-1])
 			fname = '%s/%s'%(self.artwork_path, name)
-			p = os.popen(self.__atomicParsley_path + ' \"%s\" -e \"%s\"'%(filename, fname))
-			for line in p.readlines():
+			#p = os.popen(self.__atomicParsley_path + ' \"%s\" -e \"%s\"'%(filename, fname))
+			cmd = [self.__atomicParsley_path, filename, '-e', fname]
+			p = Popen(cmd, stdout=PIPE, stderr=STDOUT)
+			while True:
+				retcode = p.poll()
+				line = p.stdout.readline()
 				if line.find('Extracted artwork to file:')!=-1:
 					ap_params['artwork'] = line[line.find(':')+1:].strip()
+					p.kill()
 					break
-			p.close()
+				if retcode is not None and len(line)==0:
+					break
 
 		return ap_params
 
@@ -718,7 +751,7 @@ if __name__=='__main__':
 	mediainfo_path = 'mediainfo'
 	atomicParsley_path = 'AtomicParsley'
 	if sys.platform == 'darwin':
-		script_dir = add_separator_to_filepath(os.path.dirname(os.path.realpath(__file__)))
+		script_dir = os.path.dirname(os.path.realpath(__file__))
 		ffmpeg_path = script_dir + '/binary/ffmpeg'
 		mkvtoolnix_path = script_dir + '/binary/mkvtoolnix/'
 		mediainfo_path = script_dir + '/binary/mediainfo'
