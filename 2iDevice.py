@@ -698,7 +698,7 @@ class Video2iDevice(object):
 				#self.__printCmd(cmd)
 				#p = os.popen(cmd)
 				#p.close()
-				cmd = [mkvtoolnix_path + 'mkvextract', fn, '%s:%s'%(hardsub_stream.params['mkvinfo_trackNumber'], ass_fn)]
+				cmd = [mkvtoolnix_path + 'mkvextract', 'tracks', fn, '%s:%s'%(hardsub_stream.params['mkvinfo_trackNumber'], ass_fn)]
 				self.__exeCmd(cmd)
 		else:
 			# TODO: there can be added other subtitle format
