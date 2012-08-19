@@ -693,7 +693,7 @@ class Video2iDevice(object):
 			shutil.copyfile(fn, ass_fn)
 		elif isMatroshkaMedia(fn) and hardsub_stream.params.has_key('mkvinfo_trackNumber'):
 			if hardsub_stream.format().upper()=='ASS' or hardsub_stream.format().upper()=='SSA':
-				ass_fn = '%s/%s.ass'%(STTNGS['temp_dir'], os.path.basename(fn), hardsub_stream.format().lower())
+				ass_fn = '%s/%s.%s'%(STTNGS['temp_dir'], os.path.basename(fn), hardsub_stream.format().lower())
 				#cmd = mkvtoolnix_path + 'mkvextract tracks "%s" %s:"%s"'%(fn, hardsub_stream.params['mkvinfo_trackNumber'], ass_fn)
 				#self.__printCmd(cmd)
 				#p = os.popen(cmd)
