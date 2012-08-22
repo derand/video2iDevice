@@ -106,6 +106,7 @@ Global options:
 	-ffmpeg_coding_params	[str]	add ffmpeg params for video/audio coding (set's for selected stream)
 	-json_pipe		set all params by JSON array [] in pipe, this should be only one param on parameters
 	-web_optimization	[int]	optimization result file to streaming (0 - disabled, another - enabled(default))
+	-stream_prefix	[str]	stream percentage prefix (shows when converting stream)
 
 Video options:
 	-vfile		[str]	set video filename. If not set try search in current dir. 
@@ -312,6 +313,10 @@ class Video2iDevice(object):
 						tmp[-1][-1][ckey] = shlex.split(el)
 				elif ckey=='web_optimization':
 					STTNGS[ckey] = el<>'0'
+				elif ckey=='stream_prefix':
+					tmp = STTNGS['fadd']
+					if len(tmp)>0:
+						tmp[-1][-1][ckey] = el
 				else:
 					if STTNGS.has_key(ckey):
 						if type(STTNGS[ckey])==type([]):
@@ -381,7 +386,7 @@ class Video2iDevice(object):
 	def __printCmd(self, cmd):
 		print ': \033[1;32m%s\033[00m'%cmd
 
-	def __exeFfmpegCmd(self, params):
+	def __exeFfmpegCmd(self, params, percentagePrefix=None):
 		def timeToMs(hoursMinsSecMs_array):
 			hours = int(hoursMinsSecMs_array[0])
 			mins = int(hoursMinsSecMs_array[1])
@@ -440,7 +445,9 @@ class Video2iDevice(object):
 					s = line
 				else:
 					if process_catched:
-						s = '  %.2f%% %s   '%(float(time)*100.0/float(duration), line)
+						if percentagePrefix<>None:
+							s = percentagePrefix
+						s += '  %.2f%% %s   '%(float(time)*100.0/float(duration), line)
 				if len(s):
 					sys.stdout.write(s+ch)
 				sys.stdout.flush()
@@ -838,7 +845,10 @@ class Video2iDevice(object):
 			cmd = ffmpeg_path + ' ' + ' '.join(ffmpeg_params)
 			self.__printCmd(cmd)
 			if STTNGS['vc']:
-				self.__exeFfmpegCmd(ffmpeg_params)
+				stream_prefix = None
+				if stream.params['extended'].has_key('stream_prefix'):
+					stream_prefix = stream.params['extended']['stream_prefix']
+				self.__exeFfmpegCmd(ffmpeg_params, stream_prefix)
 				#p = os.popen(cmd)
 				#p.close()
 
@@ -943,9 +953,12 @@ class Video2iDevice(object):
 		cmd = ffmpeg_path + ' ' + ' '.join(ffmpeg_params)
 		self.__printCmd(cmd)
 		if STTNGS['ac']:
+			stream_prefix = None
+			if stream.params['extended'].has_key('stream_prefix'):
+				stream_prefix = stream.params['extended']['stream_prefix']
 			#p = os.popen(cmd)
 			#if p.close() is not None:
-			if self.__exeFfmpegCmd(ffmpeg_params)[0]<>0:
+			if self.__exeFfmpegCmd(ffmpeg_params, stream_prefix)[0]<>0:
 				#cmd = ffmpeg_path + ' -y -i "%s" -map %s -vn -acodec ac3 -ab 448k  -ar %d  -ac 6 -threads %d ./tmp.ac3'%(iFile, stream[1], ar, STTNGS['threads'])
 				tmp_fn = '%s/tmp.ac3'%STTNGS['temp_dir']
 				ffmpeg_params = self.__audioFfmpegParamsTmpAc3(iFile, stream.trackID, 448, ar, STTNGS['threads'])
@@ -954,7 +967,7 @@ class Video2iDevice(object):
 				self.__printCmd(cmd)
 				#p = os.popen(cmd)
 				#p.close()
-				self.__exeFfmpegCmd(ffmpeg_params)
+				self.__exeFfmpegCmd(ffmpeg_params, stream_prefix)
 					
 				#cmd = ffmpeg_path + ' -y -i ./tmp.ac3 -vn -acodec libfaac -ab %dk  -ar %d  -ac 2 -threads %d %s "%s"'%(ab, ar, STTNGS['threads'], add_params, oFile)
 				ffmpeg_params = ffmpeg_params_add
@@ -977,7 +990,7 @@ class Video2iDevice(object):
 				self.__printCmd(cmd)
 				#p = os.popen(cmd)
 				#p.close()
-				self.__exeFfmpegCmd(ffmpeg_params)
+				self.__exeFfmpegCmd(ffmpeg_params, stream_prefix)
 					
 				os.remove(tmp_fn)
 
@@ -1060,9 +1073,12 @@ class Video2iDevice(object):
 				cmd = ffmpeg_path + ' ' + ' '.join(ffmpeg_params)
 				self.__printCmd(cmd)
 				if STTNGS['sc']:
+					stream_prefix = None
+					if stream.params['extended'].has_key('stream_prefix'):
+						stream_prefix = stream.params['extended']['stream_prefix']
+					self.__exeFfmpegCmd(ffmpeg_params, stream_prefix)
 					#p = os.popen(cmd)
 					#p.close()
-					self.__exeFfmpegCmd(ffmpeg_params)
 					sConverter = subConverter(STTNGS)
 					sConverter.ass2ttxt(tmpName, oFile)
 					if STTNGS['ctf']:
