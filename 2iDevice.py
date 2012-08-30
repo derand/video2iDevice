@@ -407,6 +407,9 @@ class Video2iDevice(object):
 		time_re_compiled = re.compile('.*time=\s*(\d{2}):(\d{2}):(\d{2})\.(\d{2})')
 		libx264_log_settings = []
 		libx264_log = []
+
+		tmp_process_catched = False
+		tmp_line = None
 		while True:
 			retcode = p.poll() #returns None while subprocess is running
 			#print p.stdout, p.stderr
@@ -436,16 +439,22 @@ class Video2iDevice(object):
 						else:
 							libx264_log.append(line)
 				s = ''
+				line = line+ch
 				if STTNGS['vv']:
 					s = line
 				else:
 					if process_catched:
 						s = '  %.2f%% %s   '%(float(time)*100.0/float(duration), line)
+					elif tmp_process_catched:
+						s = '  %.2f%% %s   '%(float(duration)*100.0/float(duration), tmp_line)
 				if len(s):
-					sys.stdout.write(s+ch)
+					sys.stdout.write(s)
 				sys.stdout.flush()
-
 				#print line
+				
+				tmp_process_catched = process_catched
+				tmp_line = line
+
 				line = ''
 			else:
 				line += ch
