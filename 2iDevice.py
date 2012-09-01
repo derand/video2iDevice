@@ -411,7 +411,7 @@ class Video2iDevice(object):
 
 	def __printCmd(self, cmd):
 		print ': \033[1;32m%s\033[00m'%cmd
-		self.log.put(': %s\n'%cmd)
+		self.log.put('\n: \033[1;32m%s\033[00m\n'%cmd)
 
 	def __exeFfmpegCmd(self, params, percentagePrefix=None):
 		def timeToMs(hoursMinsSecMs_array):
@@ -428,6 +428,13 @@ class Video2iDevice(object):
 				cmd.append(prm[1:-1])
 			else:
 				cmd.append(prm)
+		cmd_str = add_separator_to_filepath(cmd[0])
+		for i in range(1,len(cmd)):
+			if cmd[i].find(' ')==-1:
+				cmd_str += ' %s'%cmd[i]
+			else:
+				cmd_str += ' "%s"'%cmd[i]
+		self.__printCmd(cmd_str)
 		#cmd = ['/Users/maliy/work/Video to iDevice/video2iDevice/binary/ffmpeg', '-y', '-i', '/Users/maliy/Movies/Ga-Rei Zero/Ga-Rei Zero - 04 (BDRip H264 1280x720)_0_30.mp4', '-map', '0:0', '-an', '-vcodec', 'libx264', '-crf', '18.2', '-s', '1280x720', '-refs', '6', '-threads', '4', '-partitions', '+parti4x4+parti8x8+partp4x4+partp8x8+partb8x8', '-subq', '12', '-trellis', '1', '-coder', '1', '-me_range', '32', '-level', '4.1', '-profile:v', 'high', '-bf', '12', '-r', '23.976', '/tmp/VideoToIDevice/Ga-Rei Zero - 04 (BDRip H264 1280x720)_0_30.mp4_0:0.mp4']
 		#cmd = ['/Users/maliy/work/Video to iDevice/video2iDevice/binary/ffmpeg', '-y', '-i', '/Users/maliy/Movies/Hatsune Miku & Megurine Luka – 39′s Giving Day.m4v', '-map', '0:0', '-an', '-vcodec', 'libx264', '-crf', '18', '-s', '1280x720', '-refs', '6', '-threads', '4', '-partitions', '+parti4x4+parti8x8+partp4x4+partp8x8+partb8x8', '-subq', '12', '-trellis', '1', '-coder', '1', '-me_range', '32', '-level', '4.1', '-profile:v', 'high', '-bf', '12', '-r', '23.976', '/tmp/VideoToIDevice/Ga-Rei Zero - 04 (BDRip H264 1280x720)_0_30.mp4_0:0.mp4']
 		p = Popen(cmd, stdout=PIPE, stderr=STDOUT)
@@ -486,11 +493,14 @@ class Video2iDevice(object):
 				if len(s):
 					sys.stdout.write(s+ch)
 					sys.stdout.flush()
-				self.log.put(line+ch)
+				if ch=='\n':
+					if tmp_line<>None and tmp_line[-1]=='\r':
+						self.log.put(tmp_line)
+					self.log.put(line+ch)
 				#print line
 				
 				tmp_process_catched = process_catched
-				tmp_line = line
+				tmp_line = line+ch
 
 				line = ''
 			else:
@@ -510,8 +520,16 @@ class Video2iDevice(object):
 		return (retcode, libx264_log, libx264_log_settings)
 
 	def __exeCmd(self, cmd):
+		cmd_str = add_separator_to_filepath(cmd[0])
+		for i in range(1,len(cmd)):
+			if cmd[i].find(' ')==-1:
+				cmd_str += ' %s'%cmd[i]
+			else:
+				cmd_str += ' "%s"'%cmd[i]
+		self.__printCmd(cmd_str)
 		p = Popen(cmd, stdout=PIPE, stderr=STDOUT)
 		line = ''
+		tmp_line = None
 		retcode = 0
 		while True:
 			retcode = p.poll()
@@ -519,6 +537,11 @@ class Video2iDevice(object):
 			if ch=='\r' or ch=='\n':
 				#line = line.strip()
 				sys.stdout.write(line+ch)
+				if ch=='\n':
+					if tmp_line<>None and tmp_line[-1]=='\r':
+						self.log.put(tmp_line)
+					self.log.put(line+ch)
+				tmp_line = line+ch
 				line = ''
 			else:
 				line += ch
@@ -881,8 +904,8 @@ class Video2iDevice(object):
 				ffmpeg_params = self.__mergeFfmpegParams(ffmpeg_params, stream.params['extended']['ffmpeg_coding_params'])
 
 			#cmd = '%s "%s"'%(cmd, oFile)
-			cmd = ffmpeg_path + ' ' + ' '.join(ffmpeg_params)
-			self.__printCmd(cmd)
+			#cmd = ffmpeg_path + ' ' + ' '.join(ffmpeg_params)
+			#self.__printCmd(cmd)
 			if STTNGS['vc']:
 				stream_prefix = None
 				if stream.params.has_key('extended') and stream.params['extended'].has_key('stream_prefix'):
@@ -989,8 +1012,8 @@ class Video2iDevice(object):
 			ffmpeg_params = self.__mergeFfmpegParams(ffmpeg_params, stream.params['extended']['ffmpeg_coding_params'])
 
 		#cmd = 'ffmpeg -y -i "%s" -map %s -vn -acodec copy -strict experimental "%s"'%(iFile, stream[1], oFile)
-		cmd = ffmpeg_path + ' ' + ' '.join(ffmpeg_params)
-		self.__printCmd(cmd)
+		#cmd = ffmpeg_path + ' ' + ' '.join(ffmpeg_params)
+		#self.__printCmd(cmd)
 		if STTNGS['ac']:
 			stream_prefix = None
 			if stream.params.has_key('extended') and stream.params['extended'].has_key('stream_prefix'):
@@ -1002,8 +1025,8 @@ class Video2iDevice(object):
 				tmp_fn = '%s/tmp.ac3'%STTNGS['temp_dir']
 				ffmpeg_params = self.__audioFfmpegParamsTmpAc3(iFile, stream.trackID, 448, ar, STTNGS['threads'])
 				ffmpeg_params.append('"%s"'%tmp_fn)
-				cmd = ffmpeg_path + ' ' + ' '.join(ffmpeg_params)
-				self.__printCmd(cmd)
+				#cmd = ffmpeg_path + ' ' + ' '.join(ffmpeg_params)
+				#self.__printCmd(cmd)
 				#p = os.popen(cmd)
 				#p.close()
 				self.__exeFfmpegCmd(ffmpeg_params, stream_prefix)
@@ -1025,8 +1048,8 @@ class Video2iDevice(object):
 				if stream.params.has_key('extended') and stream.params['extended'].has_key('ffmpeg_coding_params'):
 					ffmpeg_params = self.__mergeFfmpegParams(ffmpeg_params, stream.params['extended']['ffmpeg_coding_params'])
 
-				cmd = ffmpeg_path + ' ' + ' '.join(ffmpeg_params)
-				self.__printCmd(cmd)
+				#cmd = ffmpeg_path + ' ' + ' '.join(ffmpeg_params)
+				#self.__printCmd(cmd)
 				#p = os.popen(cmd)
 				#p.close()
 				self.__exeFfmpegCmd(ffmpeg_params, stream_prefix)
@@ -1061,8 +1084,8 @@ class Video2iDevice(object):
 			tmpFile = oFile+fileExtension
 			shutil.copyfile(iFile, tmpFile)
 			#cmd = mp4box_path + ' -raw %d \"%s\"'%(track_id, tmpFile) # or can use -single instead of -raw
-			cmd = mp4box_path + ' -single %d \"%s\"'%(track_id, tmpFile) # or can use -single instead of -raw
-			self.__printCmd(cmd)
+			#cmd = mp4box_path + ' -single %d \"%s\"'%(track_id, tmpFile) # or can use -single instead of -raw
+			#self.__printCmd(cmd)
 			cmd = [mp4box_path, '-single', '%d'%track_id, tmpFile]
 			self.__exeCmd(cmd)
 			os.unlink(tmpFile)
@@ -1109,8 +1132,8 @@ class Video2iDevice(object):
 								'-sbsf', 'mov2textsub',
 								'-scodec', 'copy',
 								tmpName]
-				cmd = ffmpeg_path + ' ' + ' '.join(ffmpeg_params)
-				self.__printCmd(cmd)
+				#cmd = ffmpeg_path + ' ' + ' '.join(ffmpeg_params)
+				#self.__printCmd(cmd)
 				if STTNGS['sc']:
 					stream_prefix = None
 					if stream.params.has_key('extended') and stream.params['extended'].has_key('stream_prefix'):
