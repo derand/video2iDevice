@@ -1400,8 +1400,10 @@ class Video2iDevice(object):
 
 		self.iTagger(name)
 
+		self.log.put('Fixing flags on result mpeg file...\n')
 		mpeg4fixer().fixFlagsAndSubs(name, STTNGS['fd'])
 
+		self.log.put('Setting streams name...\n')
 		trackNames = []
 		need = False
 		for f in files:
