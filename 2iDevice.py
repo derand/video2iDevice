@@ -107,6 +107,7 @@ Global options:
 	-json_pipe		set all params by JSON array [] in pipe, this should be only one param on parameters
 	-web_optimization	[int]	optimization result file to streaming (0 - disabled, another - enabled(default))
 	-stream_prefix	[str]	stream percentage prefix (shows when converting stream)
+	-log_file 		[srt]	set log file
 
 Video options:
 	-vfile		[str]	set video filename. If not set try search in current dir. 
@@ -194,11 +195,36 @@ else:
 
 
 
+class LogToFile(object):
+	"""docstring for LogToFile"""
+	def __init__(self):
+		super(LogToFile, self).__init__()
+		self.__log_file = None
+
+	def __del__(self):
+		self.releaseLog()
+
+	def put(self, text):
+		if self.__log_file<>None:
+			self.__log_file.write(text)
+
+	def initLogByFileName(self, logFileName):
+		self.releaseLog()
+		self.__log_file = open(logFileName, 'w')
+
+	def releaseLog(self):
+		if self.__log_file<>None:
+			self.__log_file.close()
+			self.__log_file = None
+
+
+
 class Video2iDevice(object):
 	"""docstring for Video2iDevice"""
 	def __init__(self):
 		super(Video2iDevice, self).__init__()
 		self.mediainformer = MediaInformer(ffmpeg_path, mkvtoolnix_path, mediainfo_path, AtomicParsley_path, STTNGS['temp_dir'])
+		self.log = LogToFile()
 
 	def getSettings(self, argv):
 		ckey = 'files'
@@ -382,9 +408,10 @@ class Video2iDevice(object):
 				else:
 					rv[key] = val
 		return rv
-		
+
 	def __printCmd(self, cmd):
 		print ': \033[1;32m%s\033[00m'%cmd
+		self.log.put(': %s\n'%cmd)
 
 	def __exeFfmpegCmd(self, params, percentagePrefix=None):
 		def timeToMs(hoursMinsSecMs_array):
@@ -458,7 +485,8 @@ class Video2iDevice(object):
 						s += '  %.2f%% %s   '%(float(duration)*100.0/float(duration), tmp_line)
 				if len(s):
 					sys.stdout.write(s+ch)
-				sys.stdout.flush()
+					sys.stdout.flush()
+				self.log.put(line+ch)
 				#print line
 				
 				tmp_process_catched = process_catched
@@ -1451,6 +1479,9 @@ if __name__=='__main__':
 	#print STTNGS['subStyleColors']
 	converter.getSettings(argv)
 
+	if STTNGS.has_key('log_file'):
+		converter.log.initLogByFileName(STTNGS['log_file'])
+
 	if not STTNGS.has_key('threads'):
 		STTNGS['threads'] = os.sysconf('SC_NPROCESSORS_CONF')
 
@@ -1486,3 +1517,6 @@ if __name__=='__main__':
 	tm = time.time()-startTime
 	if not (STTNGS.has_key('info') and not STTNGS['vv']):
 		print 'time %02d:%02d:%02d'%(tm/60/60, tm%(60*60)/60, tm%60)
+
+	converter.log.releaseLog()
+
