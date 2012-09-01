@@ -857,7 +857,7 @@ class Video2iDevice(object):
 			self.__printCmd(cmd)
 			if STTNGS['vc']:
 				stream_prefix = None
-				if stream.params['extended'].has_key('stream_prefix'):
+				if stream.params.has_key('extended') and stream.params['extended'].has_key('stream_prefix'):
 					stream_prefix = stream.params['extended']['stream_prefix']
 				self.__exeFfmpegCmd(ffmpeg_params, stream_prefix)
 				#p = os.popen(cmd)
