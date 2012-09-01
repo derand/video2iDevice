@@ -204,9 +204,15 @@ class LogToFile(object):
 	def __del__(self):
 		self.releaseLog()
 
-	def put(self, text):
+	def put(self, text, flush=True):
 		if self.__log_file<>None:
 			self.__log_file.write(text)
+			if flush:
+				self.flush()
+
+	def flush(self):
+		if self.__log_file<>None:
+			self.__log_file.flush()		
 
 	def initLogByFileName(self, logFileName):
 		self.releaseLog()
@@ -411,7 +417,7 @@ class Video2iDevice(object):
 
 	def __printCmd(self, cmd):
 		print ': \033[1;32m%s\033[00m'%cmd
-		self.log.put('\n: \033[1;32m%s\033[00m\n'%cmd)
+		self.log.put('\n: \033[1;32m%s\033[00m\n'%cmd, True)
 
 	def __exeFfmpegCmd(self, params, percentagePrefix=None):
 		def timeToMs(hoursMinsSecMs_array):
@@ -495,8 +501,8 @@ class Video2iDevice(object):
 					sys.stdout.flush()
 				if ch=='\n':
 					if tmp_line<>None and tmp_line[-1]=='\r':
-						self.log.put(tmp_line)
-					self.log.put(line+ch)
+						self.log.put(tmp_line, False)
+					self.log.put(line+ch, True)
 				#print line
 				
 				tmp_process_catched = process_catched
@@ -539,8 +545,8 @@ class Video2iDevice(object):
 				sys.stdout.write(line+ch)
 				if ch=='\n':
 					if tmp_line<>None and tmp_line[-1]=='\r':
-						self.log.put(tmp_line)
-					self.log.put(line+ch)
+						self.log.put(tmp_line, False)
+					self.log.put(line+ch, True)
 				tmp_line = line+ch
 				line = ''
 			else:
@@ -1222,14 +1228,14 @@ class Video2iDevice(object):
 			if stream.params.has_key('extended') and stream.params['extended'].has_key('hardsub'):
 				stream.params['filename'] = fi.filename
 				hardsub_stream.append(stream)
-			self.log.put(fi.dump())
+			self.log.put(fi.dump(), True)
 		for fadd in STTNGS['fadd']:
 			stream = self.__streamFromFAdd(fadd, fi)
 			if stream.params.has_key('extended') and stream.params['extended'].has_key('hardsub'):
 				hardsub_streams.append(stream)
 			media_file_names.add(stream.params['filename'])
 		for x in media_file_names:
-			self.log.put(self.mediainformer.fileInfo(x).dump()+'\n')
+			self.log.put(self.mediainformer.fileInfo(x).dump()+'\n', True)
 
 		sConverter = subConverter(STTNGS)
 		currentTrack = 0
@@ -1509,6 +1515,7 @@ if __name__=='__main__':
 
 	if STTNGS.has_key('log_file'):
 		converter.log.initLogByFileName(STTNGS['log_file'])
+	converter.log.put('argv: %s\n\n'%argv.__str__(), True)
 
 	if not STTNGS.has_key('threads'):
 		STTNGS['threads'] = os.sysconf('SC_NPROCESSORS_CONF')
@@ -1543,8 +1550,11 @@ if __name__=='__main__':
 
 	#os.system('date')
 	tm = time.time()-startTime
+	time_str = '%02d:%02d:%02d'%(tm/60/60, tm%(60*60)/60, tm%60)
 	if not (STTNGS.has_key('info') and not STTNGS['vv']):
-		print 'time %02d:%02d:%02d'%(tm/60/60, tm%(60*60)/60, tm%60)
+		print 'time %s'%time_str
+
+	converter.log.put('time %s\n'%time_str, True)
 
 	converter.log.releaseLog()
 
