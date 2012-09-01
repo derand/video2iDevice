@@ -151,7 +151,7 @@ Tagging options:
 	-track		[int]	track
 	-tracks		[int]	tracks count
 	-et		[str]	set episodes titles separated ';' (for TV Shows)
-	-title		[srt]	stream title from appending files (vfile, afile, sfile)
+	-sname		[srt]	stream title from appending files (vfile, afile, sfile)
 	-add2TrackIdx	[int]	add to track (def: 0)
 	-tn			disable sets tags
 For tagging you can use AtomicParsley long-option params (see "AtomicParsley -h"), in param use one '-' symbol like:
@@ -273,10 +273,10 @@ class Video2iDevice(object):
 					tmp = STTNGS['fadd']
 					if len(tmp)>0:
 						tmp[-1][-1]['stream'] = int(el)
-				elif ckey=='title':
+				elif ckey=='sname':
 					tmp = STTNGS['fadd']
 					if len(tmp)>0:
-						tmp[-1][-1]['title'] = el
+						tmp[-1][-1]['sname'] = el
 				elif ckey=='ar' and len(STTNGS['fadd'])>0:
 					tmp = STTNGS['fadd']
 					tmp[-1][-1]['ar'] = int(el)
@@ -1118,9 +1118,9 @@ class Video2iDevice(object):
 			sys.exit(1)
 		_fi = self.mediainformer.fileInfo(nn)
 		_fi.streams[0].params['GlobalTrackNum'] = currentTrack
-		title = None
-		if fadd[-1].has_key('title'):
-			title = fadd[-1]['title']
+		name = None
+		if fadd[-1].has_key('sname'):
+			name = fadd[-1]['sname']
 
 		# get stream info
 		stream = None
@@ -1138,7 +1138,7 @@ class Video2iDevice(object):
 			stream.params['extended'] = fadd[-1]
 			stream.params['filename'] = _fi.filename
 			stream.params['informer'] = _fi.informer
-			stream.params['title'] = title
+			stream.params['name'] = name
 		return stream
 
 
@@ -1215,10 +1215,9 @@ class Video2iDevice(object):
 				sys.exit(1)
 
 			out_fn = '%s/%s_%s'%(STTNGS['temp_dir'], os.path.basename(stream.params['filename']), stream.trackID)
-			if stream.params['title'] and stream.params['title']!='':
-				stream.params['name'] = stream.params['title']
-				if len(stream.params['title']):
-					out_fn = '%s_%s'%(out_fn, stream.params['title'])
+			if stream.params['name']<>None and stream.params['name']!='':
+				if len(stream.params['name']):
+					out_fn = '%s_%s'%(out_fn, stream.params['name'])
 
 			print add
 			if add[0]==0:
@@ -1313,8 +1312,8 @@ class Video2iDevice(object):
 				addCmd2 += ':delay=%d'%delay
 			if f[0]>0:
 				addCmd2 += ':group=%d'%f[0]
-			#if f[2][3].has_key('name'):
-			#	addCmd2+=':name=%s'%f[2][1]
+			if stream.params['name']<>None:
+				addCmd2+=':name=%s'%stream.params['name']
 			if f[0]==0:
 				addCmd2 += ve
 				ve = ':disable'
