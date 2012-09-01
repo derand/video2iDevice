@@ -691,6 +691,7 @@ class Video2iDevice(object):
 		#cmd = 'mv "%s" "%s"'%(fn, name)
 		#self.__printCmd(cmd)
 		#os.system(cmd)
+		self.__printCmd('mv "%s" "%s"'%(fn, name))
 		shutil.move(fn, name)
 
 	def sizeConvert(self, real1, real2, out1):
@@ -1213,18 +1214,22 @@ class Video2iDevice(object):
 			for s in tmp.split(':'):
 				strms.append(int(s))
 
-		# chech hardsub
+		# chech hardsub and get unique media file names for logging
 		hardsub_streams = []
+		media_file_names = set()
 		for i in strms:
-			#stream = fi.streams[i]
 			stream = self.__streamById(i, fi.streams)
 			if stream.params.has_key('extended') and stream.params['extended'].has_key('hardsub'):
 				stream.params['filename'] = fi.filename
 				hardsub_stream.append(stream)
+			self.log.put(fi.dump())
 		for fadd in STTNGS['fadd']:
 			stream = self.__streamFromFAdd(fadd, fi)
 			if stream.params.has_key('extended') and stream.params['extended'].has_key('hardsub'):
 				hardsub_streams.append(stream)
+			media_file_names.add(stream.params['filename'])
+		for x in media_file_names:
+			self.log.put(self.mediainformer.fileInfo(x).dump()+'\n')
 
 		sConverter = subConverter(STTNGS)
 		currentTrack = 0
