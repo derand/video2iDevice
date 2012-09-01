@@ -1415,6 +1415,7 @@ class Video2iDevice(object):
 		if need:
 			mpeg4fixer().setTrackNames(name, trackNames) 
 
+		self.log.put('Remove temp files...\n')
 		if STTNGS['ctf']:
 			for f in files:
 				os.unlink(f[1])
