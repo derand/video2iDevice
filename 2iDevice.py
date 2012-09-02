@@ -214,6 +214,9 @@ class LogToFile(object):
 		if self.__log_file<>None:
 			self.__log_file.flush()		
 
+	def isSetted(self):
+		return self.__log_file<>None
+
 	def initLogByFileName(self, logFileName):
 		self.releaseLog()
 		self.__log_file = open(logFileName, 'w')
@@ -1228,6 +1231,7 @@ class Video2iDevice(object):
 			if stream.params.has_key('extended') and stream.params['extended'].has_key('hardsub'):
 				stream.params['filename'] = fi.filename
 				hardsub_stream.append(stream)
+			self.log.put('----------------------------\n', False)
 			self.log.put(fi.dump(), True)
 		for fadd in STTNGS['fadd']:
 			stream = self.__streamFromFAdd(fadd, fi)
@@ -1235,7 +1239,9 @@ class Video2iDevice(object):
 				hardsub_streams.append(stream)
 			media_file_names.add(stream.params['filename'])
 		for x in media_file_names:
-			self.log.put(self.mediainformer.fileInfo(x).dump()+'\n', True)
+			self.log.put('----------------------------\n', False)
+			self.log.put(self.mediainformer.fileInfo(x).dump(), True)
+		self.log.put('----------------------------\n', False)
 
 		sConverter = subConverter(STTNGS)
 		currentTrack = 0
@@ -1518,10 +1524,15 @@ if __name__=='__main__':
 
 	if STTNGS.has_key('log_file'):
 		converter.log.initLogByFileName(STTNGS['log_file'])
-	converter.log.put('argv: %s\n\n'%argv.__str__(), True)
+	converter.log.put('argv: %s\n'%argv.__str__(), True)
 
 	if not STTNGS.has_key('threads'):
 		STTNGS['threads'] = os.sysconf('SC_NPROCESSORS_CONF')
+	if converter.log.isSetted():
+		import platform
+		converter.log.put('Version: %s\n'%STTNGS['version'], False)
+		converter.log.put('Platform: %s\n'%platform.uname().__str__(), True)
+		converter.log.put('Threads: %d\n\n'%STTNGS['threads'], True)
 
 	if STTNGS['temp_dir'][-1]=='/':
 		STTNGS['temp_dir'] = STTNGS['temp_dir'][:-1]
