@@ -1414,7 +1414,7 @@ class Video2iDevice(object):
 		need = False
 		for f in files:
 			n = None
-			if f[2]!=None and f[2].params.has_key('name'):
+			if f[2]!=None and f[2].params.has_key('name') and f[2].params['name']:
 				n = unicode(f[2].params['name'], 'utf-8').encode('utf-8')
 				need = True
 			trackNames.append(n)
