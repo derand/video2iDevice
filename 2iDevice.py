@@ -1380,7 +1380,7 @@ class Video2iDevice(object):
 				addCmd2 += ':delay=%d'%delay
 			if f[0]>0:
 				addCmd2 += ':group=%d'%f[0]
-			if stream.params['name']<>None:
+			if stream.params.has_key('name') and stream.params['name']<>None:
 				addCmd2+=':name=%s'%stream.params['name']
 			if f[0]==0:
 				addCmd2 += ve
