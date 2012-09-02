@@ -1531,7 +1531,7 @@ if __name__=='__main__':
 	if converter.log.isSetted():
 		import platform
 		converter.log.put('Version: %s\n'%STTNGS['version'], False)
-		converter.log.put('Platform: %s\n'%platform.uname().__str__(), True)
+		converter.log.put('Platform: %s\n'%platform.uname().__str__(), False)
 		converter.log.put('Threads: %d\n\n'%STTNGS['threads'], True)
 
 	if STTNGS['temp_dir'][-1]=='/':
