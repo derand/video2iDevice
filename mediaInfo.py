@@ -549,7 +549,7 @@ class MediaInformer:
 		minTrackID = sys.maxint
 		for stream in curr_el['streams']:
 			if stream.params.has_key('ID'):
-				tid = int(stream.params['ID'])
+				tid = int(stream.params['ID'].split(' ')[0])
 				if minTrackID>tid:
 					minTrackID = tid
 
