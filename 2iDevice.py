@@ -535,7 +535,7 @@ class Video2iDevice(object):
 				cmd_str += ' %s'%cmd[i]
 			else:
 				cmd_str += ' "%s"'%cmd[i]
-		self.__printCmd(cmd_str)
+		self.__printCmd(cmd_str.encode('utf-8'))
 		p = Popen(cmd, stdout=PIPE, stderr=STDOUT)
 		line = ''
 		tmp_line = None
