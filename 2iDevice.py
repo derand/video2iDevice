@@ -67,6 +67,11 @@ STTNGS = {
 	'web_optimization': True,
 	'temp_dir': '.',
 	'encodingTool': '2iDevice.py (http://blog.derand.net)',
+	'cast': 			[],
+	'directors':		[],
+	'producers':		[],
+	'codirectors':		[],
+	'screenwriters':	[],	
 }
 
 atomicParsleyOptions = ('artist', 'title', 'album', 'genre', 'tracknum', 'disk', 'comment', 'year', 'lyrics', 'lyricsFile', 'composer',
@@ -154,6 +159,13 @@ Tagging options:
 	-et		[str]	set episodes titles separated ';' (for TV Shows)
 	-sname		[srt]	stream title from appending files (vfile, afile, sfile)
 	-add2TrackIdx	[int]	add to track (def: 0)
+	-copy_warning 	[str]	Add copy warning (displayed in iTunes summary page)
+	-studio 	[str]	Add film studio (displayed on Apple TV)
+	-cast 		[str]	Add Actors (displayed on Apple TV and iTunes under long description)
+	-directors	[str]	Add Directors (displayed on Apple TV and iTunes under long description)
+	-producers	[str]	Add Producers (displayed on Apple TV and iTunes under long description)
+	-codirectors 	[str]	Add Co-Directors (displayed in iTunes under long description)
+	-screenwriters 	[str]	Add ScreenWriters (displayed in iTunes under long description)
 	-tn			disable sets tags
 For tagging you can use AtomicParsley long-option params (see "AtomicParsley -h"), in param use one '-' symbol like:
 	./2iDevice.py <filename> -contentRating Unrated
@@ -234,6 +246,7 @@ class Video2iDevice(object):
 		super(Video2iDevice, self).__init__()
 		self.mediainformer = MediaInformer(ffmpeg_path, mkvtoolnix_path, mediainfo_path, AtomicParsley_path, STTNGS['temp_dir'])
 		self.log = LogToFile()
+		self.__iTunMOVI_arrayKeys = ['cast', 'directors', 'producers', 'codirectors', 'screenwriters']
 
 	def getSettings(self, argv):
 		ckey = 'files'
@@ -352,6 +365,9 @@ class Video2iDevice(object):
 					tmp = STTNGS['fadd']
 					if len(tmp)>0:
 						tmp[-1][-1][ckey] = el
+				elif ckey in self.__iTunMOVI_arrayKeys:
+					for tmp in el.split(','):
+						STTNGS[ckey].append(tmp.strip())
 				else:
 					if STTNGS.has_key(ckey):
 						if type(STTNGS[ckey])==type([]):
@@ -607,6 +623,31 @@ class Video2iDevice(object):
 				rv['season'] = int(srch.groups()[0])
 		return rv
 
+	def __has_iTunMOVI(self):
+		rv = STTNGS.has_key('copy_warning') or STTNGS.has_key('studio')
+		for key in self.__iTunMOVI_arrayKeys:
+			rv = rv or len(STTNGS[key])>0
+		return rv
+
+	def __iTunMOVI_XML(self):
+		rv = """<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple Computer//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\">\n  <dict>\n"""
+		if STTNGS.has_key('copy_warning'):
+			rv += "    <key>copy-warning</key>\n    <string>%s</string>\n"%STTNGS['copy_warning']
+
+		if STTNGS.has_key('studio'):
+			rv += "    <key>studio</key>\n    <string>%s</string>\n"%STTNGS['studio']
+
+		for tag in self.__iTunMOVI_arrayKeys:
+			if len(STTNGS[tag])>0:
+				rv += "    <key>%s</key>\n    <array>\n"%tag
+				for name in STTNGS[tag]:
+					rv += "      <dict>\n        <key>name</key>\n        <string>%s</string>\n      </dict>\n"%name
+				rv += "    </array>\n"
+
+		rv += "  </dict>\n</plist>\n"
+		return rv
+
+
 	def iTagger(self, fn):
 		if not STTNGS['tn']:
 			#prms = ' --copyright "derand"'
@@ -654,8 +695,20 @@ class Video2iDevice(object):
 			for p in prms.keys():
 				cmd.append('--%s'%p)
 				cmd.append(prms[p])
+			if self.__has_iTunMOVI():
+				xml = self.__iTunMOVI_XML()
+				cmd.append('--rDNSatom')
+				cmd.append(xml)
+				cmd.append('name=iTunMOVI')
+				cmd.append('domain=com.apple.iTunes')
 			cmd.append('--overWrite')
 			self.__exeCmd(cmd)
+
+			#if self.__has_iTunMOVI():
+			#	xml = self.__iTunMOVI_XML()
+			#	cmd = [AtomicParsley_path, fn, '--rDNSatom', xml, 'name=iTunMOVI', 'domain=com.apple.iTunes', '--overWrite']
+			#	self.__exeCmd(cmd)
+
 			###prms += ' --encodingTool "2iDevice.py (http://blog.derand.net)" --overWrite'
 			#prms_str = ''
 			#for p in prms.keys():
@@ -1409,10 +1462,11 @@ class Video2iDevice(object):
 		self.__exeCmd(cmd)
 
 		self.iTagger(name)
-
+		
 		self.log.put('Fixing flags on result mpeg file...\n')
 		mpeg4fixer().fixFlagsAndSubs(name, STTNGS['fd'])
-
+		
+		'''
 		self.log.put('Setting streams name...\n')
 		trackNames = []
 		need = False
@@ -1424,6 +1478,7 @@ class Video2iDevice(object):
 			trackNames.append(n)
 		if need:
 			mpeg4fixer().setTrackNames(name, trackNames) 
+		'''
 
 		self.log.put('Remove temp files...\n')
 		if STTNGS['ctf']:
