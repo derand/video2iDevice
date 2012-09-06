@@ -324,9 +324,9 @@ class MediaInformer:
 			while True:
 				retcode = p.poll()
 				line = p.stdout.readline()
-				if line.find(searchString)>-1:
-					#l = line[line.find(searchString)+len(searchString):-1]
-					rv = line[line.find(searchString)+len(searchString)+1]
+				tmp = re.search('^\s+Stream\s+#0(.)\d+', line)
+				if tmp:
+					rv = tmp.group(1)
 					break
 				if retcode is not None and len(line)==0:
 					break
