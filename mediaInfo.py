@@ -673,6 +673,7 @@ class MediaInformer:
 
 		convert_dictionary = {
 		'©art': 'artist',
+		'©ART': 'artist',
 		'©nam': 'title',
 		'©alb': 'album',
 		'©gen': 'genre',
