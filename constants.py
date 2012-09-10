@@ -555,3 +555,10 @@ LANGUAGES_DICT = {
 "creoles and pidgins":   "crp",
 "tlhIngan-Hol":          "tlh",
 }
+
+if __name__=='__main__':
+	keys = sorted(LANGUAGES_DICT.keys())
+	print '[NSDictionary dictionaryWithObjectsAndKeys:'
+	for key in keys:
+		print '@"%s", @"%s",'%(LANGUAGES_DICT[key], key)
+	print 'nil];'
