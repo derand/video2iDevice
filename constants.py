@@ -3,6 +3,32 @@
 
 # writed by derand
 
+import sys
+import os
+
+if sys.platform == 'darwin':
+	script_dir = os.path.dirname(os.path.realpath(__file__))
+	ffmpeg_path = script_dir + '/binary/ffmpeg'
+	mp4box_path = script_dir + '/binary/MP4Box'
+	AtomicParsley_path = script_dir + '/binary/AtomicParsley'
+	mkvtoolnix_path = script_dir + '/binary/mkvtoolnix/'
+	mediainfo_path = script_dir + '/binary/mediainfo'
+else:
+	ffmpeg_path = 'ffmpeg'
+	mp4box_path = 'MP4Box'
+	AtomicParsley_path = 'AtomicParsley'
+	mkvtoolnix_path = ''
+	mediainfo_path = 'mediainfo'
+
+
+def add_separator_to_filepath(filepath):
+	'''
+		I feel this function can be looks better
+	'''
+	return filepath.replace('\\', '\\\\').replace(' ', '\\ ').replace('(', '\\(').replace(')', '\\)').replace('[', '\\[').replace(']',
+							      '\\]').replace('&', '\\&').replace('"', '\\"')
+
+
 #source table http://en.wikipedia.org/wiki/List_of_ISO_639-2_codes
 LANGUAGES_DICT = { 
 "Abkhazian":             "abk",

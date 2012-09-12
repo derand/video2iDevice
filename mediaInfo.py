@@ -12,15 +12,8 @@ import fileCoding
 import math
 from subprocess import Popen, PIPE, STDOUT
 
-from constants import LANGUAGES_DICT
+from constants import *
 
-
-def add_separator_to_filepath(filepath):
-	'''
-		I feel this function can be looks better
-	'''
-	return filepath.replace('\\', '\\\\').replace(' ', '\\ ').replace('(', '\\(').replace(')', '\\)').replace('[', '\\[').replace(']',
-							      '\\]').replace('&', '\\&').replace('"', '\\"')
 
 def isMatroshkaMedia(file_name):
 	_, file_ext = os.path.splitext(file_name)
@@ -202,6 +195,27 @@ class MediaInformer:
 		if prm.find('.')>-1:
 			return float(prm)
 		return int(prm)
+
+	def __mediaDuration(self, filename):
+		rv = None
+		duration_re_compiled = re.compile('Duration:\s*(\d{2}):(\d{2}):(\d{2})\.(\d{2})')
+		cmd = [self.__ffmpeg_path, '-i', filename]
+		p = Popen(cmd, stdout=PIPE, stderr=STDOUT)
+		while True:
+			retcode = p.poll()
+			line = p.stdout.readline()
+			if retcode is not None and len(line)==0:
+				break
+			duration_re =  duration_re_compiled.search(line)
+			if duration_re:
+				groups = duration_re.groups()
+				hours = int(groups[0])
+				mins = int(groups[1])
+				secs = int(groups[2])
+				ms = float(groups[3])
+				rv = (hours*60.0 + mins)*60.0 + secs + ms/100
+		return rv
+
 
 	def fileInfoUsingFFMPEG(self, filename):
 		'''
@@ -638,6 +652,12 @@ class MediaInformer:
 			if len(rv.streams)==0:
 				rv = self.fileInfoUsingFFMPEG(filename)
 
+		try:
+			rv.general['mediaDuration'] = self.__mediaDuration(filename)
+		except Exception, e:
+			pass
+			#raise e
+
 		if ext=='.mp4' or ext=='.m4v':
 			rv.tags = self.__readTags(filename)
 
@@ -748,19 +768,7 @@ class MediaInformer:
 
 
 if __name__=='__main__':
-	ffmpeg_path = 'ffmpeg'
-	mkvtoolnix_path = ''
-	mediainfo_path = 'mediainfo'
-	atomicParsley_path = 'AtomicParsley'
-	if sys.platform == 'darwin':
-		script_dir = os.path.dirname(os.path.realpath(__file__))
-		ffmpeg_path = script_dir + '/binary/ffmpeg'
-		mkvtoolnix_path = script_dir + '/binary/mkvtoolnix/'
-		mediainfo_path = script_dir + '/binary/mediainfo'
-		atomicParsley_path = script_dir + '/binary/AtomicParsley'
-
-
-	mi = MediaInformer(ffmpeg_path, mkvtoolnix_path, mediainfo_path, atomicParsley_path, os.getenv('HOME')+'/Desktop')
+	mi = MediaInformer(ffmpeg_path, mkvtoolnix_path, mediainfo_path, AtomicParsley_path, os.getenv('HOME')+'/Desktop')
 	for arg in sys.argv[1:]:
 		fi = mi.fileInfo(arg)
 		print fi.dump()

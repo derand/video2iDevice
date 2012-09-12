@@ -13,6 +13,14 @@
 #
 
 
+__version__ = '0.5.4'
+__author__ = 'Andrey Derevyagin'
+__maintainer__ = 'Andrey Derevyagin'
+__email__ = '2derand+2idevice@gmail.com'
+__copyright__ = 'Copyright © 2010-2012, Andrey Derevyagin'
+#__license__
+
+
 #####################  #########################
 
 import sys
@@ -37,11 +45,12 @@ from mpeg4fixer import mpeg4fixer
 import select
 import shlex
 
-from mediaInfo import cStream, cMediaInfo, cChapter, MediaInformer, add_separator_to_filepath, isMatroshkaMedia
+from mediaInfo import cStream, cMediaInfo, cChapter, MediaInformer, isMatroshkaMedia
+from constants import *
 
 
 STTNGS = {
-	'version' : '0.5.4',
+	'version' : __version__,
 #	'threads':	3,
 	'files':	[],
 	'ac':		True,
@@ -173,7 +182,7 @@ for AtomicParsley --contentRating Unrated.
 
 	
 Author
-	Writen by Andrey Derevyagin (2derand+2idevice@gmail.com)
+	Writed by Andrey Derevyagin (2derand+2idevice@gmail.com)
 
 Copyright
 	Copyright © 2010-2012 Andrey Derevyagin
@@ -186,21 +195,8 @@ Bugs
 
 
 if sys.platform == 'darwin':
-	script_dir = os.path.dirname(os.path.realpath(__file__))
-	ffmpeg_path = script_dir + '/binary/ffmpeg'
-	mp4box_path = script_dir + '/binary/MP4Box'
-	AtomicParsley_path = script_dir + '/binary/AtomicParsley'
-	mkvtoolnix_path = script_dir + '/binary/mkvtoolnix/'
-	mediainfo_path = script_dir + '/binary/mediainfo'
-
 	os_ffmpeg_prms = []
 else:
-	ffmpeg_path = 'ffmpeg'
-	mp4box_path = 'MP4Box'
-	AtomicParsley_path = 'AtomicParsley'
-	mkvtoolnix_path = ''
-	mediainfo_path = 'mediainfo'
-
 	os_ffmpeg_prms = ['-flags2', '+bpyramid-mixed_refs+wpred+dct8x8+fastpskip']
 
 
