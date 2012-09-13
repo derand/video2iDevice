@@ -1284,8 +1284,7 @@ class Video2iDevice(object):
 			if stream.params.has_key('extended') and stream.params['extended'].has_key('hardsub'):
 				stream.params['filename'] = fi.filename
 				hardsub_stream.append(stream)
-			self.log.put('----------------------------\n', False)
-			self.log.put(fi.dump(), True)
+			media_file_names.add(fi.filename)
 		for fadd in STTNGS['fadd']:
 			stream = self.__streamFromFAdd(fadd, fi)
 			if stream.params.has_key('extended') and stream.params['extended'].has_key('hardsub'):
