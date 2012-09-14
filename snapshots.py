@@ -67,7 +67,7 @@ Bugs
 	if not os.path.exists(snapshots_dir):
 		os.mkdir(snapshots_dir)
 	for fn in files:
-		i = 0
+		i = 1
 		mi = MediaInformer(ffmpeg_path, mkvtoolnix_path, mediainfo_path, AtomicParsley_path, '/tmp/')
 		fi = mi.fileInfo(fn)
 		if fi.general.has_key('mediaDuration'):
