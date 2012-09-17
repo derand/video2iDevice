@@ -197,7 +197,8 @@ Bugs
 if sys.platform == 'darwin':
 	os_ffmpeg_prms = []
 else:
-	os_ffmpeg_prms = ['-flags2', '+bpyramid-mixed_refs+wpred+dct8x8+fastpskip']
+	#os_ffmpeg_prms = ['-flags2', '+bpyramid-mixed_refs+wpred+dct8x8+fastpskip']
+	os_ffmpeg_prms = []
 
 
 
@@ -1498,8 +1499,9 @@ class Video2iDevice(object):
 			#self.__printCmd(cmd)
 			#p = os.popen(cmd)
 			#p.close()
-			cmd = [mp4box_path, '-inter', '500', filename]
-			self.__exeCmd(cmd)
+			pass
+			#cmd = [mp4box_path, '-inter', '500', filename]
+			#self.__exeCmd(cmd)
 
 		self.rename(filename)
 
