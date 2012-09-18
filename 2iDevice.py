@@ -402,7 +402,7 @@ class Video2iDevice(object):
 		_tmp = ''
 		rv = {}
 		arrSymb = None
-		file_lines = file.read()
+		file_lines = file.read().encode('utf-8')
 		for line in file_lines.split('\n'):
 			if len(line)==1 or line[0]=='#':
 				continue
@@ -1570,8 +1570,8 @@ if __name__=='__main__':
 	if len(STTNGS['tfile'])>0:
 		TAGS = converter.loadSettingsFile(STTNGS['tfile'])
 		for key,val in TAGS.items():
-			if type(val)==type(''):
-				val = unicode(val, 'utf-8')
+			#if type(val)==type(''):
+			#	val = unicode(val, 'utf-8')
 			if key=='TRACK_REGEX' or key=='TRACKS_REGEX':
 				if not STTNGS.has_key(key):
 					STTNGS[key] = val.split(';')
