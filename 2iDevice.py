@@ -547,9 +547,9 @@ class Video2iDevice(object):
 		cmd_str = add_separator_to_filepath(cmd[0])
 		for i in range(1,len(cmd)):
 			if cmd[i].find(' ')==-1:
-				cmd_str += ' %s'%cmd[i]
+				cmd_str += u' %s'%cmd[i]
 			else:
-				cmd_str += ' "%s"'%cmd[i]
+				cmd_str += u' "%s"'%cmd[i]
 		if sys.platform != 'darwin':
 			cmd_str = cmd_str.encode('utf-8')
 		self.__printCmd(cmd_str)
