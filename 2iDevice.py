@@ -552,9 +552,9 @@ class Video2iDevice(object):
 			if cmd[i].find(' ')==-1:
 				cmd_str += ' %s'%cmd[i]
 			else:
-				cmd_str += ' "%s"'%cmd[i].encode('utf-8')
-		if sys.platform != 'darwin':
-			cmd_str = cmd_str.encode('utf-8')
+				cmd_str += ' "%s"'%cmd[i]
+		#if sys.platform != 'darwin':
+		#	cmd_str = cmd_str.encode('utf-8')
 		self.__printCmd(cmd_str)
 		p = Popen(cmd, stdout=PIPE, stderr=STDOUT)
 		line = ''
