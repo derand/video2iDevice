@@ -404,7 +404,7 @@ class Video2iDevice(object):
 		arrSymb = None
 		file_lines = file.read().encode('utf-8')
 		for line in file_lines.split('\n'):
-			if len(line)==1 or line[0]=='#':
+			if len(line)<1 or line[0]=='#':
 				continue
 			if inside_key:
 				_tmp += line.strip()
