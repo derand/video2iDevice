@@ -391,6 +391,7 @@ class Video2iDevice(object):
 	def loadSettingsFile(self, filename):
 		file = 0 
 		try:
+			encoding = fileCoding.file_encoding(filename)
 			file = open(filename, 'r')
 		except:
 			print 'error open file %s'%filename
@@ -400,7 +401,8 @@ class Video2iDevice(object):
 		_tmp = ''
 		rv = {}
 		arrSymb = None
-		for line in file:
+		file_lines = file.read().encode(encoding)
+		for line in file_lines.split('\n'):
 			if len(line)==1 or line[0]=='#':
 				continue
 			if inside_key:
@@ -547,21 +549,9 @@ class Video2iDevice(object):
 		cmd_str = add_separator_to_filepath(cmd[0])
 		for i in range(1,len(cmd)):
 			if cmd[i].find(' ')==-1:
-				try:
-					cmd_str += ' %s'%cmd[i]
-				except:
-					import chardet
-					print chardet.detect(cmd[i])['encoding']
-					print cmd[i], chardet.detect(cmd[i])['encoding']
-					sys.exit()
+				cmd_str += ' %s'%cmd[i]
 			else:
-				try:
-					cmd_str += ' "%s"'%cmd[i].encode('utf-8')
-				except:
-					import chardet
-					print chardet.detect(cmd[i])['encoding']
-					print cmd[i], chardet.detect(cmd[i])['encoding']
-					sys.exit()
+				cmd_str += ' "%s"'%cmd[i].encode('utf-8')
 		if sys.platform != 'darwin':
 			cmd_str = cmd_str.encode('utf-8')
 		self.__printCmd(cmd_str)

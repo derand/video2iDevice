@@ -638,7 +638,7 @@ class MediaInformer:
 		ext = ext.lower()
 		if ext=='.ass' or ext=='.srt' or ext=='.ttxt' or ext=='.ssa':
 			rv.informer = 'none'
-			rv.stream_add(cStream(2, '0%s0'%self.mapStreamSeparatedSymbol(filename), None, {'codec': ext[1:], 'encoding': fileCoding.code_detecter(filename)}))
+			rv.stream_add(cStream(2, '0%s0'%self.mapStreamSeparatedSymbol(filename), None, {'codec': ext[1:], 'encoding': fileCoding.file_encoding(filename)}))
 		else:
 			rv = self.fileInfoUsingMediaInfo(filename)
 			if isMatroshkaMedia(filename):
