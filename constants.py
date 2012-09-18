@@ -29,6 +29,17 @@ def add_separator_to_filepath(filepath):
 							      '\\]').replace('&', '\\&').replace('"', '\\"')
 
 
+
+def video_size_convert(real1, real2, out1):
+	out2 = (real2*out1)/real1
+	if out2%16>7:
+		out2 += 16-out2%16
+	else:
+		out2 -= out2%16
+	return (out1, out2)
+
+
+
 #source table http://en.wikipedia.org/wiki/List_of_ISO_639-2_codes
 LANGUAGES_DICT = { 
 "Abkhazian":             "abk",

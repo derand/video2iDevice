@@ -393,7 +393,7 @@ class Video2iDevice(object):
 		file = 0 
 		try:
 			encoding = fileCoding.file_encoding(filename)
-			file = codecs.open(filename, mode='r', encoding='utf-8')
+			file = codecs.open(filename, mode='r', encoding=encoding)
 		except:
 			print 'error open file %s'%filename
 			sys.exit(1)
@@ -760,14 +760,6 @@ class Video2iDevice(object):
 		self.__printCmd('mv "%s" "%s"'%(fn, name))
 		shutil.move(fn, name)
 
-	def sizeConvert(self, real1, real2, out1):
-		out2 = (real2*out1)/real1
-		if out2%16>7:
-			out2 += 16-out2%16
-		else:
-			out2 -= out2%16
-		return (out1, out2)
-
 	def __videoFfmpegParamsBase(self, fileName, _map):
 		return ['-y', 
 				'-i', '"'+fileName+'"',
@@ -856,16 +848,16 @@ class Video2iDevice(object):
 		if STTNGS.has_key('s'):
 			res = STTNGS['s'].split('x')
 			if res[0]=='*':
-				(_h, _w) = self.sizeConvert(h, w, int(res[1]))
+				(_h, _w) = video_size_convert(h, w, int(res[1]))
 			elif res[1]=='*':
-				(_w, _h) = self.sizeConvert(w, h, int(res[0]))
+				(_w, _h) = video_size_convert(w, h, int(res[0]))
 			else:
 				_w = int(res[0])
 				_h = int(res[1])
 		else:
 			(_w, _h) = (w, h)
-			#(_w, _h) = self.sizeConvert(w, h, w)
-			#(_h, _w) = self.sizeConvert(_h, _w, _h)
+			#(_w, _h) = video_size_convert(w, h, w)
+			#(_h, _w) = video_size_convert(_h, _w, _h)
 		if _w == 480 and (_h == 368 or _h == 352): _h = 360
 
 		print '\033[1;33m %dx%d  ==> %dx%d \033[00m'%(w,h, _w,_h)

@@ -36,8 +36,9 @@ if __name__=='__main__':
 	if len(sys.argv)==1:
 		print 'usage:\n  %s <options> <media files> '%os.path.basename(sys.argv[0])
 		print 'where <options>:'
-		print '   -c 	<int>	shots count by file'
-		print '   -d 	<str>	snapshots directory (default "%s")'%snapshots_dir
+		print '   -c 	<int>		shots count by file'
+		print '   -d 	<str>		snapshots directory (default "%s")'%snapshots_dir
+		print '   -s 	<int>x<int>	snapshot size, can looks like ("*x320", "960x*"")'
 		print '''
 Author
 	Writed by %s (%s)
@@ -51,6 +52,8 @@ Bugs
 		sys.exit(0)
 	files = []
 	i = 1
+	_w = 0
+	_h = 0
 	while i < len(sys.argv):
 		arg = sys.argv[i]
 		if arg=='-c':
@@ -61,6 +64,16 @@ Bugs
 			snapshots_dir = sys.argv[i]
 			if snapshots_dir[-1]=='/':
 				snapshots_dir = snapshots_dir[:-1]
+		elif arg=='-s':
+			i += 1
+			res = sys.argv[i].split('x')
+			if res[0]=='*':
+				_h =  int(res[1])
+			elif res[1]=='*':
+				_w = int(res[0])
+			else:
+				_w = int(res[0])
+				_h = int(res[1])
 		else:
 			files.append(arg)
 		i += 1
@@ -74,7 +87,29 @@ Bugs
 			duration = fi.general['mediaDuration']
 			if duration>shots_count:
 				tm = duration/(shots_count*2)
+				
 				cmd = [ffmpeg_path, '-ss', '', '-vframes:v', '1',  '-i', fn, '-y', '-vcodec', 'png', '-an', '-f', 'image2', '']
+
+				if _w>0 or _h>0:
+					stream = fi.video_stream()
+					if stream==None:
+						print 'Can\'t find video stream at %s'%fn
+						sys.exit(1)
+					w = stream.params['width']
+					h = stream.params['height']
+					if stream.params.has_key('dwidth') and stream.params.has_key('dheight'):
+						w = stream.params['dwidth']
+						h = stream.params['dheight']
+
+					if _w==0:
+						(h, w) = video_size_convert(h, w, _h)
+					elif _h==0:
+						(w, h) = video_size_convert(w, h, _w)
+					else:
+						(w, h) = (_w, _h)
+					cmd.insert(8, '%dx%d'%(w, h))
+					cmd.insert(8, '-s')
+
 				while tm < duration:
 					cmd[2] = '%.02f'%tm
 					cmd[-1] = '%s/%s_%03d_of_%03d.png'%(snapshots_dir, os.path.basename(fn), i, shots_count)

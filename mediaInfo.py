@@ -138,6 +138,13 @@ class cMediaInfo(object):
 			'chapters': chapters_arr
 			}
 
+	def video_stream(self):
+		for stream in self.streams:
+			if stream.type==0:
+				return stream
+		return None
+
+
 class cChapter(object):
 	"""docstring for cChapter"""
 	def __init__(self, time_str, title):
