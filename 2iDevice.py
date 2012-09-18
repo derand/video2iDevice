@@ -44,6 +44,7 @@ from mpeg4fixer import mpeg4fixer
 
 import select
 import shlex
+import codecs
 
 from mediaInfo import cStream, cMediaInfo, cChapter, MediaInformer, isMatroshkaMedia
 from constants import *
@@ -392,7 +393,7 @@ class Video2iDevice(object):
 		file = 0 
 		try:
 			encoding = fileCoding.file_encoding(filename)
-			file = open(filename, 'r')
+			file = codecs.open(filename, mode='r', encoding='utf-8')
 		except:
 			print 'error open file %s'%filename
 			sys.exit(1)
@@ -401,7 +402,7 @@ class Video2iDevice(object):
 		_tmp = ''
 		rv = {}
 		arrSymb = None
-		file_lines = file.read().encode(encoding)
+		file_lines = file.read()
 		for line in file_lines.split('\n'):
 			if len(line)==1 or line[0]=='#':
 				continue
