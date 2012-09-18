@@ -6,7 +6,7 @@ import os
 #import chardet
 import codecs
 
-def code_detecter(filename):
+def file_encoding(filename):
 		data = open(filename).read()
 		#with open(filename) as codefile:
 		#data = codefile.read()
@@ -24,4 +24,4 @@ def code_detecter(filename):
     
 if __name__=='__main__':
 	if len(sys.argv)==2:
-		print code_detecter(sys.argv[1])
+		print file_encoding(sys.argv[1])

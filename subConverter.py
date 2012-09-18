@@ -660,7 +660,7 @@ class subConverter:
 		lastVal = None
 		styles = {}
 		canMergeLines = True
-		fCoding = fileCoding.code_detecter(fname_ass)
+		fCoding = fileCoding.file_encoding(fname_ass)
 		for line in fi:
 			if block==2:
 				elems = line.split(',')
@@ -799,7 +799,7 @@ class subConverter:
 		if self.__STNGS.has_key('subReplace'):
 			subReplace = self.__STNGS['subReplace']
 		subStyle = None
-		fCoding = fileCoding.code_detecter(fname_srt)
+		fCoding = fileCoding.file_encoding(fname_srt)
 		for line in fi:
 			line = unicode(line, fCoding).strip()
 			if len(line)>3 and line[:3]==u'\xEF\xBB\xBF':

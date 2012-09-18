@@ -44,6 +44,7 @@ from mpeg4fixer import mpeg4fixer
 
 import select
 import shlex
+import codecs
 
 from mediaInfo import cStream, cMediaInfo, cChapter, MediaInformer, isMatroshkaMedia
 from constants import *
@@ -391,7 +392,8 @@ class Video2iDevice(object):
 	def loadSettingsFile(self, filename):
 		file = 0 
 		try:
-			file = open(filename, 'r')
+			encoding = fileCoding.file_encoding(filename)
+			file = codecs.open(filename, mode='r', encoding='utf-8')
 		except:
 			print 'error open file %s'%filename
 			sys.exit(1)
@@ -400,8 +402,9 @@ class Video2iDevice(object):
 		_tmp = ''
 		rv = {}
 		arrSymb = None
-		for line in file:
-			if len(line)==1 or line[0]=='#':
+		file_lines = file.read().encode('utf-8')
+		for line in file_lines.split('\n'):
+			if len(line)<1 or line[0]=='#':
 				continue
 			if inside_key:
 				_tmp += line.strip()
@@ -550,8 +553,8 @@ class Video2iDevice(object):
 				cmd_str += ' %s'%cmd[i]
 			else:
 				cmd_str += ' "%s"'%cmd[i]
-		if sys.platform != 'darwin':
-			cmd_str = cmd_str.encode('utf-8')
+		#if sys.platform != 'darwin':
+		#	cmd_str = cmd_str.encode('utf-8')
 		self.__printCmd(cmd_str)
 		p = Popen(cmd, stdout=PIPE, stderr=STDOUT)
 		line = ''
@@ -1567,8 +1570,8 @@ if __name__=='__main__':
 	if len(STTNGS['tfile'])>0:
 		TAGS = converter.loadSettingsFile(STTNGS['tfile'])
 		for key,val in TAGS.items():
-			if type(val)==type(''):
-				val = unicode(val, 'utf-8')
+			#if type(val)==type(''):
+			#	val = unicode(val, 'utf-8')
 			if key=='TRACK_REGEX' or key=='TRACKS_REGEX':
 				if not STTNGS.has_key(key):
 					STTNGS[key] = val.split(';')
