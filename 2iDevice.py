@@ -547,9 +547,15 @@ class Video2iDevice(object):
 		cmd_str = add_separator_to_filepath(cmd[0])
 		for i in range(1,len(cmd)):
 			if cmd[i].find(' ')==-1:
-				cmd_str += ' %s'%cmd[i].encode('utf-8')
+				cmd_str += ' %s'%cmd[i]
 			else:
-				cmd_str += ' "%s"'%cmd[i].encode('utf-8')
+				try:
+					cmd_str += ' "%s"'%cmd[i].encode('utf-8')
+				except:
+					import chardet
+					print chardet.detect(cmd[i])['encoding']
+					print cmd[i], chardet.detect(cmd[i])['encoding']
+					sys.exit()
 		if sys.platform != 'darwin':
 			cmd_str = cmd_str.encode('utf-8')
 		self.__printCmd(cmd_str)
