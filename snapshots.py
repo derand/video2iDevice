@@ -27,8 +27,8 @@ def __print_cmd(cmd):
 			cmd_str += ' %s'%cmd[i]
 		else:
 			cmd_str += ' "%s"'%cmd[i]
-	if sys.platform != 'darwin':
-		cmd_str = cmd_str.encode('utf-8')
+	#if sys.platform != 'darwin':
+	#	cmd_str = cmd_str.encode('utf-8')
 	print cmd_str
 
 
@@ -39,6 +39,7 @@ if __name__=='__main__':
 		print '   -c 	<int>		shots count by file'
 		print '   -d 	<str>		snapshots directory (default "%s")'%snapshots_dir
 		print '   -s 	<int>x<int>	snapshot size, can looks like ("*x320", "960x*"")'
+		print '   -f 	<str>		snapshots file format, png(default) or jpeg'
 		print '''
 Author
 	Writed by %s (%s)
@@ -54,6 +55,8 @@ Bugs
 	i = 1
 	_w = 0
 	_h = 0
+	vcodec = 'png'
+	out_ext = 'png'
 	while i < len(sys.argv):
 		arg = sys.argv[i]
 		if arg=='-c':
@@ -74,6 +77,11 @@ Bugs
 			else:
 				_w = int(res[0])
 				_h = int(res[1])
+		elif arg=='-f':
+			i += 1
+			if sys.argv[i].lower()=='jpeg' or sys.argv[i].lower()=='jpg':
+				vcodec = 'jpeg'
+				out_ext = 'jpg'
 		else:
 			files.append(arg)
 		i += 1
@@ -88,7 +96,13 @@ Bugs
 			if duration>shots_count:
 				tm = duration/(shots_count*2)
 				
-				cmd = [ffmpeg_path, '-ss', '', '-vframes:v', '1',  '-i', fn, '-y', '-vcodec', 'png', '-an', '-f', 'image2', '']
+				cmd = [ffmpeg_path, '-ss', '', '-vframes:v', '1',  '-i', fn, '-y']
+				if vcodec=='png':
+					cmd.append('-vcodec')
+					cmd.append(vcodec)
+				elif vcodec=='jpeg':
+					cmd.append('-sameq')
+				cmd[len(cmd):] = ['-an', '-f', 'image2', '']
 
 				if _w>0 or _h>0:
 					stream = fi.video_stream()
@@ -112,7 +126,7 @@ Bugs
 
 				while tm < duration:
 					cmd[2] = '%.02f'%tm
-					cmd[-1] = '%s/%s_%03d_of_%03d.png'%(snapshots_dir, os.path.basename(fn), i, shots_count)
+					cmd[-1] = '%s/%s_%03d_of_%03d.%s'%(snapshots_dir, os.path.basename(fn), i, shots_count, out_ext)
 					__print_cmd(cmd)
 				
 					p = Popen(cmd, stdout=PIPE, stderr=STDOUT)
