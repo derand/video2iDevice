@@ -905,7 +905,7 @@ class Video2iDevice(object):
 					ffmpeg_params = self.__videoFfmpegParamsCRF(iFile, stream.trackID, crf)
 					ffmpeg_params_add = ['-s', '%dx%d'%(_w,_h),
 										 '-refs', '%d'%STTNGS['refs'],
-										 '-threads', '%d'%STTNGS['threads']]
+										 '-threads', '%s'%STTNGS['threads']]
 				else:
 					'PASSES mode'
 					ffmpeg_params = self.__videoFfmpegParamsPasses(iFile, stream.trackID, _pass)
@@ -914,7 +914,7 @@ class Video2iDevice(object):
 										 '-maxrate', '"%d k"'%STTNGS['b'],
 										 '-bufsize', '"%d k"'%int(STTNGS['b']*2.5),
 										 '-refs', '%d'%STTNGS['refs'],
-										 '-threads', '%d'%STTNGS['threads']]
+										 '-threads', '%s'%STTNGS['threads']]
 					ffmpeg_params_add[len(ffmpeg_params_add):] = os_ffmpeg_prms
 				ffmpeg_params[len(ffmpeg_params):] = ffmpeg_params_add
 				ffmpeg_params_add = []
