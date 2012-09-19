@@ -126,7 +126,7 @@ Bugs
 
 				while tm < duration:
 					cmd[2] = '%.02f'%tm
-					cmd[-1] = '%s/%s_%03d_of_%03d.%s'%(snapshots_dir, os.path.basename(fn), i, shots_count, out_ext)
+					cmd[-1] = '%s/%s_%03d_of_%03d(tm_%.02f).%s'%(snapshots_dir, os.path.splitext(os.path.basename(fn))[0], i, shots_count, tm, out_ext)
 					__print_cmd(cmd)
 				
 					p = Popen(cmd, stdout=PIPE, stderr=STDOUT)
