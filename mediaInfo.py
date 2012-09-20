@@ -12,7 +12,7 @@ import fileCoding
 import math
 from subprocess import Popen, PIPE, STDOUT
 
-from constants import *
+from v2d_utils import *
 
 
 def isMatroshkaMedia(file_name):

@@ -12,7 +12,7 @@ __copyright__ = 'Copyright © 2010-2012, Andrey Derevyagin'
 import os
 import sys
 from mediaInfo import cMediaInfo, MediaInformer
-from constants import *
+from v2d_utils import *
 from subprocess import Popen, PIPE, STDOUT
 
 

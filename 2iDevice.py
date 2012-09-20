@@ -47,7 +47,7 @@ import shlex
 import codecs
 
 from mediaInfo import cStream, cMediaInfo, cChapter, MediaInformer, isMatroshkaMedia
-from constants import *
+from v2d_utils import *
 
 
 STTNGS = {
