@@ -118,7 +118,7 @@ Global options:
 	-info 		[str]	show media file info, value is format (can be blank), 'json' - JSON format, default - human format
 	-vv			verbose mode
 	-temp_dir	[str]	path to temporary directory
-	-ffmpeg_coding_params	[str]	add ffmpeg params for video/audio coding (set's for selected stream)
+	-ffmpeg_coding_params	[str]	add ffmpeg params for video/audio coding (set's for selected stream), video filters disabled
 	-json_pipe		set all params by JSON array [] in pipe, this should be only one param on parameters
 	-web_optimization	[int]	optimization result file to streaming (0 - disabled, another - enabled(default))
 	-stream_prefix	[str]	stream percentage prefix (shows when converting stream)
@@ -462,6 +462,7 @@ class Video2iDevice(object):
 		#if sys.platform != 'darwin':
 		#	cmd_str = cmd_str.encode('utf-8')
 		self.__printCmd(cmd_str)
+		sys.exit()
 		#cmd = ['/Users/maliy/work/Video to iDevice/video2iDevice/binary/ffmpeg', '-y', '-i', '/Users/maliy/Movies/Ga-Rei Zero/Ga-Rei Zero - 04 (BDRip H264 1280x720)_0_30.mp4', '-map', '0:0', '-an', '-vcodec', 'libx264', '-crf', '18.2', '-s', '1280x720', '-refs', '6', '-threads', '4', '-partitions', '+parti4x4+parti8x8+partp4x4+partp8x8+partb8x8', '-subq', '12', '-trellis', '1', '-coder', '1', '-me_range', '32', '-level', '4.1', '-profile:v', 'high', '-bf', '12', '-r', '23.976', '/tmp/VideoToIDevice/Ga-Rei Zero - 04 (BDRip H264 1280x720)_0_30.mp4_0:0.mp4']
 		#cmd = ['/Users/maliy/work/Video to iDevice/video2iDevice/binary/ffmpeg', '-y', '-i', '/Users/maliy/Movies/Hatsune Miku & Megurine Luka – 39′s Giving Day.m4v', '-map', '0:0', '-an', '-vcodec', 'libx264', '-crf', '18', '-s', '1280x720', '-refs', '6', '-threads', '4', '-partitions', '+parti4x4+parti8x8+partp4x4+partp8x8+partb8x8', '-subq', '12', '-trellis', '1', '-coder', '1', '-me_range', '32', '-level', '4.1', '-profile:v', 'high', '-bf', '12', '-r', '23.976', '/tmp/VideoToIDevice/Ga-Rei Zero - 04 (BDRip H264 1280x720)_0_30.mp4_0:0.mp4']
 		p = Popen(cmd, stdout=PIPE, stderr=STDOUT)
@@ -802,13 +803,14 @@ class Video2iDevice(object):
 				if user_params[0][0]!='-':
 					val = user_params[0]
 					del user_params[0]
-				if idx==-1:
-					current_params.insert(-1, param)
-					if val!=None:
-						current_params.insert(-1, val)
-				else:
-					if val!=None:
-						current_params[idx+1] = val
+				if param!='-vf':
+					if idx==-1:
+						current_params.insert(-1, param)
+						if val!=None:
+							current_params.insert(-1, val)
+					else:
+						if val!=None:
+							current_params[idx+1] = val
 		return current_params
 
 
@@ -858,7 +860,10 @@ class Video2iDevice(object):
 			(_w, _h) = (w, h)
 			#(_w, _h) = video_size_convert(w, h, w)
 			#(_h, _w) = video_size_convert(_h, _w, _h)
+		video_filters = []
 		if _w == 480 and (_h == 368 or _h == 352): _h = 360
+		if STTNGS.has_key('s'):
+			video_filters.append({'scale': '%d:%d'%(_w, _h)})
 
 		print '\033[1;33m %dx%d  ==> %dx%d \033[00m'%(w,h, _w,_h)
 
@@ -903,14 +908,14 @@ class Video2iDevice(object):
 				if  crf<>0:
 					'CRF mode'
 					ffmpeg_params = self.__videoFfmpegParamsCRF(iFile, stream.trackID, crf)
-					ffmpeg_params_add = ['-s', '%dx%d'%(_w,_h),
+					ffmpeg_params_add = [#'-s', '%dx%d'%(_w,_h),
 										 '-refs', '%d'%STTNGS['refs'],
 										 '-threads', '%s'%STTNGS['threads']]
 				else:
 					'PASSES mode'
 					ffmpeg_params = self.__videoFfmpegParamsPasses(iFile, stream.trackID, _pass)
 					ffmpeg_params_add = ['-b:v', '"%d k"'%STTNGS['b'],
-										 '-s', '%dx%d'%(_w,_h),
+										 #'-s', '%dx%d'%(_w,_h),
 										 '-maxrate', '"%d k"'%STTNGS['b'],
 										 '-bufsize', '"%d k"'%int(STTNGS['b']*2.5),
 										 '-refs', '%d'%STTNGS['refs'],
@@ -941,21 +946,31 @@ class Video2iDevice(object):
 					#cmd = ffmpeg_path + ' -y -i "%s" -pass %d -map %s -an  -vcodec "libx264" -b:v "%d k" -s "%dx%d" -flags "+loop" -cmp "+chroma" -partitions "+parti4x4+parti8x8+partp4x4+partp8x8+partb8x8" -subq 12  -trellis 0  -refs %d  -coder 1  -me_range 32  -g 240   -keyint_min 25  -sc_threshold 40 -i_qfactor 0.71 -maxrate  "%d k" -bufsize "%d k" -rc_eq "blurCplx^(1-qComp)" -qcomp 0.6 -me_method full  -b_strategy 1 %s -level 4.1 -threads %d -profile high -bf 10 '%(iFile, _pass, stream[1], STTNGS['b'], _w,_h, STTNGS['refs'], STTNGS['b'], STTNGS['b']*2, os_ffmpeg_prms, STTNGS['threads'])
 				#if len(os_ffmpeg_prms):
 				#	ffmpeg_params_add[len(ffmpeg_params_add):] = os_ffmpeg_prms
+				if STTNGS.has_key('vr'):
+					ffmpeg_params_add[len(ffmpeg_params_add):] = ['-r', '%.3f'%STTNGS['vr']]
+					#cmd = '%s -r %.3f'%(cmd, STTNGS['vr'])
+
+				# video filters section
 				if len(hardsub_streams)==1:
 					hardsub_stream = hardsub_streams[0]
 					ass_fn = self.__prepareHardsubFile(hardsub_stream)
 					if ass_fn!=None:
-						ffmpeg_params_add[len(ffmpeg_params_add):] = ['-vf', 'ass=%s'%ass_fn]
+						#ffmpeg_params_add[len(ffmpeg_params_add):] = ['-vf', 'ass=%s'%ass_fn]
+						video_filters.append({'ass': ass_fn})
 					else:
 						print 'Can\'t set stream', hardsub_stream, 'as hardsub.'
 						sys.exit(1)
 						hardsub_stream.params['extended']['hardsub'] = False
-				if STTNGS.has_key('vr'):
-					ffmpeg_params_add[len(ffmpeg_params_add):] = ['-r', '%.3f'%STTNGS['vr']]
-					#cmd = '%s -r %.3f'%(cmd, STTNGS['vr'])
 				if STTNGS.has_key('crop'):
-					ffmpeg_params_add[len(ffmpeg_params_add):] = ['-vf', 'crop=%s'%STTNGS['crop']]
-					#cmd = '%s -vf crop=%s'%(cmd, STTNGS['crop'])
+					#ffmpeg_params_add[len(ffmpeg_params_add):] = ['-vf', 'crop=%s'%STTNGS['crop']]
+					video_filters.append({'crop': STTNGS['crop']})
+				if len(video_filters)>0:
+					ffmpeg_params_add.append('-vf')
+					filter_val = ''
+					for filter_dict in video_filters:
+						filter_name = filter_dict.keys()[0]
+						filter_val += '%s=%s,'%(filter_name, filter_dict[filter_name])
+					ffmpeg_params_add.append(filter_val[:-1])
 				ffmpeg_params[len(ffmpeg_params):] = ffmpeg_params_add
 			ffmpeg_params.append('"%s"'%oFile)
 
