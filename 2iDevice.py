@@ -956,7 +956,7 @@ class Video2iDevice(object):
 					ass_fn = self.__prepareHardsubFile(hardsub_stream)
 					if ass_fn!=None:
 						#ffmpeg_params_add[len(ffmpeg_params_add):] = ['-vf', 'ass=%s'%ass_fn]
-						video_filters.append({'ass': ass_fn})
+						video_filters.append({'ass': '"%s"'%ass_fn})
 					else:
 						print 'Can\'t set stream', hardsub_stream, 'as hardsub.'
 						sys.exit(1)
