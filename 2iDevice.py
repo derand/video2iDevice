@@ -861,8 +861,8 @@ class Video2iDevice(object):
 			#(_h, _w) = video_size_convert(_h, _w, _h)
 		video_filters = []
 		if _w == 480 and (_h == 368 or _h == 352): _h = 360
-		if STTNGS.has_key('s'):
-			video_filters.append({'scale': '%d:%d'%(_w, _h)})
+		#if STTNGS.has_key('s'):
+		#	video_filters.append({'scale': '%d:%d'%(_w, _h)})
 
 		print '\033[1;33m %dx%d  ==> %dx%d \033[00m'%(w,h, _w,_h)
 
@@ -960,6 +960,8 @@ class Video2iDevice(object):
 						print 'Can\'t set stream', hardsub_stream, 'as hardsub.'
 						sys.exit(1)
 						hardsub_stream.params['extended']['hardsub'] = False
+				if STTNGS.has_key('s'):
+					video_filters.append({'scale': '%d:%d'%(_w, _h)})
 				if STTNGS.has_key('crop'):
 					#ffmpeg_params_add[len(ffmpeg_params_add):] = ['-vf', 'crop=%s'%STTNGS['crop']]
 					video_filters.append({'crop': STTNGS['crop']})
