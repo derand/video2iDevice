@@ -960,11 +960,11 @@ class Video2iDevice(object):
 						print 'Can\'t set stream', hardsub_stream, 'as hardsub.'
 						sys.exit(1)
 						hardsub_stream.params['extended']['hardsub'] = False
-				if STTNGS.has_key('s'):
-					video_filters.append({'scale': '%d:%d'%(_w, _h)})
 				if STTNGS.has_key('crop'):
 					#ffmpeg_params_add[len(ffmpeg_params_add):] = ['-vf', 'crop=%s'%STTNGS['crop']]
 					video_filters.append({'crop': STTNGS['crop']})
+				if STTNGS.has_key('s'):
+					video_filters.append({'scale': '%d:%d'%(_w, _h)})
 				if len(video_filters)>0:
 					ffmpeg_params_add.append('-vf')
 					filter_val = ''
