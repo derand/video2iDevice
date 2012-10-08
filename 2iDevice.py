@@ -829,6 +829,19 @@ class Video2iDevice(object):
 				#p.close()
 				cmd = [mkvtoolnix_path + 'mkvextract', 'tracks', fn, '%s:%s'%(hardsub_stream.params['mkvinfo_trackNumber'], ass_fn)]
 				self.__exeCmd(cmd)
+			elif hardsub_stream.format().upper()=='UTF-8' and hardsub_stream.params.has_key('Codec_ID') and hardsub_stream.params['Codec_ID'].upper()=='S_TEXT/UTF8':
+				srt_fn = '%s/%s.srt'%(STTNGS['temp_dir'], os.path.basename(fn))
+				print 'asd %s'%srt_fn
+				cmd = [mkvtoolnix_path + 'mkvextract', 'tracks', fn, '%s:%s'%(hardsub_stream.params['mkvinfo_trackNumber'], srt_fn)]
+				self.__exeCmd(cmd)
+
+				ass_fn = '%s/%s.ass'%(STTNGS['temp_dir'], os.path.basename(fn))
+				cmd = ['-y', '-i', srt_fn, ass_fn]
+				self.__exeFfmpegCmd(cmd)
+		elif file_ext=='.srt':
+				ass_fn = '%s/%s.ass'%(STTNGS['temp_dir'], os.path.basename(fn))
+				cmd = ['-y', '-i', fn, ass_fn]
+				self.__exeFfmpegCmd(cmd)
 		else:
 			# TODO: there can be added other subtitle format
 			return None
