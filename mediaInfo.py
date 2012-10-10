@@ -570,7 +570,9 @@ class MediaInformer:
 			return rv
 
 		track_id = 0
-		for stream in sorted(curr_el['streams'], key=lambda s: int(s.params['ID'])):
+		# convert int  values and like '4353 (0x1101)' or return string
+		cnvrtToInt = lambda x: x.isdigit() and int(x) or x.split(' ')[0].isdigit() and int(x.split(' ')[0]) or x
+		for stream in sorted(curr_el['streams'], key=lambda s: cnvrtToInt(s.params['ID'])):
 			#fix track id's
 			if stream.params.has_key('ID'):
 				stream.trackID = '0%s%d'%(self.mapStreamSeparatedSymbol(filename), track_id)
