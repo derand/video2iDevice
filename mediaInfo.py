@@ -76,6 +76,8 @@ class cStream(object):
 			rv = self.params['Format']
 		if self.params.has_key('codec'):
 			rv = self.params['codec']
+		if self.type==2 and rv.upper()=='UTF-8' and self.params.has_key('Codec_ID') and self.params['Codec_ID'].upper()=='S_TEXT/UTF8':
+			rv = 'srt'
 		return rv
 
 class cMediaInfo(object):
@@ -567,20 +569,12 @@ class MediaInformer:
 		except Exception, e:
 			return rv
 
-		minTrackID = sys.maxint
-		for stream in curr_el['streams']:
-			if stream.params.has_key('ID'):
-				stream.params['ID'] = stream.params['ID'].split(' ')[0] # '1270245485 (0x4BB6686D)'
-				tid = int(stream.params['ID'])
-				if minTrackID>tid:
-					minTrackID = tid
-
-		tmp, ext = os.path.splitext(filename)
-		ext = ext.lower()
-		for stream in curr_el['streams']:
+		track_id = 0
+		for stream in sorted(curr_el['streams'], key=lambda s: int(s.params['ID'])):
 			#fix track id's
 			if stream.params.has_key('ID'):
-				stream.trackID = '0%s%d'%(self.mapStreamSeparatedSymbol(filename), int(stream.params['ID'])-minTrackID)
+				stream.trackID = '0%s%d'%(self.mapStreamSeparatedSymbol(filename), track_id)
+			track_id += 1
 
 			if stream.params.has_key('Language') and LANGUAGES_DICT.has_key(stream.params['Language']):
 				stream.language = LANGUAGES_DICT[stream.params['Language']]
