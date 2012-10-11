@@ -571,11 +571,14 @@ class MediaInformer:
 
 		track_id = 0
 		# convert int  values and like '4353 (0x1101)' or return string
-		cnvrtToInt = lambda x: x.isdigit() and int(x) or x.split(' ')[0].isdigit() and int(x.split(' ')[0]) or x
-		for stream in sorted(curr_el['streams'], key=lambda s: cnvrtToInt(s.params['ID'])):
+		def __toInt(str):
+			try:
+				return int(str.params['ID'].split(' ')[0])
+			except Exception, e:
+				return str.params['ID']
+		for stream in sorted(curr_el['streams'], key=__toInt):
 			#fix track id's
-			if stream.params.has_key('ID'):
-				stream.trackID = '0%s%d'%(self.mapStreamSeparatedSymbol(filename), track_id)
+			stream.trackID = '0%s%d'%(self.mapStreamSeparatedSymbol(filename), track_id)
 			track_id += 1
 
 			if stream.params.has_key('Language') and LANGUAGES_DICT.has_key(stream.params['Language']):
