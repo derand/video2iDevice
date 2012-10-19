@@ -5,6 +5,7 @@
 
 import sys
 import os
+import re
 
 if sys.platform == 'darwin':
 	script_dir = os.path.dirname(os.path.realpath(__file__))
@@ -22,11 +23,10 @@ else:
 
 
 def add_separator_to_filepath(filepath):
-	'''
-		I feel this function can be looks better
-	'''
-	return filepath.replace('\\', '\\\\').replace(' ', '\\ ').replace('(', '\\(').replace(')', '\\)').replace('[', '\\[').replace(']',
-							      '\\]').replace('&', '\\&').replace('"', '\\"')
+	return re.escape(str)
+	#for c in '\\ ()[]&":\'`':
+	#	filepath = filepath.replace(c, '\\%s'%c)
+	#return filepath
 
 
 

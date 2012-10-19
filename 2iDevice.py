@@ -1519,13 +1519,8 @@ class Video2iDevice(object):
 			filename = self.encodeMedia(fi)
 
 		if STTNGS['web_optimization']:
-			#cmd = mp4box_path + ' -inter 500 "%s"'%filename
-			#self.__printCmd(cmd)
-			#p = os.popen(cmd)
-			#p.close()
-			pass
-			#cmd = [mp4box_path, '-inter', '500', filename]
-			#self.__exeCmd(cmd)
+			cmd = [mp4box_path, '-inter', '500', filename]
+			self.__exeCmd(cmd)
 
 		self.rename(filename)
 
@@ -1544,29 +1539,9 @@ class Video2iDevice(object):
 				fobj.close()
 
 
-#print sys.argv
-#print sys.platform
-#print os.path.dirname(sys.argv[0])
-#sys.exit(1)
-
 
 
 if __name__=='__main__':
-	"""
-	import struct
-	print struct.pack('b', int('29', 16))
-	correct_profile(sys.argv[1])
-	sys.exit()
-	"""
-
-	#tmp = shlex.split("fagfsdf fsadf ads \"fasndifuds fsf asdf\" f\ fds")
-	#tmp.append('asdq we')
-	#print tmp
-	#print ' '.join(tmp)
-	#sys.exit(0)
-
-	#os.environ['PYTHONIOENCODING'] = 'utf-8'
-
 	converter = Video2iDevice()
 
 	startTime = time.time()
@@ -1641,8 +1616,6 @@ if __name__=='__main__':
 			else:
 				fi = converter.mediainformer.fileInfo(fn)
 			converter.fileProcessing(fi)
-
-	#os.system('date')
 	tm = time.time()-startTime
 	time_str = '%02d:%02d:%02d'%(tm/60/60, tm%(60*60)/60, tm%60)
 	if not (STTNGS.has_key('info') and not STTNGS['vv']):
