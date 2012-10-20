@@ -108,7 +108,7 @@ Global options:
 	-TRACK_REGEX	[srt]	set regular exeption for select track number from filename
 	-TRACKS_REGEX	[srt]	set regular exeption for select tracks count from filename
 	-out_file	[str]	save result to this file. supports tags: [SEASON], [EPISODE_ID]
-	-format		[str]	output format (default: 'm4v')
+	-format		[str]	output format, can be: mp4, m4v, mkv (default: 'm4v')
 	-stream		[int]	stream idx from appending files (vfile, afile, sfile)
 	-ctf			clear temp files after converting
 	-v			script version
