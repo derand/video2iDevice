@@ -23,7 +23,7 @@ else:
 
 
 def add_separator_to_filepath(filepath):
-	return re.escape(str)
+	return re.escape(filepath)
 	#for c in '\\ ()[]&":\'`':
 	#	filepath = filepath.replace(c, '\\%s'%c)
 	#return filepath

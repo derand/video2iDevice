@@ -546,8 +546,9 @@ class Video2iDevice(object):
 			sys.exit()
 		return (retcode, libx264_log, libx264_log_settings)
 
-	def __exeCmd(self, cmd):
+	def __exeCmd(self, cmd, check_exit_code=True):
 		cmd_str = add_separator_to_filepath(cmd[0])
+		print cmd
 		for i in range(1,len(cmd)):
 			if cmd[i].find(' ')==-1:
 				cmd_str += ' %s'%cmd[i]
@@ -576,8 +577,9 @@ class Video2iDevice(object):
 				line += ch
 			if retcode is not None and len(ch)==0:
 				break
-		if retcode<>0:
+		if check_exit_code and retcode<>0:
 			print cmd
+			print 'Exit code: %d'%retcode
 			sys.exit()
 		return retcode
 
@@ -1280,6 +1282,108 @@ class Video2iDevice(object):
 			stream.params['name'] = name
 		return stream
 
+	def createMPEG(self, files, fi):
+		name = os.path.basename(fi.filename)
+		addCmd2=''
+		ve = ''
+		ae = ''
+		se = ''
+		currentTrackIdx = 0
+		trackID = 0
+		if STTNGS['vv']:
+			print
+		info =  self.tagTrackInfo(name)
+		cmd = [mp4box_path, ]
+		for f in files:
+			def trackDelay(trackID):
+				key = 'delay%d'%trackID	
+				rv = 0		
+				if STTNGS.has_key(key):
+					rv = STTNGS[key]
+				if STTNGS.has_key('episodes') and info.has_key('track') and type(info['track'])==type(1):
+					eid = info['track']-1
+					if STTNGS['episodes'][eid].has_key(key):
+						rv = STTNGS['episodes'][eid][key]
+				return rv
+
+			stream = f[2]
+			delay = 0
+			if stream.params.has_key('extended'):
+				if stream.params['extended'].has_key('delay'):
+					delay = stream.params['extended']['delay']
+			if delay==0:
+				delay = trackDelay(trackID)
+
+			if stream!=None:
+				if stream.params.has_key('extended') and stream.params['extended'].has_key('lang'):
+					(l, currentTrackIdx) = self.getLang(currentTrackIdx, stream.params['extended']['lang'])
+					l = stream.params['extended']['lang'] 
+				else:
+					(l, currentTrackIdx) = self.getLang(currentTrackIdx, stream.language)
+			else:
+				(l, currentTrackIdx) = self.getLang(currentTrackIdx)
+			addCmd2 = '%s:lang=%s'%(f[1], l,)
+			#addCmd2 += ' -add "%s":lang=%s'%(string.replace(f[1], '0.0', '0:0'), l,)
+			if delay!=0:
+				addCmd2 += ':delay=%d'%delay
+			if f[0]>0:
+				addCmd2 += ':group=%d'%f[0]
+			if stream.params.has_key('name') and stream.params['name']<>None:
+				addCmd2+=':name=%s'%stream.params['name']
+			if f[0]==0:
+				addCmd2 += ve
+				ve = ':disable'
+			elif f[0]==1:
+				addCmd2 += ae
+				ae = ':disable'
+			elif f[0]==2:
+				addCmd2 += se
+				se = ':disable'
+			trackID+=1
+			cmd.append('-add')
+			cmd.append(addCmd2)
+
+		name = STTNGS['temp_dir']+'/'+'.'.join(os.path.basename(fi.filename).split('.')[:-1])+'.'+STTNGS['format']
+		cmd.append(name)
+		cmd.append('-new')
+		#cmd = mp4box_path + ' %s "%s" -new'%(addCmd2, name)
+		#self.__printCmd(cmd)
+		#p = os.popen(cmd)
+		#p.close()
+		self.__exeCmd(cmd)
+
+		self.iTagger(name)
+		
+		self.log.put('Fixing flags on result mpeg file...\n')
+		mpeg4fixer().fixFlagsAndSubs(name, STTNGS['fd'])
+		
+		'''
+		self.log.put('Setting stream names...\n')
+		trackNames = []
+		need = False
+		for f in files:
+			n = None
+			if f[2]!=None and f[2].params.has_key('name') and f[2].params['name']:
+				n = unicode(f[2].params['name'], 'utf-8').encode('utf-8')
+				need = True
+			trackNames.append(n)
+		if need:
+			mpeg4fixer().setTrackNames(name, trackNames) 
+		'''
+		return name
+
+	def createMKV(self, files, fi):
+		name = STTNGS['temp_dir']+'/'+'.'.join(os.path.basename(fi.filename).split('.')[:-1])+'.'+STTNGS['format']
+		cmd = [mkvtoolnix_path + 'mkvmerge', '-o', name, ]
+		for f in files:
+			cmd.append(f[1])
+		retcode = self.__exeCmd(cmd, False)
+		if retcode>1:
+			print cmd
+			print 'Exit with code: %d'%retcode
+			sys.exit()
+		return name
+
 
 	def encodeMedia(self, fi):
 		'''
@@ -1413,92 +1517,13 @@ class Video2iDevice(object):
 		if STTNGS['vv']:
 			print
 
-		addCmd2=''
-		ve = ''
-		ae = ''
-		se = ''
-		currentTrackIdx = 0
-		trackID = 0
-		if STTNGS['vv']:
-			print
-		info =  self.tagTrackInfo(name)
-		cmd = [mp4box_path, ]
-		for f in files:
-			def trackDelay(trackID):
-				key = 'delay%d'%trackID	
-				rv = 0		
-				if STTNGS.has_key(key):
-					rv = STTNGS[key]
-				if STTNGS.has_key('episodes') and info.has_key('track') and type(info['track'])==type(1):
-					eid = info['track']-1
-					if STTNGS['episodes'][eid].has_key(key):
-						rv = STTNGS['episodes'][eid][key]
-				return rv
-
-			stream = f[2]
-			delay = 0
-			if stream.params.has_key('extended'):
-				if stream.params['extended'].has_key('delay'):
-					delay = stream.params['extended']['delay']
-			if delay==0:
-				delay = trackDelay(trackID)
-
-			if stream!=None:
-				if stream.params.has_key('extended') and stream.params['extended'].has_key('lang'):
-					(l, currentTrackIdx) = self.getLang(currentTrackIdx, stream.params['extended']['lang'])
-					l = stream.params['extended']['lang'] 
-				else:
-					(l, currentTrackIdx) = self.getLang(currentTrackIdx, stream.language)
-			else:
-				(l, currentTrackIdx) = self.getLang(currentTrackIdx)
-			addCmd2 = '%s:lang=%s'%(f[1], l,)
-			#addCmd2 += ' -add "%s":lang=%s'%(string.replace(f[1], '0.0', '0:0'), l,)
-			if delay!=0:
-				addCmd2 += ':delay=%d'%delay
-			if f[0]>0:
-				addCmd2 += ':group=%d'%f[0]
-			if stream.params.has_key('name') and stream.params['name']<>None:
-				addCmd2+=':name=%s'%stream.params['name']
-			if f[0]==0:
-				addCmd2 += ve
-				ve = ':disable'
-			elif f[0]==1:
-				addCmd2 += ae
-				ae = ':disable'
-			elif f[0]==2:
-				addCmd2 += se
-				se = ':disable'
-			trackID+=1
-			cmd.append('-add')
-			cmd.append(addCmd2)
-
-		name = STTNGS['temp_dir']+'/'+'.'.join(os.path.basename(fi.filename).split('.')[:-1])+'.'+STTNGS['format']
-		cmd.append(name)
-		cmd.append('-new')
-		#cmd = mp4box_path + ' %s "%s" -new'%(addCmd2, name)
-		#self.__printCmd(cmd)
-		#p = os.popen(cmd)
-		#p.close()
-		self.__exeCmd(cmd)
-
-		self.iTagger(name)
-		
-		self.log.put('Fixing flags on result mpeg file...\n')
-		mpeg4fixer().fixFlagsAndSubs(name, STTNGS['fd'])
-		
-		'''
-		self.log.put('Setting streams name...\n')
-		trackNames = []
-		need = False
-		for f in files:
-			n = None
-			if f[2]!=None and f[2].params.has_key('name') and f[2].params['name']:
-				n = unicode(f[2].params['name'], 'utf-8').encode('utf-8')
-				need = True
-			trackNames.append(n)
-		if need:
-			mpeg4fixer().setTrackNames(name, trackNames) 
-		'''
+		# write streams to output file
+		format = STTNGS['format'].lower()
+		if format in ['m4v', 'mp4', 'mov']:
+			name = self.createMPEG(files, fi)
+		if format in ['mkv']:
+			STTNGS['web_optimization'] = False
+			name = self.createMKV(files, fi)
 
 		self.log.put('Remove temp files...\n')
 		if STTNGS['ctf']:
