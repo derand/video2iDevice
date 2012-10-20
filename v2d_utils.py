@@ -3,6 +3,43 @@
 
 # writed by derand
 
+import sys
+import os
+import re
+
+if sys.platform == 'darwin':
+	script_dir = os.path.dirname(os.path.realpath(__file__))
+	ffmpeg_path = script_dir + '/binary/ffmpeg'
+	mp4box_path = script_dir + '/binary/MP4Box'
+	AtomicParsley_path = script_dir + '/binary/AtomicParsley'
+	mkvtoolnix_path = script_dir + '/binary/mkvtoolnix/'
+	mediainfo_path = script_dir + '/binary/mediainfo'
+else:
+	ffmpeg_path = 'ffmpeg'
+	mp4box_path = 'MP4Box'
+	AtomicParsley_path = 'AtomicParsley'
+	mkvtoolnix_path = ''
+	mediainfo_path = 'mediainfo'
+
+
+def add_separator_to_filepath(filepath):
+	return re.escape(filepath)
+	#for c in '\\ ()[]&":\'`':
+	#	filepath = filepath.replace(c, '\\%s'%c)
+	#return filepath
+
+
+
+def video_size_convert(real1, real2, out1):
+	out2 = (real2*out1)/real1
+	if out2%16>7:
+		out2 += 16-out2%16
+	else:
+		out2 -= out2%16
+	return (out1, out2)
+
+
+
 #source table http://en.wikipedia.org/wiki/List_of_ISO_639-2_codes
 LANGUAGES_DICT = { 
 "Abkhazian":             "abk",
@@ -555,3 +592,10 @@ LANGUAGES_DICT = {
 "creoles and pidgins":   "crp",
 "tlhIngan-Hol":          "tlh",
 }
+
+if __name__=='__main__':
+	keys = sorted(LANGUAGES_DICT.keys())
+	print '[NSDictionary dictionaryWithObjectsAndKeys:'
+	for key in keys:
+		print '@"%s", @"%s",'%(LANGUAGES_DICT[key], key)
+	print 'nil];'

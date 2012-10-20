@@ -12,15 +12,8 @@ import fileCoding
 import math
 from subprocess import Popen, PIPE, STDOUT
 
-from constants import LANGUAGES_DICT
+from v2d_utils import *
 
-
-def add_separator_to_filepath(filepath):
-	'''
-		I feel this function can be looks better
-	'''
-	return filepath.replace('\\', '\\\\').replace(' ', '\\ ').replace('(', '\\(').replace(')', '\\)').replace('[', '\\[').replace(']',
-							      '\\]').replace('&', '\\&').replace('"', '\\"')
 
 def isMatroshkaMedia(file_name):
 	_, file_ext = os.path.splitext(file_name)
@@ -83,6 +76,8 @@ class cStream(object):
 			rv = self.params['Format']
 		if self.params.has_key('codec'):
 			rv = self.params['codec']
+		if self.type==2 and rv.upper()=='UTF-8' and self.params.has_key('Codec_ID') and self.params['Codec_ID'].upper()=='S_TEXT/UTF8':
+			rv = 'srt'
 		return rv
 
 class cMediaInfo(object):
@@ -145,6 +140,13 @@ class cMediaInfo(object):
 			'chapters': chapters_arr
 			}
 
+	def video_stream(self):
+		for stream in self.streams:
+			if stream.type==0:
+				return stream
+		return None
+
+
 class cChapter(object):
 	"""docstring for cChapter"""
 	def __init__(self, time_str, title):
@@ -202,6 +204,27 @@ class MediaInformer:
 		if prm.find('.')>-1:
 			return float(prm)
 		return int(prm)
+
+	def __mediaDuration(self, filename):
+		rv = None
+		duration_re_compiled = re.compile('Duration:\s*(\d{2}):(\d{2}):(\d{2})\.(\d{2})')
+		cmd = [self.__ffmpeg_path, '-i', filename]
+		p = Popen(cmd, stdout=PIPE, stderr=STDOUT)
+		while True:
+			retcode = p.poll()
+			line = p.stdout.readline()
+			if retcode is not None and len(line)==0:
+				break
+			duration_re =  duration_re_compiled.search(line)
+			if duration_re:
+				groups = duration_re.groups()
+				hours = int(groups[0])
+				mins = int(groups[1])
+				secs = int(groups[2])
+				ms = float(groups[3])
+				rv = (hours*60.0 + mins)*60.0 + secs + ms/100
+		return rv
+
 
 	def fileInfoUsingFFMPEG(self, filename):
 		'''
@@ -324,9 +347,9 @@ class MediaInformer:
 			while True:
 				retcode = p.poll()
 				line = p.stdout.readline()
-				if line.find(searchString)>-1:
-					#l = line[line.find(searchString)+len(searchString):-1]
-					rv = line[line.find(searchString)+len(searchString)+1]
+				tmp = re.search('^\s+Stream\s+#0(.)\d+', line)
+				if tmp:
+					rv = tmp.group(1)
 					break
 				if retcode is not None and len(line)==0:
 					break
@@ -546,19 +569,17 @@ class MediaInformer:
 		except Exception, e:
 			return rv
 
-		minTrackID = sys.maxint
-		for stream in curr_el['streams']:
-			if stream.params.has_key('ID'):
-				tid = int(stream.params['ID'])
-				if minTrackID>tid:
-					minTrackID = tid
-
-		tmp, ext = os.path.splitext(filename)
-		ext = ext.lower()
-		for stream in curr_el['streams']:
+		track_id = 0
+		# convert int  values and like '4353 (0x1101)' or return string
+		def __toInt(str):
+			try:
+				return int(str.params['ID'].split(' ')[0])
+			except Exception, e:
+				return str.params['ID']
+		for stream in sorted(curr_el['streams'], key=__toInt):
 			#fix track id's
-			if stream.params.has_key('ID'):
-				stream.trackID = '0%s%d'%(self.mapStreamSeparatedSymbol(filename), int(stream.params['ID'])-minTrackID)
+			stream.trackID = '0%s%d'%(self.mapStreamSeparatedSymbol(filename), track_id)
+			track_id += 1
 
 			if stream.params.has_key('Language') and LANGUAGES_DICT.has_key(stream.params['Language']):
 				stream.language = LANGUAGES_DICT[stream.params['Language']]
@@ -623,7 +644,7 @@ class MediaInformer:
 		ext = ext.lower()
 		if ext=='.ass' or ext=='.srt' or ext=='.ttxt' or ext=='.ssa':
 			rv.informer = 'none'
-			rv.stream_add(cStream(2, '0%s0'%self.mapStreamSeparatedSymbol(filename), None, {'codec': ext[1:], 'encoding': fileCoding.code_detecter(filename)}))
+			rv.stream_add(cStream(2, '0%s0'%self.mapStreamSeparatedSymbol(filename), None, {'codec': ext[1:], 'encoding': fileCoding.file_encoding(filename)}))
 		else:
 			rv = self.fileInfoUsingMediaInfo(filename)
 			if isMatroshkaMedia(filename):
@@ -636,6 +657,12 @@ class MediaInformer:
 
 			if len(rv.streams)==0:
 				rv = self.fileInfoUsingFFMPEG(filename)
+
+		try:
+			rv.general['mediaDuration'] = self.__mediaDuration(filename)
+		except Exception, e:
+			pass
+			#raise e
 
 		if ext=='.mp4' or ext=='.m4v':
 			rv.tags = self.__readTags(filename)
@@ -672,6 +699,7 @@ class MediaInformer:
 
 		convert_dictionary = {
 		'©art': 'artist',
+		'©ART': 'artist',
 		'©nam': 'title',
 		'©alb': 'album',
 		'©gen': 'genre',
@@ -746,19 +774,7 @@ class MediaInformer:
 
 
 if __name__=='__main__':
-	ffmpeg_path = 'ffmpeg'
-	mkvtoolnix_path = ''
-	mediainfo_path = 'mediainfo'
-	atomicParsley_path = 'AtomicParsley'
-	if sys.platform == 'darwin':
-		script_dir = os.path.dirname(os.path.realpath(__file__))
-		ffmpeg_path = script_dir + '/binary/ffmpeg'
-		mkvtoolnix_path = script_dir + '/binary/mkvtoolnix/'
-		mediainfo_path = script_dir + '/binary/mediainfo'
-		atomicParsley_path = script_dir + '/binary/AtomicParsley'
-
-
-	mi = MediaInformer(ffmpeg_path, mkvtoolnix_path, mediainfo_path, atomicParsley_path, os.getenv('HOME')+'/Desktop')
+	mi = MediaInformer(ffmpeg_path, mkvtoolnix_path, mediainfo_path, AtomicParsley_path, os.getenv('HOME')+'/Desktop')
 	for arg in sys.argv[1:]:
 		fi = mi.fileInfo(arg)
 		print fi.dump()
