@@ -814,6 +814,19 @@ class Video2iDevice(object):
 							current_params[idx+1] = val
 		return current_params
 
+	def __copyFileAndChangeEncoding(self, fn_src, fn_dest):
+		fCoding = fileCoding.file_encoding(fn_src)
+		if fCoding.lower()=='utf-8':
+			shutil.copyfile(fn_src, fn_dest)
+		else:
+			BLOCKSIZE = 1024*10
+			with codecs.open(fn_src, 'r', fCoding) as sourceFile:
+				with codecs.open(fn_dest, 'w', 'utf-8') as destFile:
+					while True:
+						contents = sourceFile.read(BLOCKSIZE)
+						if not contents:
+							break
+						destFile.write(contents)			
 
 	def __prepareHardsubFile(self, hardsub_stream):
 		fn = hardsub_stream.params['filename']
@@ -821,7 +834,8 @@ class Video2iDevice(object):
 		file_ext = file_ext.lower()
 		if file_ext=='.ass' or file_ext=='.ssa':
 			ass_fn = '%s/%s'%(STTNGS['temp_dir'], os.path.basename(fn))
-			shutil.copyfile(fn, ass_fn)
+			#shutil.copyfile(fn, ass_fn)
+			self.__copyFileAndChangeEncoding(fn, ass_fn)
 		elif isMatroshkaMedia(fn) and hardsub_stream.params.has_key('mkvinfo_trackNumber'):
 			if hardsub_stream.format().upper()=='ASS' or hardsub_stream.format().upper()=='SSA':
 				ass_fn = '%s/%s.%s'%(STTNGS['temp_dir'], os.path.basename(fn), hardsub_stream.format().lower())
