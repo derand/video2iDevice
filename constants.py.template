@@ -1,0 +1,10 @@
+# -*- coding: utf-8 -*-
+
+
+# service jabber account 
+SERVICE_XMPP_UID = ''
+SERVICE_XMPP_PASS = ''
+
+# jabber uid to send logs about actions
+XMPP_UID = ''
+

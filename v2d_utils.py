@@ -40,6 +40,20 @@ def video_size_convert(real1, real2, out1):
 
 
 
+def send_xmpp_message(from_uid, password, to_uid, message):
+	try:
+		import xmpp
+		jid = xmpp.protocol.JID(from_uid)
+		cl = xmpp.Client(jid.getDomain(), debug=[])
+		cl.connect()
+		cl.auth(jid.getNode(), password)
+		cl.send(xmpp.protocol.Message(to_uid, message, typ='chat'))
+	except:
+		pass
+
+
+
+
 #source table http://en.wikipedia.org/wiki/List_of_ISO_639-2_codes
 LANGUAGES_DICT = { 
 "Abkhazian":             "abk",

@@ -1,5 +1,17 @@
 
+# auth files #
+constants.py
+
+# python compiled files #
 *.pyc
 
+# OS X binaries #
+binary/
 
+# OS X generated files #
+######################
 .DS_Store
+.DS_Store?
+._*
+Icon?
+

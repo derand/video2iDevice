@@ -210,6 +210,7 @@ class LogToFile(object):
 	def __init__(self):
 		super(LogToFile, self).__init__()
 		self.__log_file = None
+		self.__file_name = None
 
 	def __del__(self):
 		self.releaseLog()
@@ -227,8 +228,12 @@ class LogToFile(object):
 	def isSetted(self):
 		return self.__log_file<>None
 
+	def file_name(self):
+		return self.__file_name
+
 	def initLogByFileName(self, logFileName):
 		self.releaseLog()
+		self.__file_name = logFileName
 		self.__log_file = open(logFileName, 'w')
 
 	def releaseLog(self):
@@ -1656,11 +1661,19 @@ if __name__=='__main__':
 				fi = converter.mediainformer.fileInfo(fn)
 			converter.fileProcessing(fi)
 	tm = time.time()-startTime
-	time_str = '%02d:%02d:%02d'%(tm/60/60, tm%(60*60)/60, tm%60)
+	time_str = '%02d:%02d:%.3f'%(tm/60/60, tm%(60*60)/60, int(tm%60)+(tm-int(tm)))
 	if not (STTNGS.has_key('info') and not STTNGS['vv']):
 		print 'time %s'%time_str
 
 	converter.log.put('time %s\n'%time_str, True)
+
+	if converter.log.isSetted():
+		try:
+			from constants import SERVICE_XMPP_UID, SERVICE_XMPP_PASS, XMPP_UID
+			send_xmpp_message(SERVICE_XMPP_UID, SERVICE_XMPP_PASS, XMPP_UID, 'Convertion "%s" complite.'%'.'.join(os.path.basename(converter.log.file_name()).split('.')[:-1]))
+		except:
+			pass
+
 
 	converter.log.releaseLog()
 
