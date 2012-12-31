@@ -436,6 +436,9 @@ class Video2iDevice(object):
 						_tmp = val
 						inside_key = True
 				else:
+					if key in self.__iTunMOVI_arrayKeys:
+						for tmp in val.split(','):
+							STTNGS[key].append(tmp.strip())
 					rv[key] = val
 		return rv
 
