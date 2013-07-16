@@ -855,7 +855,6 @@ class Video2iDevice(object):
 				self.__exeCmd(cmd)
 			elif hardsub_stream.format().upper()=='SRT':
 				srt_fn = '%s/%s.srt'%(STTNGS['temp_dir'], os.path.basename(fn))
-				print 'asd %s'%srt_fn
 				cmd = [mkvtoolnix_path + 'mkvextract', 'tracks', fn, '%s:%s'%(hardsub_stream.params['mkvinfo_trackNumber'], srt_fn)]
 				self.__exeCmd(cmd)
 
