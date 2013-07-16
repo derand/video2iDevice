@@ -104,6 +104,10 @@ Global options:
 	-lang		[str]	languages of srteams separated ':' (also can set for each track like 'stream' param)
 	-cn			disable converting step (files converted yet from another script run), merge streams files to .m4v file
 	-streams	[str]	select streams numbers or 'none' for none (first index 0 separated ':', default 'all')
+				also index can be formated [stream_type]_[stream index or stream language] where:
+					stream_type - symbol (v - video, a - audio, s - subtitle)
+					stream index - stream number, counting only for this type streams
+					stream language - search stream by language
 	-tfile		[str]	set tags file
 	-TRACK_REGEX	[srt]	set regular exeption for select track number from filename
 	-TRACKS_REGEX	[srt]	set regular exeption for select tracks count from filename
@@ -930,7 +934,6 @@ class Video2iDevice(object):
 		if stream.params.has_key('hardsub_streams'):
 			hardsub_streams = stream.params['hardsub_streams']
 
-	
 		items2Delete = []
 		for _pass in passes:
 			ffmpeg_params = []
@@ -1424,7 +1427,34 @@ class Video2iDevice(object):
 			pass
 		else:
 			for s in tmp.split(':'):
-				strms.append(int(s))
+				if s.isdigit():
+					strms.append(int(s))
+				else:
+					s = s.lower()
+					stream_types_chars = 'vasi'
+					tt = stream_types_chars.find(s[0])
+					if tt > -1:
+						s = s[1:]
+						if len(s)>0 and s[0]=='_': s = s[1:]
+					strm = None
+					if s.isdigit():
+						idx = int(s)
+						tmp = filter(lambda a: a.type == tt, fi.streams)
+						if idx < len(tmp):
+							strm = tmp[idx]
+					elif len(s)>0:
+						tmp = filter(lambda a: a.type==tt and a.language==s, fi.streams)
+						if len(tmp) > 0:
+							strm = tmp[0]
+					else:
+						tmp = filter(lambda a: a.type==tt, fi.streams)
+						if len(tmp) > 0:
+							strm = tmp[0]
+					if strm <> None:
+						separator = self.mediainformer.mapStreamSeparatedSymbol()
+						currStreamId = strm.trackID.split(separator)[-1]
+						strms.append(int(currStreamId))
+
 
 		# chech hardsub and get unique media file names for logging
 		hardsub_streams = []
