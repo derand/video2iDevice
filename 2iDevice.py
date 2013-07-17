@@ -113,7 +113,7 @@ Global options:
 	-TRACKS_REGEX	[srt]	set regular exeption for select tracks count from filename
 	-out_file	[str]	save result to this file. supports tags: [SEASON], [EPISODE_ID]
 	-format		[str]	output format, can be: mp4, m4v, mkv (default: 'm4v')
-	-stream		[int]	stream idx from appending files (vfile, afile, sfile)
+	-stream		[int]	stream idx from appending files, like streams param, only one index
 	-ctf			clear temp files after converting
 	-v			script version
 	-addTimeDiff 	[int]	add time(ms) diff to subs (last sub stream)
@@ -327,7 +327,7 @@ class Video2iDevice(object):
 				elif ckey=='stream':
 					tmp = STTNGS['fadd']
 					if len(tmp)>0:
-						tmp[-1][-1]['stream'] = int(el)
+						tmp[-1][-1]['stream'] = el
 				elif ckey=='sname':
 					tmp = STTNGS['fadd']
 					if len(tmp)>0:
@@ -1261,14 +1261,37 @@ class Video2iDevice(object):
 						os.unlink(tmpName)
 		return oFile
 
-
 	def __streamById(self, streamId, streams):
 		separator = self.mediainformer.mapStreamSeparatedSymbol()
-		for s in streams:
-			currStreamId = s.trackID.split(separator)[-1]
-			if currStreamId==str(streamId):
-				return s
-		print 'Can\'t found stream #%d'%streamId
+		if str(streamId).isdigit():
+			for s in streams:
+				currStreamId = s.trackID.split(separator)[-1]
+				if currStreamId==str(streamId):
+					return s
+		else:
+			s = str(streamId).lower()
+			stream_types_chars = 'vasi'
+			tt = stream_types_chars.find(s[0])
+			if tt > -1:
+				s = s[1:]
+				if len(s)>0 and s[0]=='_': s = s[1:]
+			strm = None
+			if s.isdigit():
+				idx = int(s)
+				tmp = filter(lambda a: a.type == tt, streams)
+				if idx < len(tmp):
+					strm = tmp[idx]
+			elif len(s)>0:
+				tmp = filter(lambda a: a.type==tt and a.language==s, streams)
+				if len(tmp) > 0:
+					strm = tmp[0]
+			else:
+				tmp = filter(lambda a: a.type==tt, streams)
+				if len(tmp) > 0:
+					strm = tmp[0]
+			if strm <> None:
+				return strm
+		print 'Can\'t found stream #%s'%streamId
 		sys.exit(1)
 		return streams[streamId]
 
@@ -1427,6 +1450,8 @@ class Video2iDevice(object):
 			pass
 		else:
 			for s in tmp.split(':'):
+				strms.append(s)
+				'''
 				if s.isdigit():
 					strms.append(int(s))
 				else:
@@ -1454,6 +1479,7 @@ class Video2iDevice(object):
 						separator = self.mediainformer.mapStreamSeparatedSymbol()
 						currStreamId = strm.trackID.split(separator)[-1]
 						strms.append(int(currStreamId))
+				'''
 
 
 		# chech hardsub and get unique media file names for logging
