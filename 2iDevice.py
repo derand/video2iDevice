@@ -1451,35 +1451,6 @@ class Video2iDevice(object):
 		else:
 			for s in tmp.split(':'):
 				strms.append(s)
-				'''
-				if s.isdigit():
-					strms.append(int(s))
-				else:
-					s = s.lower()
-					stream_types_chars = 'vasi'
-					tt = stream_types_chars.find(s[0])
-					if tt > -1:
-						s = s[1:]
-						if len(s)>0 and s[0]=='_': s = s[1:]
-					strm = None
-					if s.isdigit():
-						idx = int(s)
-						tmp = filter(lambda a: a.type == tt, fi.streams)
-						if idx < len(tmp):
-							strm = tmp[idx]
-					elif len(s)>0:
-						tmp = filter(lambda a: a.type==tt and a.language==s, fi.streams)
-						if len(tmp) > 0:
-							strm = tmp[0]
-					else:
-						tmp = filter(lambda a: a.type==tt, fi.streams)
-						if len(tmp) > 0:
-							strm = tmp[0]
-					if strm <> None:
-						separator = self.mediainformer.mapStreamSeparatedSymbol()
-						currStreamId = strm.trackID.split(separator)[-1]
-						strms.append(int(currStreamId))
-				'''
 
 
 		# chech hardsub and get unique media file names for logging
