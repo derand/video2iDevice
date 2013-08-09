@@ -252,8 +252,8 @@ class MediaInformer:
 		streamTypes = ['Video:', 'Audio:', 'Subtitle:']
 		while True:
 			retcode = p.poll()
-			line = p.stdout.readline()
-			if line.find(searchString)>-1:
+			line = p.stdout.readline().strip()
+			if line.find(searchString)==0:
 				l = line[line.find(searchString)+len(searchString):-1]
 				tp = -1
 				for i in range(len(streamTypes)):
@@ -261,7 +261,7 @@ class MediaInformer:
 					pos = l .find(_type)
 					if pos>0:
 						tp = i
-						name =  l[:pos]
+						name = l[:pos]
 						l = l[pos+len(_type):]
 						break
 
