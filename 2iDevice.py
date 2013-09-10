@@ -790,7 +790,7 @@ class Video2iDevice(object):
 		add = ['-pass', '%s'%_pass,
 				'-vcodec', 'libx264',
 				'-flags', '+loop',
-				'-cmp','+chroma',
+				'-cmp','chroma',
 				'-me_method','full']
 		rv[len(rv):] = add
 		return rv
@@ -873,7 +873,7 @@ class Video2iDevice(object):
 			# TODO: there can be added other subtitle format
 			return None
 
-		ass_fn = add_separator_to_filepath(ass_fn)
+		#ass_fn = add_separator_to_filepath(ass_fn)
 		#ass_fn = ass_fn.replace('(', '\\(').replace(')', '\\)').replace(' ', '\\ ').replace('[', '\\[').replace(']', '\\]')
 		return ass_fn
 
