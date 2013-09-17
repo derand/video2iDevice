@@ -96,13 +96,13 @@ Bugs
 			if duration>shots_count:
 				tm = duration/(shots_count*2)
 				
-				cmd = [ffmpeg_path, '-ss', '', '-vframes:v', '1',  '-i', fn, '-y']
+				cmd = [ffmpeg_path, '-ss', '',  '-i', fn, '-y']
 				if vcodec=='png':
 					cmd.append('-vcodec')
 					cmd.append(vcodec)
 				elif vcodec=='jpeg':
 					cmd.append('-sameq')
-				cmd[len(cmd):] = ['-an', '-f', 'image2', '']
+				cmd[len(cmd):] = ['-an', '-f', 'image2', '-vframes:v', '1', '']
 
 				if _w>0 or _h>0:
 					stream = fi.video_stream()
