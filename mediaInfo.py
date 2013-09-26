@@ -770,7 +770,6 @@ class MediaInformer:
 					break
 				if retcode is not None and len(line)==0:
 					break
-				elif retcode 
 
 		return ap_params
 
