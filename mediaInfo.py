@@ -760,15 +760,17 @@ class MediaInformer:
 			#p = os.popen(self.__atomicParsley_path + ' \"%s\" -e \"%s\"'%(filename, fname))
 			cmd = [self.__atomicParsley_path, filename, '-e', fname]
 			p = Popen(cmd, stdout=PIPE, stderr=STDOUT)
+			srch_txt = 'Extracted artwork to file:'
 			while True:
 				retcode = p.poll()
 				line = p.stdout.readline()
-				if line.find('Extracted artwork to file:')!=-1:
-					ap_params['artwork'] = line[line.find(':')+1:].strip()
-					p.kill()
+				if line.find(srch_txt)!=-1:
+					ap_params['artwork'] = line[line.find(srch_txt)+len(srch_txt):].strip()
+					#p.kill()
 					break
 				if retcode is not None and len(line)==0:
 					break
+				elif retcode 
 
 		return ap_params
 
