@@ -240,6 +240,7 @@ class MediaInformer:
 			Stream #0.5[0x1104](jpn): Audio: truehd, 48000 Hz, 7 channels (FL|FR|FC|LFE|BC|SL|SR), s32
 			Stream #0.6[0x1104]: Audio: ac3, 48000 Hz, 5.1, s16, 640 kb/s
 			Stream #0:1[0x1100](rus): Audio: dts (DTS) ([130][0][0][0] / 0x0082), 48000 Hz, 5.1(side), s16, 768 kb/s
+			Stream #0:0(und): Video: h264 (High) (avc1 / 0x31637661), yuv420p(tv, bt709), 856x480 [SAR 1:1 DAR 107:60], 4854 kb/s, 60 fps, 60 tbr, 15360 tbn, 120 tbc (default)
     	'''
 		rv = cMediaInfo('ffmpeg', filename)
 		#rv['filename'] = filename
@@ -275,7 +276,8 @@ class MediaInformer:
 
 				prms = {}
 				if tp == 0: #'Video':
-					info = l.split(', ')
+					#delete xxx from 'h264 (xxx) (xxx), yuv420p(xxx), 856x480 [SAR 1:1 DAR 107:60], '
+					info = re.sub(r'\(.*?\)', '', l).split(', ')
 					prms['codec'] = info[0].strip()
 					prms['colorFormat'] = info[1]
 					res = info[2]
@@ -453,7 +455,7 @@ class MediaInformer:
 		return rv
 
 
-	def fileInfoUsingMediaInfo(self, filename):
+	def fileInfoUsingMediaInfo(self, filename, fixStreamsIDsWithFFMPEG=True):
 		rv = cMediaInfo('mediainfo', filename)
 		curr_el = {'trackID_int': -1, 'streams': [], 'global': {}, 'chapters': [], 'track_block':-1}
 
@@ -611,6 +613,18 @@ class MediaInformer:
 		rv.chapters = curr_el['chapters']
 		#rv['streams'] = curr_el['streams']
 		#rv['global'] = curr_el['global']
+
+		if fixStreamsIDsWithFFMPEG:
+			l = lambda el: el.trackID
+			ffmpeg_dt = self.fileInfoUsingFFMPEG(filename)
+			for stream_type in range(3):
+				tmp1 = sorted(filter(lambda el: el.type==stream_type, rv.streams), key=l)
+				tmp2 = sorted(filter(lambda el: el.type==stream_type, ffmpeg_dt.streams), key=l)
+				if len(tmp1)==len(tmp2):
+					for i in range(len(tmp1)):
+						tmp1[i].trackID = tmp2[i].trackID
+
+			rv.informer += '_and_ffmpeg'
 
 		return rv
 

@@ -101,7 +101,8 @@ Bugs
 					cmd.append('-vcodec')
 					cmd.append(vcodec)
 				elif vcodec=='jpeg':
-					cmd.append('-sameq')
+					cmd.append('-vcodec')
+					cmd.append('mjpeg')
 				cmd[len(cmd):] = ['-an', '-f', 'image2', '-vframes:v', '1', '']
 
 				if _w>0 or _h>0:

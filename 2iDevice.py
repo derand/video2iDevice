@@ -127,6 +127,9 @@ Global options:
 	-web_optimization	[int]	optimization result file to streaming (0 - disabled, another - enabled(default))
 	-stream_prefix	[str]	stream percentage prefix (shows when converting stream)
 	-log_file 		[srt]	set log file
+	-ss 		[str]	split media file, format: HH:MM:SS.ms/HH.MM.SS.ms 
+				where first - start time, second - duration (not required)
+				Use "tagging_mode" for split only
 
 Video options:
 	-vfile		[str]	set video filename. If not set try search in current dir. 
@@ -775,10 +778,12 @@ class Video2iDevice(object):
 		shutil.move(fn, name)
 
 	def __videoFfmpegParamsBase(self, fileName, _map):
-		return ['-y', 
-				'-i', '"'+fileName+'"',
-				'-map', _map,
-				'-an']
+		rv =  ['-y', 
+				'-i', '"'+fileName+'"']
+		if _map is not None:
+			rv.append('-map')
+			rv.append(_map)
+		return rv
 
 	def __videoFfmpegParamsCopy(self, fileName, _map):
 		rv = self.__videoFfmpegParamsBase(fileName, _map)
@@ -801,6 +806,49 @@ class Video2iDevice(object):
 			   '-crf', '%s'%crf]
 		rv[len(rv):] = add
 		return rv
+
+	def __videoFfmpegParamsQuality(self, fileName, _map, crf=0, _pass=0, hQuality=True):
+		if  crf<>0:
+			'CRF mode'
+			ffmpeg_params = self.__videoFfmpegParamsCRF(fileName, _map, crf)
+			ffmpeg_params_add = [#'-s', '%dx%d'%(_w,_h),
+								 '-refs', '%d'%STTNGS['refs'],
+								 '-threads', '%s'%STTNGS['threads']]
+		else:
+			'PASSES mode'
+			ffmpeg_params = self.__videoFfmpegParamsPasses(fileName, _map, _pass)
+			ffmpeg_params_add = ['-b:v', '"%d k"'%STTNGS['b'],
+								 #'-s', '%dx%d'%(_w,_h),
+								 '-maxrate', '"%d k"'%STTNGS['b'],
+								 '-bufsize', '"%d k"'%int(STTNGS['b']*2.5),
+								 '-refs', '%d'%STTNGS['refs'],
+								 '-threads', '%s'%STTNGS['threads']]
+			ffmpeg_params_add[len(ffmpeg_params_add):] = os_ffmpeg_prms
+		ffmpeg_params[len(ffmpeg_params):] = ffmpeg_params_add
+		ffmpeg_params_add = []
+		if hQuality:
+			''' HIGHT QUALITY '''
+			ffmpeg_params_add = ['-partitions', '+parti4x4+parti8x8+partp4x4+partp8x8+partb8x8',
+								 '-subq', '12',
+								 '-trellis','1',
+								 '-coder', '1',
+								 '-me_range', '32',
+								 '-level', '4.1',
+								 '-profile:v', 'high',
+								 '-bf', '12']
+			#cmd = ffmpeg_path + ' -y -i "%s" -pass %d -map %s -an  -vcodec "libx264" -b:v "%d k" -s "%dx%d" -flags "+loop" -cmp "+chroma" -partitions "+parti4x4+parti8x8+partp4x4+partp8x8+partb8x8" -subq 12  -trellis 0  -refs %d  -coder 1  -me_range 32  -g 240   -keyint_min 25  -sc_threshold 40 -i_qfactor 0.71 -maxrate  "%d k" -bufsize "%d k" -rc_eq "blurCplx^(1-qComp)" -qcomp 0.6 -me_method full  -b_strategy 1 %s -level 4.1 -threads %d -profile high -bf 10 '%(iFile, _pass, stream[1], STTNGS['b'], _w,_h, STTNGS['refs'], STTNGS['b'], STTNGS['b']*2, os_ffmpeg_prms, STTNGS['threads'])
+		else:
+			''' LOW QUALITY '''
+			ffmpeg_params_add = ['-partitions', '+parti4x4+partp8x8+partb8x8',
+								 '-subq', '6',
+								 '-trellis','0',
+								 '-coder', '0',
+								 '-me_range', '16',
+								 '-level', '3.1',
+								 '-profile:v', 'baseline']
+			#cmd = ffmpeg_path + ' -y -i "%s" -pass %d -map %s -an  -vcodec "libx264" -b:v "%d k" -s "%dx%d" -flags "+loop" -cmp "+chroma" -partitions "+parti4x4+partp8x8+partb8x8" -subq 6  -trellis 0  -refs %d  -coder 0  -me_range 16  -g 240   -keyint_min 25  -sc_threshold 40 -i_qfactor 0.71 -maxrate  "%d k" -bufsize "%d k" -rc_eq "blurCplx^(1-qComp)" -qcomp 0.6 -me_method full -b_strategy 1 %s -level 3.1 -threads %d -profile baseline '%(iFile, _pass, stream[1], STTNGS['b'], _w,_h, STTNGS['refs'], STTNGS['b'], STTNGS['b']*2.5, os_ffmpeg_prms, STTNGS['threads'])
+		ffmpeg_params[len(ffmpeg_params):] = ffmpeg_params_add
+		return ffmpeg_params
 
 	def __mergeFfmpegParams(self, current_params, user_params):
 		while len(user_params):
@@ -939,49 +987,13 @@ class Video2iDevice(object):
 			ffmpeg_params = []
 			if copyFlag:
 				ffmpeg_params = self.__videoFfmpegParamsCopy(iFile, stream.trackID)
+				ffmpeg_params.append('-an')
 				#cmd = ffmpeg_path + ' -y -i "%s" -map %s -an -vcodec copy -threads %d'%(iFile, stream[1], STTNGS['threads'])
 			else:
-				ffmpeg_params = []
-				ffmpeg_params_add = []
-				if  crf<>0:
-					'CRF mode'
-					ffmpeg_params = self.__videoFfmpegParamsCRF(iFile, stream.trackID, crf)
-					ffmpeg_params_add = [#'-s', '%dx%d'%(_w,_h),
-										 '-refs', '%d'%STTNGS['refs'],
-										 '-threads', '%s'%STTNGS['threads']]
-				else:
-					'PASSES mode'
-					ffmpeg_params = self.__videoFfmpegParamsPasses(iFile, stream.trackID, _pass)
-					ffmpeg_params_add = ['-b:v', '"%d k"'%STTNGS['b'],
-										 #'-s', '%dx%d'%(_w,_h),
-										 '-maxrate', '"%d k"'%STTNGS['b'],
-										 '-bufsize', '"%d k"'%int(STTNGS['b']*2.5),
-										 '-refs', '%d'%STTNGS['refs'],
-										 '-threads', '%s'%STTNGS['threads']]
-					ffmpeg_params_add[len(ffmpeg_params_add):] = os_ffmpeg_prms
-				ffmpeg_params[len(ffmpeg_params):] = ffmpeg_params_add
-				ffmpeg_params_add = []
-				if _h<=320 or _w<=480:
-					''' LOW QUALITY '''
-					ffmpeg_params_add = ['-partitions', '+parti4x4+partp8x8+partb8x8',
-										 '-subq', '6',
-										 '-trellis','0',
-										 '-coder', '0',
-										 '-me_range', '16',
-										 '-level', '3.1',
-										 '-profile:v', 'baseline']
-					#cmd = ffmpeg_path + ' -y -i "%s" -pass %d -map %s -an  -vcodec "libx264" -b:v "%d k" -s "%dx%d" -flags "+loop" -cmp "+chroma" -partitions "+parti4x4+partp8x8+partb8x8" -subq 6  -trellis 0  -refs %d  -coder 0  -me_range 16  -g 240   -keyint_min 25  -sc_threshold 40 -i_qfactor 0.71 -maxrate  "%d k" -bufsize "%d k" -rc_eq "blurCplx^(1-qComp)" -qcomp 0.6 -me_method full -b_strategy 1 %s -level 3.1 -threads %d -profile baseline '%(iFile, _pass, stream[1], STTNGS['b'], _w,_h, STTNGS['refs'], STTNGS['b'], STTNGS['b']*2.5, os_ffmpeg_prms, STTNGS['threads'])
-				else:
-					''' HIGHT QUALITY '''
-					ffmpeg_params_add = ['-partitions', '+parti4x4+parti8x8+partp4x4+partp8x8+partb8x8',
-										 '-subq', '12',
-										 '-trellis','1',
-										 '-coder', '1',
-										 '-me_range', '32',
-										 '-level', '4.1',
-										 '-profile:v', 'high',
-										 '-bf', '12']
-					#cmd = ffmpeg_path + ' -y -i "%s" -pass %d -map %s -an  -vcodec "libx264" -b:v "%d k" -s "%dx%d" -flags "+loop" -cmp "+chroma" -partitions "+parti4x4+parti8x8+partp4x4+partp8x8+partb8x8" -subq 12  -trellis 0  -refs %d  -coder 1  -me_range 32  -g 240   -keyint_min 25  -sc_threshold 40 -i_qfactor 0.71 -maxrate  "%d k" -bufsize "%d k" -rc_eq "blurCplx^(1-qComp)" -qcomp 0.6 -me_method full  -b_strategy 1 %s -level 4.1 -threads %d -profile high -bf 10 '%(iFile, _pass, stream[1], STTNGS['b'], _w,_h, STTNGS['refs'], STTNGS['b'], STTNGS['b']*2, os_ffmpeg_prms, STTNGS['threads'])
+				lowQuality = _h<=320 or _w<=480
+				ffmpeg_params = self.__videoFfmpegParamsQuality(iFile, stream.trackID, crf, _pass, not lowQuality)
+				ffmpeg_params_add = ['-an']
+
 				#if len(os_ffmpeg_prms):
 				#	ffmpeg_params_add[len(ffmpeg_params_add):] = os_ffmpeg_prms
 				if STTNGS.has_key('vr'):
@@ -1329,8 +1341,35 @@ class Video2iDevice(object):
 			stream.params['name'] = name
 		return stream
 
-	def createMPEG(self, files, fi):
-		name = os.path.basename(fi.filename)
+	def splitMedia(self, filename):
+		if STTNGS.has_key('ss'):
+			print '------ Split Media ------'
+			fi = self.mediainformer.fileInfo(filename)
+			vstreams = filter(lambda s: s.type == 0, fi.streams)
+			if len(vstreams):
+				import uuid
+				ext = filename.split('.')[-1].lower()
+				#tmp_fn = str(uuid.uuid4())+'.'+ext
+				tmp_fn = '.'.join(filename.split('.')[:-1])+'_tmp.'+ext
+				os.rename(filename, tmp_fn)
+
+				stream = vstreams[0]
+				w = stream.params['width']
+				h = stream.params['height']
+				lowQuality = h<=320 or w<=480
+				crf = STTNGS.get('crf', 17)
+				ffmpeg_params = self.__videoFfmpegParamsQuality(tmp_fn, None, crf, 0, not lowQuality)
+				ss_tmp = STTNGS['ss'].split('/')
+				ss = ss_tmp[0]
+				ffmpeg_params[len(ffmpeg_params):] = ['-acodec', 'copy', '-ss', ss]
+				if len(ss_tmp)>1:
+					ffmpeg_params.append('-t')
+					ffmpeg_params.append(ss_tmp[1])
+				ffmpeg_params.append(filename)
+				self.__exeFfmpegCmd(ffmpeg_params)
+				#os.unlink(tmp_fn)
+
+	def createMPEGusingMP4Box(self, files, fi, name):
 		addCmd2=''
 		ve = ''
 		ae = ''
@@ -1339,7 +1378,7 @@ class Video2iDevice(object):
 		trackID = 0
 		if STTNGS['vv']:
 			print
-		info =  self.tagTrackInfo(name)
+		info =  self.tagTrackInfo(os.path.basename(fi.filename))
 		cmd = [mp4box_path, ]
 		for f in files:
 			def trackDelay(trackID):
@@ -1369,7 +1408,9 @@ class Video2iDevice(object):
 					(l, currentTrackIdx) = self.getLang(currentTrackIdx, stream.language)
 			else:
 				(l, currentTrackIdx) = self.getLang(currentTrackIdx)
-			addCmd2 = '%s:lang=%s'%(f[1], l,)
+			addCmd2 = f[1]
+			if l <> 'und':
+				addCmd2 += ':lang=%s'%l
 			#addCmd2 += ' -add "%s":lang=%s'%(string.replace(f[1], '0.0', '0:0'), l,)
 			if delay!=0:
 				addCmd2 += ':delay=%d'%delay
@@ -1390,14 +1431,47 @@ class Video2iDevice(object):
 			cmd.append('-add')
 			cmd.append(addCmd2)
 
-		name = STTNGS['temp_dir']+'/'+'.'.join(os.path.basename(fi.filename).split('.')[:-1])+'.'+STTNGS['format']
 		cmd.append(name)
 		cmd.append('-new')
 		#cmd = mp4box_path + ' %s "%s" -new'%(addCmd2, name)
 		#self.__printCmd(cmd)
 		#p = os.popen(cmd)
 		#p.close()
-		self.__exeCmd(cmd)
+		rv = self.__exeCmd(cmd, False)
+		return rv
+
+	def createMPEGusingFfmpeg(self, files, fi, name):
+		addCmd2=''
+		currentTrackIdx = 0
+		trackID = 0
+		if STTNGS['vv']:
+			print
+		info =  self.tagTrackInfo(os.path.basename(fi.filename))
+		cmd = [ffmpeg_path, '-y', ]
+		for f in files:
+			stream = f[2]
+			addCmd2 = f[1]
+			cmd.append('-i')
+			cmd.append(addCmd2)
+
+		cmd[len(cmd):] = ['-c:v', 'copy', '-c:a', 'copy', '-bsf:a', 'aac_adtstoasc', '-strict', 'experimental']
+		cmd.append(name)
+		#cmd = mp4box_path + ' %s "%s" -new'%(addCmd2, name)
+		#self.__printCmd(cmd)
+		#p = os.popen(cmd)
+		#p.close()
+		rv = self.__exeCmd(cmd, False)
+		return rv
+
+	def createMPEG(self, files, fi):
+		name = STTNGS['temp_dir']+'/'+'.'.join(os.path.basename(fi.filename).split('.')[:-1])+'.'+STTNGS['format']
+		ret_code = self.createMPEGusingMP4Box(files, fi, name)
+
+		if ret_code <> 0:
+			rv = self.createMPEGusingFfmpeg(files, fi, name)
+			if rv <> 0:
+				print 'Merge streams failed, code:', rv
+				sys.exit(code)
 
 		self.iTagger(name)
 		
@@ -1569,9 +1643,11 @@ class Video2iDevice(object):
 		format = STTNGS['format'].lower()
 		if format in ['m4v', 'mp4', 'mov']:
 			name = self.createMPEG(files, fi)
-		if format in ['mkv']:
+		elif format in ['mkv']:
 			STTNGS['web_optimization'] = False
 			name = self.createMKV(files, fi)
+
+		self.splitMedia(name)
 
 		self.log.put('Remove temp files...\n')
 		if STTNGS['ctf']:
@@ -1587,6 +1663,7 @@ class Video2iDevice(object):
 		'''
 		filename = fi.filename
 		if STTNGS.has_key('tagging_mode'):
+			self.splitMedia(filename)
 			self.iTagger(filename)
 		else:
 			filename = self.encodeMedia(fi)
