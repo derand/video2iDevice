@@ -29,14 +29,14 @@ import re
 import getopt
 import glob
 import string
-import json
+import json_ex
 import os.path
 import time
 import shutil
 import fileCoding
 import os.path
 
-import xml.parsers.expat
+#import xml.parsers.expat
 from subprocess import Popen, PIPE, STDOUT
 
 from subConverter import subConverter
@@ -76,7 +76,7 @@ STTNGS = {
 	'vv':		False,
 	'web_optimization': True,
 	'temp_dir': '.',
-	'encodingTool': '2iDevice.py (http://blog.derand.net)',
+	'encodingTool': '2iDevice',
 	'cast': 			[],
 	'directors':		[],
 	'producers':		[],
@@ -116,10 +116,10 @@ Global options:
 	-stream		[int]	stream idx from appending files, like streams param, only one index
 	-ctf			clear temp files after converting
 	-v			script version
-	-addTimeDiff 	[int]	add time(ms) diff to subs (last sub stream)
 	-copy			copy selected stream from source
 	-delay		[int]	sets track start delay in ms.
-	-info 		[str]	show media file info, value is format (can be blank), 'json' - JSON format, default - human format
+	-info 		[str]	show media file info, value is format (can be blank), 'json' - JSON format, 'short' - short human format, default - human format
+	-info1 			synonim for '-info short'
 	-vv			verbose mode
 	-temp_dir	[str]	path to temporary directory
 	-ffmpeg_coding_params	[str]	add ffmpeg params for video/audio coding (set's for selected stream), video filters disabled
@@ -168,6 +168,7 @@ Subtitle options:
 					[2EC] - episode count
 	-hardsub		set stream as hurdsub (for ass format only)
 	-sn			disable convert subtitles
+	-addTimeDiff 	[int]	add time(ms) diff to subs (last sub stream)
 
 Tagging options:
 	-tagging_mode		set tags only
@@ -254,7 +255,7 @@ class Video2iDevice(object):
 	"""docstring for Video2iDevice"""
 	def __init__(self):
 		super(Video2iDevice, self).__init__()
-		self.mediainformer = MediaInformer(ffmpeg_path, mkvtoolnix_path, mediainfo_path, AtomicParsley_path, STTNGS['temp_dir'])
+		self.mediainformer = MediaInformer(ffmpeg_path=ffmpeg_path, mkvtoolnix_path=mkvtoolnix_path, mediainfo_path=mediainfo_path, atomicParsley_path=AtomicParsley_path, mp4box_path=mp4box_path, artwork_path=STTNGS['temp_dir'])
 		self.log = LogToFile()
 		self.__iTunMOVI_arrayKeys = ['cast', 'directors', 'producers', 'codirectors', 'screenwriters']
 
@@ -316,6 +317,9 @@ class Video2iDevice(object):
 				# single or not param 
 				if ckey=='info':
 					STTNGS[ckey] = None
+				if ckey=='info1':
+					STTNGS['info'] = 'short'
+					saveP = True
 			else:
 				waitParam = False
 				if saveP:
@@ -378,6 +382,8 @@ class Video2iDevice(object):
 				elif ckey in self.__iTunMOVI_arrayKeys:
 					for tmp in el.split(','):
 						STTNGS[ckey].append(tmp.strip())
+				elif ckey=='threads':
+					STTNGS[ckey] = int(el)
 				else:
 					if STTNGS.has_key(ckey):
 						if type(STTNGS[ckey])==type([]):
@@ -425,7 +431,7 @@ class Video2iDevice(object):
 						if STTNGS['vv']:
 							print _tmp
 						#rv[save_key] = json.loads(_tmp)
-						rv[save_key] = json.JsonReader().read(_tmp)
+						rv[save_key] = json_ex.JsonReader().read(_tmp)
 						inside_key = False
 			else:
 				tmp = line.split('=',1)
@@ -437,7 +443,7 @@ class Video2iDevice(object):
 					if val[0]=='{': arrSymb='}'
 					if val[-1]==arrSymb:
 						#rv[key] = json.loads(_tmp)
-						rv[key] = json.JsonReader().read(val)
+						rv[key] = json_ex.JsonReader().read(val)
 					else:
 						save_key  =key
 						_tmp = val
@@ -779,7 +785,8 @@ class Video2iDevice(object):
 
 	def __videoFfmpegParamsBase(self, fileName, _map):
 		rv =  ['-y', 
-				'-i', '"'+fileName+'"']
+				'-i', '"'+fileName+'"',
+				'-map_chapters', '-1']
 		if _map is not None:
 			rv.append('-map')
 			rv.append(_map)
@@ -892,6 +899,7 @@ class Video2iDevice(object):
 		fn = hardsub_stream.params['filename']
 		_, file_ext = os.path.splitext(fn)
 		file_ext = file_ext.lower()
+		ass_fn = None
 		if file_ext=='.ass' or file_ext=='.ssa':
 			ass_fn = '%s/%s'%(STTNGS['temp_dir'], os.path.basename(fn))
 			#shutil.copyfile(fn, ass_fn)
@@ -1078,7 +1086,7 @@ class Video2iDevice(object):
 
 	def __audioFfmpegParamsAac(self, fileName, _map, _ab, _ar):
 		rv = self.__audioFfmpegParamsBase(fileName, _map)
-		rv[len(rv):] = ['-acodec', 'libfaac',
+		rv[len(rv):] = ['-acodec', 'aac', #'libfaac',
 						'-ac', '2',
 						'-ab', '%dk'%_ab,
 						'-ar', '%d'%_ar]
@@ -1200,15 +1208,18 @@ class Video2iDevice(object):
 		elif ext=='ttxt':
 			copyfile(iFile, oFile)
 		elif ext=='mp4' or ext=='m4v':
-			if stream.params['extended'].has_key('copy'):
-				print 'subtitle from .mp4 files allways copy'
+			if stream.params.get('extended', {}).has_key('copy'):
+				print 'subtitle from .mp4 files always copy'
 
 			# TODO: extract or copy subtitles on ttxt format
-			track_id = (int)(stream.trackID.split(self.mediainformer.mapStreamSeparatedSymbol(iFile))[1])+1
+			track_id = stream.params.get('mp4_track_id')
+			if track_id is None:
+				track_id = (int)(stream.trackID.split(self.mediainformer.mapStreamSeparatedSymbol(iFile))[1])+1
 
 			fileName, fileExtension = os.path.splitext(iFile)
 			tmpFile = oFile+fileExtension
-			shutil.copyfile(iFile, tmpFile)
+			#shutil.copyfile(iFile, tmpFile)
+			os.symlink(iFile, tmpFile)
 			#cmd = mp4box_path + ' -raw %d \"%s\"'%(track_id, tmpFile) # or can use -single instead of -raw
 			#cmd = mp4box_path + ' -single %d \"%s\"'%(track_id, tmpFile) # or can use -single instead of -raw
 			#self.__printCmd(cmd)
@@ -1218,6 +1229,8 @@ class Video2iDevice(object):
 
 			fileName, fileExtension = os.path.splitext(tmpFile)
 			tmpFile = fileName + '_track%d'%track_id + fileExtension
+			if not os.path.exists(tmpFile):
+				tmpFile = fileName + '_track%d'%track_id
 			return tmpFile
 		else:
 			if isMatroshkaMedia(iFile) and stream.params.has_key('mkvinfo_trackNumber'):
@@ -1357,7 +1370,7 @@ class Video2iDevice(object):
 				w = stream.params['width']
 				h = stream.params['height']
 				lowQuality = h<=320 or w<=480
-				crf = STTNGS.get('crf', 17)
+				crf = STTNGS.get('crf', 16)
 				ffmpeg_params = self.__videoFfmpegParamsQuality(tmp_fn, None, crf, 0, not lowQuality)
 				ss_tmp = STTNGS['ss'].split('/')
 				ss = ss_tmp[0]
@@ -1471,7 +1484,7 @@ class Video2iDevice(object):
 			rv = self.createMPEGusingFfmpeg(files, fi, name)
 			if rv <> 0:
 				print 'Merge streams failed, code:', rv
-				sys.exit(code)
+				sys.exit(rv)
 
 		self.iTagger(name)
 		
@@ -1527,7 +1540,7 @@ class Video2iDevice(object):
 				strms.append(s)
 
 
-		# chech hardsub and get unique media file names for logging
+		# check hardsub and get unique media file names for logging
 		hardsub_streams = []
 		media_file_names = set()
 		for i in strms:
@@ -1652,7 +1665,11 @@ class Video2iDevice(object):
 		self.log.put('Remove temp files...\n')
 		if STTNGS['ctf']:
 			for f in files:
-				os.unlink(f[1])
+				try:
+					os.unlink(f[1])
+				except OSError as e:
+					print('Can\'t remove file: %s'%f[1])
+				
 
 		return name
 
@@ -1692,6 +1709,11 @@ class Video2iDevice(object):
 
 
 if __name__=='__main__':
+	script_path = os.path.dirname(os.path.realpath(__file__))
+	# set 'FONTCONFIG_FILE' environment variable for font_config
+	if os.environ.get('FONTCONFIG_FILE') is None:
+		os.environ['FONTCONFIG_FILE'] = '%s/fonts.conf'%script_path
+
 	converter = Video2iDevice()
 
 	startTime = time.time()
@@ -1701,7 +1723,7 @@ if __name__=='__main__':
 		i, o, e = select.select([sys.stdin], [], [], 3)
 		if i:
 			if JSON_pipe:
-				argv = json.JsonReader().read(sys.stdin.read())
+				argv = json_ex.JsonReader().read(sys.stdin.read())
 			else:
 				argv = shlex.split(sys.stdin.read())
 		else:
@@ -1756,7 +1778,9 @@ if __name__=='__main__':
 			#print type(fi['streams'][2][1])
 			#sys.exit()
 			if STTNGS['info']=='json':
-				print json.write(fi.dump('dict'))
+				print json_ex.write(fi.dump('dict'))
+			elif STTNGS['info']=='short':
+				print fi.dump('short')
 			else:
 				print fi.dump()
 		else:

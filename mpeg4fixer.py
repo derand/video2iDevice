@@ -257,6 +257,6 @@ class mpeg4fixer:
 
 if __name__=='__main__':
 	if len(sys.argv)==2:
-		#mpeg4fixer().fixFlagsAndSubs(sys.argv[1])
-		names = [None, None, 'OpenDub', 'Persona99', 'Shachiburi', 'Antravoco', 'Shift', 'Stan WarHammer & Nesitach']
-		mpeg4fixer().setTrackNames(sys.argv[1], names)
+		mpeg4fixer().fixFlagsAndSubs(sys.argv[1])
+		#names = [None, None, 'OpenDub', 'Persona99', 'Shachiburi', 'Antravoco', 'Shift', 'Stan WarHammer & Nesitach']
+		#mpeg4fixer().setTrackNames(sys.argv[1], names)
