@@ -112,6 +112,7 @@ Global options:
 	-TRACK_REGEX	[srt]	set regular exeption for select track number from filename
 	-TRACKS_REGEX	[srt]	set regular exeption for select tracks count from filename
 	-out_file	[str]	save result to this file. supports tags: [SEASON], [EPISODE_ID]
+	-out_path	[str]	save result to this directory
 	-format		[str]	output format, can be: mp4, m4v, mkv (default: 'm4v')
 	-stream		[int]	stream idx from appending files, like streams param, only one index
 	-ctf			clear temp files after converting
@@ -1748,6 +1749,9 @@ if __name__=='__main__':
 					STTNGS[key] = val
 	#print STTNGS['subStyleColors']
 	converter.getSettings(argv)
+
+	if STTNGS.has_key('out_path'):
+		os.chdir(STTNGS['out_path'])
 
 	if STTNGS.has_key('log_file'):
 		converter.log.initLogByFileName(STTNGS['log_file'])
