@@ -81,7 +81,8 @@ STTNGS = {
 	'directors':		[],
 	'producers':		[],
 	'codirectors':		[],
-	'screenwriters':	[],	
+	'screenwriters':	[],
+	'sleep_between_files': 0,
 }
 
 atomicParsleyOptions = ('artist', 'title', 'album', 'genre', 'tracknum', 'disk', 'comment', 'year', 'lyrics', 'lyricsFile', 'composer',
@@ -131,6 +132,7 @@ Global options:
 	-ss 		[str]	split media file, format: HH:MM:SS.ms/HH.MM.SS.ms 
 				where first - start time, second - duration (not required)
 				Use "tagging_mode" for split only
+	-sleep_between_files	[int]	pause between encoding files
 
 Video options:
 	-vfile		[str]	set video filename. If not set try search in current dir. 
@@ -1773,7 +1775,11 @@ if __name__=='__main__':
 
 	converter.mediainformer.artwork_path = STTNGS['temp_dir']
 
+	c = 0
 	for fn in STTNGS['files']:
+		if STTNGS['sleep_between_files'] > 0 and c > 0:
+			print 'Sleeping...'
+			time.sleep(STTNGS['sleep_between_files'])
 		if STTNGS['vv']:
 			print '\n------------------------ %s ------------------------'%fn
 		if STTNGS.has_key('info'):
@@ -1794,6 +1800,7 @@ if __name__=='__main__':
 			else:
 				fi = converter.mediainformer.fileInfo(fn)
 			converter.fileProcessing(fi)
+		c += 1
 	tm = time.time()-startTime
 	time_str = '%02d:%02d:%.3f'%(tm/60/60, tm%(60*60)/60, int(tm%60)+(tm-int(tm)))
 	if not (STTNGS.has_key('info') and not STTNGS['vv']):
