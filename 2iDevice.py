@@ -1777,9 +1777,6 @@ if __name__=='__main__':
 
 	c = 0
 	for fn in STTNGS['files']:
-		if STTNGS['sleep_between_files'] > 0 and c > 0:
-			print 'Sleeping...'
-			time.sleep(STTNGS['sleep_between_files'])
 		if STTNGS['vv']:
 			print '\n------------------------ %s ------------------------'%fn
 		if STTNGS.has_key('info'):
@@ -1794,6 +1791,9 @@ if __name__=='__main__':
 			else:
 				print fi.dump()
 		else:
+			if STTNGS['sleep_between_files'] > 0 and c > 0:
+				print 'Sleeping...'
+				time.sleep(STTNGS['sleep_between_files'])
 			if STTNGS['streams']=='none':
 				#fi = {'filename': fn, 'informer': 'no need'}
 				fi = cMediaInfo('no need', fn)
