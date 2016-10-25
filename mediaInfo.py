@@ -102,9 +102,9 @@ class cStream(object):
 		rv = ''
 		if self.params.has_key('Format'):
 			rv = self.params['Format']
-		if self.params.has_key('codec'):
+		elif self.params.has_key('codec'):
 			rv = self.params['codec']
-		if self.type==2 and rv.upper()=='UTF-8' and self.params.has_key('Codec_ID') and self.params['Codec_ID'].upper()=='S_TEXT/UTF8':
+		elif self.type==2 and rv.upper()=='UTF-8' and self.params.has_key('Codec_ID') and self.params['Codec_ID'].upper()=='S_TEXT/UTF8':
 			rv = 'srt'
 		return rv
 
@@ -307,7 +307,7 @@ class MediaInformer:
 			retcode = p.poll()
 			line = p.stdout.readline().strip()
 			if line.find(searchString)==0:
-				l = line[line.find(searchString)+len(searchString):-1]
+				l = line[line.find(searchString)+len(searchString):].strip()
 				tp = -1
 				for i in range(len(streamTypes)):
 					_type = streamTypes[i] 
