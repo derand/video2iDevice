@@ -89,7 +89,7 @@ Bugs
 		os.mkdir(snapshots_dir)
 	for fn in files:
 		i = 1
-		mi = MediaInformer(ffmpeg_path, mkvtoolnix_path, mediainfo_path, AtomicParsley_path, '/tmp/')
+		mi = MediaInformer(ffmpeg_path=ffmpeg_path, mkvtoolnix_path=mkvtoolnix_path, mediainfo_path=mediainfo_path, atomicParsley_path=AtomicParsley_path, artwork_path='/tmp')
 		fi = mi.fileInfo(fn)
 		if fi.general.has_key('mediaDuration'):
 			duration = fi.general['mediaDuration']
