@@ -29,18 +29,18 @@ def __print_cmd(cmd):
             cmd_str += ' "%s"'%cmd[i]
     #if sys.platform != 'darwin':
     #    cmd_str = cmd_str.encode('utf-8')
-    print cmd_str
+    print(cmd_str)
 
 
 if __name__=='__main__':
     if len(sys.argv)==1:
-        print 'usage:\n  %s <options> <media files> '%os.path.basename(sys.argv[0])
-        print 'where <options>:'
-        print '   -c     <int>        shots count by file'
-        print '   -d     <str>        snapshots directory (default "%s")'%snapshots_dir
-        print '   -s     <int>x<int>  snapshot size, can looks like ("*x320", "960x*"")'
-        print '   -f     <str>        snapshots file format, png(default) or jpeg'
-        print '''
+        print('usage:\n  %s <options> <media files> '%os.path.basename(sys.argv[0]))
+        print('where <options>:')
+        print('   -c     <int>        shots count by file')
+        print('   -d     <str>        snapshots directory (default "%s")'%snapshots_dir)
+        print('   -s     <int>x<int>  snapshot size, can looks like ("*x320", "960x*"")')
+        print('   -f     <str>        snapshots file format, png(default) or jpeg')
+        print('''
 Author
     Writed by %s (%s)
 
@@ -49,7 +49,7 @@ Copyright
   
 Bugs
     If you feel you have found a bug in "%s", please email me %s
-'''%(__author__, __email__, __copyright__, os.path.basename(sys.argv[0]), __email__)
+'''%(__author__, __email__, __copyright__, os.path.basename(sys.argv[0]), __email__))
         sys.exit(0)
     files = []
     i = 1
@@ -91,7 +91,7 @@ Bugs
         i = 1
         mi = MediaInformer(ffmpeg_path=ffmpeg_path, mkvtoolnix_path=mkvtoolnix_path, mediainfo_path=mediainfo_path, atomicParsley_path=AtomicParsley_path, artwork_path='/tmp')
         fi = mi.fileInfo(fn)
-        if fi.general.has_key('mediaDuration'):
+        if 'mediaDuration' in fi.general:
             duration = fi.general['mediaDuration']
             if duration>shots_count:
                 tm = duration/(shots_count*2)
@@ -108,11 +108,11 @@ Bugs
                 if _w>0 or _h>0:
                     stream = fi.video_stream()
                     if stream==None:
-                        print 'Can\'t find video stream at %s'%fn
+                        print('Can\'t find video stream at %s'%fn)
                         sys.exit(1)
                     w = stream.params['width']
                     h = stream.params['height']
-                    if stream.params.has_key('dwidth') and stream.params.has_key('dheight'):
+                    if 'dwidth' in stream.params and 'dheight' in stream.params:
                         w = stream.params['dwidth']
                         h = stream.params['dheight']
 

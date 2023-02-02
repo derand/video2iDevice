@@ -7,7 +7,7 @@ import os
 import codecs
 
 def file_encoding(filename):
-        data = open(filename).read()
+        data = open(filename, 'rb').read()
         #with open(filename) as codefile:
         #data = codefile.read()
         try:
@@ -24,4 +24,4 @@ def file_encoding(filename):
     
 if __name__=='__main__':
     if len(sys.argv)==2:
-        print file_encoding(sys.argv[1])
+        print(file_encoding(sys.argv[1]))

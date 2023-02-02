@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 # writed by derand
@@ -100,11 +100,11 @@ class cStream(object):
 
     def format(self):
         rv = ''
-        if self.params.has_key('Format') and self.type!=2:   #  "and self.type!=2" added 2020.02.16
+        if 'Format' in self.params and self.type!=2:   #  "and self.type!=2" added 2020.02.16
             rv = self.params['Format']
-        elif self.params.has_key('codec') and self.type!=2:  #  "and self.type!=2" added 2020.02.16
+        elif 'codec' in self.params and self.type!=2:  #  "and self.type!=2" added 2020.02.16
             rv = self.params['codec']
-        elif self.type==2 and (self.params.has_key('Codec_ID') and self.params['Codec_ID'].upper()=='S_TEXT/UTF8') or (self.params.has_key('CodecID') and self.params['CodecID'].upper()=='S_TEXT/UTF8'):
+        elif self.type==2 and ('Codec_ID' in self.params and self.params['Codec_ID'].upper()=='S_TEXT/UTF8') or ('CodecID' in self.params and self.params['CodecID'].upper()=='S_TEXT/UTF8'):
             rv = 'srt'
         return rv
 
@@ -131,7 +131,7 @@ class cMediaInfo(object):
     def dump(self, mode='string'):
         if mode=='string':
             rv = 'Informer:\t%s\nFile Name:\t%s\n\n'%(self.informer, self.filename)
-            if len(self.general.keys()):
+            if len(list(self.general.keys())):
                 rv += 'General:\n'
                 for key in sorted(self.general.keys()):
                     val = '%s'%self.general[key]
@@ -146,7 +146,7 @@ class cMediaInfo(object):
                 for ch in self.chapters:
                     rv += '%s\n'%ch.dump(mode)
 
-            if len(self.tags.keys()):
+            if len(list(self.tags.keys())):
                 rv += 'Tags:\n'
                 for key in sorted(self.tags.keys()):
                     val = '%s'%self.tags[key]
@@ -262,7 +262,7 @@ class MediaInformer:
         p = Popen(cmd, stdout=PIPE, stderr=STDOUT)
         while True:
             retcode = p.poll()
-            line = p.stdout.readline()
+            line = p.stdout.readline().decode('UTF-8')
             if retcode is not None and len(line)==0:
                 break
             duration_re =  duration_re_compiled.search(line)
@@ -305,7 +305,7 @@ class MediaInformer:
         streamTypes = ['Video:', 'Audio:', 'Subtitle:']
         while True:
             retcode = p.poll()
-            line = p.stdout.readline().strip()
+            line = p.stdout.readline().decode('UTF-8').strip()
             if line.find(searchString)==0:
                 l = line[line.find(searchString)+len(searchString):].strip()
                 tp = -1
@@ -381,10 +381,10 @@ class MediaInformer:
                 break
         i = len(streams)
         while i>0:
-            if streams[i-1].type<>3:# or streams[i-1].params['codec']!='mjpeg':
+            if streams[i-1].type!=3:# or streams[i-1].params['codec']!='mjpeg':
                 break
             i = i-1
-        if i>0 and i<>len(streams):
+        if i>0 and i!=len(streams):
             streams = streams[:i]
         #p.close()
         #rv['streams'] = streams
@@ -403,7 +403,7 @@ class MediaInformer:
             rv = '+'
             while True:
                 retcode = p.poll()
-                line = p.stdout.readline()
+                line = p.stdout.readline().decode('UTF-8')
                 tmp = re.search('^\s+Stream\s+#0(.)\d+', line)
                 if tmp:
                     rv = tmp.group(1)
@@ -439,7 +439,7 @@ class MediaInformer:
         p = Popen(cmd, stdout=PIPE, stderr=STDOUT)
         while True:
             retcode = p.poll()
-            line = p.stdout.readline()
+            line = p.stdout.readline().decode('UTF-8')
             if len(line)>2 and line[:2]=='|+':
                 val = line[2:].strip()
                 inTrackSegment = (val=='Segment tracks') or (val=='Tracks')
@@ -519,7 +519,7 @@ class MediaInformer:
             curr_el['attrs'] = attrs
             curr_el['data'] = ''
             if name=='track':
-                if attrs.has_key('type'):
+                if 'type' in attrs:
                     #print attrs['type']
                     if attrs['type']=='General':
                         curr_el['track_block']=0
@@ -603,7 +603,7 @@ class MediaInformer:
         data = ''
         while True:
             retcode = p.poll()
-            line = p.stdout.readline()
+            line = p.stdout.readline().decode('UTF-8')
             data = data + line
             if retcode is not None and len(line)==0:
                 break
@@ -622,8 +622,8 @@ class MediaInformer:
         parser.CharacterDataHandler = char_data
         try:
             import chardet
-            parser.Parse(unicode(data, chardet.detect(data)['encoding']).encode('utf-8'), 1)
-        except Exception, e:
+            parser.Parse(str(data, chardet.detect(data)['encoding']).encode('utf-8'), 1)
+        except Exception as e:
             return rv
 
         track_id = 0
@@ -631,21 +631,21 @@ class MediaInformer:
         def __toInt(str):
             try:
                 return int(str.params['ID'].split(' ')[0])
-            except Exception, e:
+            except Exception as e:
                 return str.params['ID']
         for s in curr_el['streams']:
-            if not s.params.has_key('ID'):
+            if 'ID' not in s.params:
                 return rv
         for stream in sorted(curr_el['streams'], key=__toInt):
             #fix track id's
             stream.trackID = '0%s%d'%(self.mapStreamSeparatedSymbol(filename), track_id)
             track_id += 1
 
-            if stream.params.has_key('Language') and LANGUAGES_DICT.has_key(stream.params['Language']):
+            if 'Language' in stream.params and stream.params['Language'] in LANGUAGES_DICT:
                 stream.language = LANGUAGES_DICT[stream.params['Language']]
 
 
-            if stream.type==0 and stream.params.has_key('Display_aspect_ratio'):
+            if stream.type==0 and 'Display_aspect_ratio' in stream.params:
                 try:
                     width = int(stream.params['Width'].replace('pixels', '').replace(' ', ''))
                     height = int(stream.params['Height'].replace('pixels', '').replace(' ', ''))
@@ -662,7 +662,7 @@ class MediaInformer:
                     if math.fabs(float(drx)/float(dry)-float(width)/float(height))>.1:
                         stream.params['dheight'] = height
                         stream.params['dwidth'] = height*drx/dry
-                except Exception, e:
+                except Exception as e:
                     pass
                     #raise
 
@@ -739,7 +739,7 @@ class MediaInformer:
         streams = []
         while True:
             retcode = p.poll()
-            line = p.stdout.readline()
+            line = p.stdout.readline().decode('UTF-8')
             if retcode is not None and len(line)==0:
                 break
 
@@ -810,8 +810,8 @@ class MediaInformer:
             get_track_id = lambda el: el.trackID
             merged = False
             for stream_type in range(3):
-                tmp1 = sorted(filter(lambda el: el.type==stream_type, rv.streams), key=get_track_id)
-                tmp2 = sorted(filter(lambda el: el.type==stream_type, md_streams.streams), key=get_track_id)
+                tmp1 = sorted([el for el in rv.streams if el.type==stream_type], key=get_track_id)
+                tmp2 = sorted([el for el in md_streams.streams if el.type==stream_type], key=get_track_id)
                 if len(tmp1)==len(tmp2):
                     for i in range(len(tmp1)):
                         prms = tmp2[i].params
@@ -825,8 +825,8 @@ class MediaInformer:
                 mkv_streams = self.fileInfoUsingMKV(filename)
                 merged = False
                 for stream_type in range(3):
-                    tmp1 = sorted(filter(lambda el: el.type==stream_type, rv.streams), key=get_track_id)
-                    tmp2 = sorted(filter(lambda el: el.type==stream_type, mkv_streams.streams), key=get_track_id)
+                    tmp1 = sorted([el for el in rv.streams if el.type==stream_type], key=get_track_id)
+                    tmp2 = sorted([el for el in mkv_streams.streams if el.type==stream_type], key=get_track_id)
                     if len(tmp1)==len(tmp2):
                         for i in range(len(tmp1)):
                             prms = tmp2[i].params
@@ -840,8 +840,8 @@ class MediaInformer:
                 mp4_streams = self.fileInfoUsingMP4Box(filename)
                 merged = False
                 for stream_type in range(3):
-                    tmp1 = sorted(filter(lambda el: el.type==stream_type, rv.streams), key=get_track_id)
-                    tmp2 = sorted(filter(lambda el: el.type==stream_type, mp4_streams.streams), key=get_track_id)
+                    tmp1 = sorted([el for el in rv.streams if el.type==stream_type], key=get_track_id)
+                    tmp2 = sorted([el for el in mp4_streams.streams if el.type==stream_type], key=get_track_id)
                     if len(tmp1)==len(tmp2):
                         for i in range(len(tmp1)):
                             prms = tmp2[i].params
@@ -869,7 +869,7 @@ class MediaInformer:
 
         try:
             rv.general['mediaDuration'] = self.__mediaDuration(filename)
-        except Exception, e:
+        except Exception as e:
             pass
             #raise e
 
@@ -954,8 +954,8 @@ class MediaInformer:
         }
 
         ap_params = {}
-        for k in rv.keys():
-            if convert_dictionary.has_key(k):
+        for k in list(rv.keys()):
+            if k in convert_dictionary:
                 if k=='trkn' or k=='disk':
                     ap_params[convert_dictionary[k]] = rv[k].replace(' of ', '/')
                 else:
@@ -963,7 +963,7 @@ class MediaInformer:
             else:
                 ap_params[k] = rv[k]
 
-        if ap_params.has_key('artwork'):
+        if 'artwork' in ap_params:
             name = '.'.join(os.path.basename(filename).split('.')[:-1])
             fname = '%s/%s'%(self.artwork_path, name)
             #p = os.popen(self.__atomicParsley_path + ' \"%s\" -e \"%s\"'%(filename, fname))
@@ -988,5 +988,5 @@ if __name__=='__main__':
     for arg in sys.argv[1:]:
         fi = mi.fileInfo(arg)
         #print fi.dump(mode='short')
-        print fi.dump()
+        print(fi.dump())
 

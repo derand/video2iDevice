@@ -48,7 +48,7 @@ class mpeg4fixer:
                         mvhd_pos = si[2]
                         f.seek(si[2]+24)
                         movie_dur = struct.unpack('I', self.__swapBytes(f.read(4)))[0]
-                        print 'duration: ', movie_dur
+                        print('duration: ', movie_dur)
 
                     if si[1]=='trak':
                         tkhd_pos = 0
@@ -99,7 +99,7 @@ class mpeg4fixer:
                 # fix duration 
                 if fixVideoDuration:
                     f.seek(mvhd_pos+24)
-                    print f.write(self.__swapBytes(struct.pack('I', video_dur)))
+                    print(f.write(self.__swapBytes(struct.pack('I', video_dur))))
             f.seek(pos+moov_sz)
         f.close()
 
@@ -171,7 +171,7 @@ class mpeg4fixer:
         for n in names:
             if n!=None:
                 addSize+=len(n)+16
-        print addSize
+        print(addSize)
         if addSize==0:
             return None
         fstruct = self.__getFileStruct(fn)
@@ -179,14 +179,14 @@ class mpeg4fixer:
         mdatIdx = -1
         for i in range(len(fstruct)):
             gi = fstruct[i]
-            print '%012d +%s(%d)'%(gi[2], gi[1], gi[0])
+            print('%012d +%s(%d)'%(gi[2], gi[1], gi[0]))
             if gi[1]=='moov': moovIdx = i
             if gi[1]=='mdat': mdatIdx = i
         moveMoov = False
         if moovIdx < mdatIdx:
             gi = fstruct[moovIdx+1]
             moveMoov = (gi[1]=='free') and ((gi[0]-8)<addSize)
-        print moveMoov
+        print(moveMoov)
         i = len(fstruct)-1
         while fstruct[i][1]=='free':
             del fstruct[i]
@@ -222,7 +222,7 @@ class mpeg4fixer:
         trackCounter = 0
         for i in range(len(streams)):
             gi = streams[i]
-            print '%012d +%s(%d)'%(gi[2], gi[1], gi[0])
+            print('%012d +%s(%d)'%(gi[2], gi[1], gi[0]))
             if gi[1]=='moov':
                 fo.write(self.__swapBytes(struct.pack('I', gi[0])))
                 fo.write('moov')
@@ -230,7 +230,7 @@ class mpeg4fixer:
                     self.__copySection(mi, f, fo)
                     if mi[1]=='trak':
                         if names[trackCounter]!=None:
-                            print '%012d   %s(%d)\t%s'%(mi[2], mi[1], mi[0], names[trackCounter])
+                            print('%012d   %s(%d)\t%s'%(mi[2], mi[1], mi[0], names[trackCounter]))
                             nsz = len(names[trackCounter]) + 16
                             fo.write(self.__swapBytes(struct.pack('I', nsz)))
                             fo.write('udta')
@@ -241,10 +241,10 @@ class mpeg4fixer:
                             nsz = mi[0]+nsz
                             fo.write(self.__swapBytes(struct.pack('I', nsz)))
                         else:
-                            print '%012d   %s(%d)'%(mi[2], mi[1], mi[0])
+                            print('%012d   %s(%d)'%(mi[2], mi[1], mi[0]))
                         trackCounter += 1
                     else:
-                        print '%012d   %s(%d)'%(mi[2], mi[1], mi[0])
+                        print('%012d   %s(%d)'%(mi[2], mi[1], mi[0]))
             elif gi[1]=='free':
                 self.__writeFreeBlock(gi, fo)
             else:

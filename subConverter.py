@@ -40,37 +40,37 @@ STTNGS = {
     },
 
 'subReplace' : {
-    unicode("На", 'utf-8'): {
-            "text": unicode("<i><font color=\"#b9d4b5\">На</font><font color=\"#846546\">зад обернувшись, смотрю пред собою:\n\"Кто там стоит?\"</font></i>", 'utf-8'),
+    str("На"): {
+            "text": str("<i><font color=\"#b9d4b5\">На</font><font color=\"#846546\">зад обернувшись, смотрю пред собою:\n\"Кто там стоит?\"</font></i>"),
             "style": "Song1",
             "duration": 470
         },
-    unicode("Когтями", 'utf-8'): {
-            "text": unicode("Когтями на части всю тьму разорвало...", 'utf-8'),
+    str("Когтями"): {
+            "text": str("Когтями на части всю тьму разорвало..."),
             "style": "Song1",
         },
-    unicode("Когда", 'utf-8'): {
-            "text": unicode("Когда обернётся дождь крови рекой,\nна горло мое вдруг прольется потоком...", 'utf-8'),
+    str("Когда"): {
+            "text": str("Когда обернётся дождь крови рекой,\nна горло мое вдруг прольется потоком..."),
             "style": "Song1",
         },
-    unicode("Не будет", 'utf-8'): {
-            "text": unicode("Не будет впредь места на целой", 'utf-8'),
+    str("Не будет"): {
+            "text": str("Не будет впредь места на целой"),
             "style": "Song1",
         },
-    unicode("Земле, куда ты вернуться бы смог.", 'utf-8'): {
-            "text": unicode("Земле, куда ты вернуться бы смог.", 'utf-8'),
+    str("Земле, куда ты вернуться бы смог."): {
+            "text": str("Земле, куда ты вернуться бы смог."),
             "style": "Song1",
         },
-    unicode("Иди вслед за пальцем,", 'utf-8'): {
-            "text": unicode("Иди вслед за пальцем, за пальцем моим.\nЯ тебя уведу за собою в тот лес,..", 'utf-8'),
+    str("Иди вслед за пальцем,"): {
+            "text": str("Иди вслед за пальцем, за пальцем моим.\nЯ тебя уведу за собою в тот лес,.."),
             "style": "Song1",
         },
-    unicode("...где цикады стрекочут", 'utf-8'): {
-            "text": unicode("...где цикады стрекочут во тьме.\nНо назад ты уже не вернёшься...", 'utf-8'),
+    str("...где цикады стрекочут"): {
+            "text": str("...где цикады стрекочут во тьме.\nНо назад ты уже не вернёшься..."),
             "style": "Song1",
         },
-    unicode("Вон туда.", 'utf-8'): {
-            "text": unicode("Вон туда.", 'utf-8'),
+    str("Вон туда."): {
+            "text": str("Вон туда."),
             "outStyle": "808080[",
         },
     },
@@ -100,7 +100,7 @@ class subConverter:
     
     def mergeSubs(self, sub, add, anywayNeedSpace):
         tmp = ''
-        if len(unicode(add,'utf-8'))>1 or anywayNeedSpace:
+        if len(str(add,'utf-8'))>1 or anywayNeedSpace:
             tmp = '\n'
         return '%s%s%s'%(sub,tmp,add)
 
@@ -158,7 +158,7 @@ class subConverter:
         c=0
         x1=0 
         while i<len(arr):
-            if len(unicode(arr[i],'utf-8'))==1:
+            if len(str(arr[i],'utf-8'))==1:
                 c+=1
                 x1 = i-c+1
             else:
@@ -442,7 +442,7 @@ class subConverter:
                         __tags = []
                         for l in s:
                             subStyles = ''
-                            subLen = len(unicode(sub, 'utf-8'))
+                            subLen = len(str(sub, 'utf-8'))
                             if l==None:
                                 color = '38 38 38 00'
                                 subStyles =' color="%s"'%color
@@ -455,7 +455,7 @@ class subConverter:
                             else:
                                 add = l[3].replace('&lt;', '<').replace('&gt;', '>')
                                 #print '--', l[0], l[1], l[2], l[3], l[4]
-                                _len = len(unicode(add, 'utf-8'))
+                                _len = len(str(add, 'utf-8'))
                                 if len(l[4]):
                                     for style in l[4]:
                                         _start = 0
@@ -501,7 +501,7 @@ class subConverter:
                                         if len(subStyles)>0: subStyles = ' styles="%s"'%subStyles[1:]
                                         color = '%s %s %s ff'%(color[0:2], color[2:4], color[4:6])
                                         color = color.lower()
-                                        if color<>'ff ff ff ff':
+                                        if color!='ff ff ff ff':
                                             subStyles = subStyles+' color="%s"'%color
                                         #subLen = len(unicode(sub, 'utf-8'))
                                         if len(sub):
@@ -534,7 +534,7 @@ class subConverter:
                         #sub = sub.replace('<', '&lt;').replace('>', '&gt;').replace('¶', '&nbsp;')
                         #sub = sub.replace('<', '&lt;').replace('>', '&gt;').replace('¶', ' ')
                         sub = sub.replace('<', '&lt;').replace('>', '&gt;').replace('¶', '.')
-                        if lastSubTm<>tmFrom:
+                        if lastSubTm!=tmFrom:
                             fo.write('\n<TextSample sampleTime="%s" xml:space="preserve"></TextSample>'%lastSubTm)
                         #print'%s%s'%(sub,tags.encode('utf-8'))
                         fo.write('\n<TextSample sampleTime="%s" xml:space="preserve">%s%s</TextSample>'%(tmFrom, sub, tags.encode('utf-8')))
@@ -553,7 +553,7 @@ class subConverter:
 
     def getSubStyle(self, st, defStyles):
         rv = None
-        if self.__STNGS.has_key('subStyleColors'):
+        if 'subStyleColors' in self.__STNGS:
             for key in self.__STNGS['subStyleColors']:
                 tmp = key.encode( "utf-8" ).split(',')
                 if len(tmp)==1:
@@ -564,7 +564,7 @@ class subConverter:
                     if tmp[1]==st[1] and (tmp[0]=='' or tmp[0]==st[0]):
                         rv = self.__STNGS['subStyleColors'][key].encode( "utf-8" )
                         break
-        if rv==None and defStyles.has_key(st[0]):
+        if rv==None and st[0] in defStyles:
             rv = defStyles[st[0]]
         return rv
 
@@ -576,7 +576,7 @@ class subConverter:
             if __tag[-1]==' ':
                 srch = srch[:-1]
             idx = line.find(srch);
-            if (min_pos==-1 or min_pos>idx) and idx<>-1:
+            if (min_pos==-1 or min_pos>idx) and idx!=-1:
                 min_pos = idx
                 tag = __tag
         if tag==None:
@@ -593,15 +593,15 @@ class subConverter:
                 break
             __add = end_pos+1
             end_pos = line[__add:].find('</%s>'%tag)+__add
-        if tag<>None and end_pos==-1 and len(tag)>1:
+        if tag!=None and end_pos==-1 and len(tag)>1:
             return (tag, min_pos, len(line))
-        if tag<>None and end_pos<=min_pos:
+        if tag!=None and end_pos<=min_pos:
             return self.firstTagBounds(line[min_pos+1:], tags, add+min_pos)
         return (tag, min_pos, end_pos)
 
     def tagsBounds(self, line, tags, bounds=[], add=0):
         (tag, min_pos, end_pos) = self.firstTagBounds(line, tags)
-        while tag<>None:
+        while tag!=None:
             idx = min_pos+line[min_pos:].find('>')+1
             b = []
             if tag=='font':
@@ -609,7 +609,7 @@ class subConverter:
                 if srch==None:
                     srch = re.compile('\s+size').search(line[min_pos:idx])
                     if srch==None:
-                        print 'Error on line: "%s"'%line
+                        print('Error on line: "%s"'%line)
                         sys.exit(1)
                     b.append('#ffffff')
                 else:
@@ -652,10 +652,10 @@ class subConverter:
         block = 0
         lines = []
         black_list = ()
-        if self.__STNGS.has_key('ASSremoveItems'):
+        if 'ASSremoveItems' in self.__STNGS:
             black_list = self.__STNGS['ASSremoveItems']
         subReplace = {}
-        if self.__STNGS.has_key('subReplace'):
+        if 'subReplace' in self.__STNGS:
             subReplace = self.__STNGS['subReplace']
         lastVal = None
         styles = {}
@@ -683,7 +683,7 @@ class subConverter:
                     line = line[8:]
                     elems = line.split(',')
                     linetext = ",".join(elems[9:])
-                    linetext = unicode(linetext, fCoding)
+                    linetext = str(linetext, fCoding)
 
                     #if len(linetext)>12 and ((linetext[:7]=='{\\bord3') or (linetext[:5]=='{\\be1')) and (len(elems[3])>3 and elems[3][:3]=="ed_"):
                     #    linetext=''
@@ -700,11 +700,11 @@ class subConverter:
 
                     blackCheck = True
                     subEnd = self.timesrt(elems[2])
-                    if subReplace.has_key(linetext.strip()):
+                    if linetext.strip() in subReplace:
                         v = subReplace[linetext.strip()]
-                        if (not v.has_key('style')) or (v.has_key('style') and v['style']==elems[3].strip()):
+                        if ('style' not in v) or ('style' in v and v['style']==elems[3].strip()):
                             linetext = v['text']
-                            if v.has_key('duration'):
+                            if 'duration' in v:
                                 subDuration = v['duration']
                                 subEnd = self.int2time(self.time2int(self.timesrt(elems[1]))+subDuration)
                             blackCheck = False
@@ -712,7 +712,7 @@ class subConverter:
                     if blackCheck:
                         bl = False
                         for style in black_list:
-                            if style==unicode(elems[3], 'utf-8'):
+                            if style==str(elems[3], 'utf-8'):
                                 bl = True
                                 break
                         if bl:
@@ -739,9 +739,9 @@ class subConverter:
                         if _style[0]=='*': _style = _style[1:]
                         _name = elems[4].strip()
                         val = [[_style, _name], self.timesrt(elems[1]), subEnd, linetext8, []]
-                        if lastVal<>None:
+                        if lastVal!=None:
                             if canMergeLines and lastVal[0][0]==val[0][0] and lastVal[1]==val[1] and lastVal[2]==lastVal[2] and linetext.find(' ')==-1 and linetext.find('.')==-1 and linetext.find(',')==-1:
-                                lastVal[3] = '%s %s'%(unicode(lastVal[3], 'utf-8'), linetext)
+                                lastVal[3] = '%s %s'%(str(lastVal[3], 'utf-8'), linetext)
                                 lastVal[3] = lastVal[3].encode('utf-8')
                             else:
                                 self.__insert(lines, val)
@@ -777,7 +777,7 @@ class subConverter:
             for i in range(len(lines)):
                 l = lines[i]
                 style = self.getSubStyle(l[0], styles)
-                strLineStyle = self.stylesFromSrtLine(unicode(l[3], 'utf-8'))
+                strLineStyle = self.stylesFromSrtLine(str(l[3], 'utf-8'))
                 if style!=None:
                     if strLineStyle[1]==[]:
                         lines[i][4].append(("#%s"%style,))
@@ -796,13 +796,13 @@ class subConverter:
         set = False
         lines = []
         subReplace = {}
-        if self.__STNGS.has_key('subReplace'):
+        if 'subReplace' in self.__STNGS:
             subReplace = self.__STNGS['subReplace']
         subStyle = None
         fCoding = fileCoding.file_encoding(fname_srt)
         for line in fi:
-            line = unicode(line, fCoding).strip()
-            if len(line)>3 and line[:3]==u'\xEF\xBB\xBF':
+            line = str(line, fCoding).strip()
+            if len(line)>3 and line[:3]=='\xEF\xBB\xBF':
                 line = line[3:]
 
             line = re.sub(r'\{\\[^\}]*\}', '', line)
@@ -810,8 +810,8 @@ class subConverter:
             if len(line)!=0:
                 
                 subStyle = []
-                if subReplace.has_key(line):
-                    if subReplace[line].has_key('text'):
+                if line in subReplace:
+                    if 'text' in subReplace[line]:
                         line = subReplace[line]['text']
 
                 if lastLineEmpty:
@@ -844,7 +844,7 @@ class subConverter:
                     elif txt==None:
                         txt = line
                     else:
-                        txt += u'\n%s'%line
+                        txt += '\n%s'%line
                 set= False
                 lastLineEmpty = False
             else:
@@ -869,7 +869,7 @@ class subConverter:
         
         for i in range(len(lines)):
             val = lines[i]
-            tmp = self.stylesFromSrtLine(unicode(val[3], 'utf-8'))
+            tmp = self.stylesFromSrtLine(str(val[3], 'utf-8'))
             if len(tmp[1]):
                 val = (val[0], val[1], val[2], tmp[0].encode('utf-8'), tmp[1])
                 lines[i] = val
@@ -893,7 +893,7 @@ class subConverter:
     def ass2srt(self, fname_ass, fname_srt, sttngs={}):
         lines = self.readAss(fname_ass)
 
-        if sttngs.has_key('addTimeDiff'):
+        if 'addTimeDiff' in sttngs:
             lines = self.timeAdd(lines, sttngs['addTimeDiff'])
 
         self.writeOut2srt(fname_srt, lines)
@@ -909,9 +909,9 @@ class subConverter:
             val = (val[0], tm1, tm2, val[3], val[4])
             lines[i] = val
         '''
-        print '----------',sttngs
+        print('----------',sttngs)
         
-        if sttngs.has_key('addTimeDiff'):
+        if 'addTimeDiff' in sttngs:
             lines = self.timeAdd(lines, sttngs['addTimeDiff'])
 
         self.writeOut2ttxt(fname_ttxt, lines)
@@ -920,7 +920,7 @@ class subConverter:
     def srt2ttxt(self, fname_srt, fname_ttxt, sttngs={}):
         lines = self.readSrt(fname_srt)
 
-        if sttngs.has_key('addTimeDiff'):
+        if 'addTimeDiff' in sttngs:
             lines = self.timeAdd(lines, sttngs['addTimeDiff'])
 
         self.writeOut2ttxt(fname_ttxt, lines)
@@ -933,14 +933,14 @@ class subConverter:
 
         lines = self.readSrt(fname_srt1)
 
-        if sttngs.has_key('addTimeDiff'):
+        if 'addTimeDiff' in sttngs:
             lines = self.timeAdd(lines, sttngs['addTimeDiff'])
 
         self.writeOut2srt(tmp_fn, lines)
 
         if fname_srt1==fname_srt2 or fname_srt2==None:
             cmd = 'mv "%s" "%s"'%(tmp_fn, fname_srt1)
-            print cmd
+            print(cmd)
             os.system(cmd)
         return fname_srt2
 
@@ -987,7 +987,7 @@ if __name__=='__main__':
             #print sys.argv[1], fname_ttxt
             #sc.ass2ttxt(sys.argv[1], fname_ttxt)
             fname_ttxt = os.path.basename(re.compile('\\.ass$').sub('.ttxt', sys.argv[1]))
-            print sys.argv[1], fname_ttxt
+            print(sys.argv[1], fname_ttxt)
             sc.ass2ttxt(sys.argv[1], fname_ttxt)
     elif len(sys.argv)>2:
         if sys.argv[1]=='-styles':
@@ -995,22 +995,22 @@ if __name__=='__main__':
             st = {}
             for i in range(2, len(sys.argv)):
                 st = sc.readAssStyles(sys.argv[i], st)
-            keys = st.keys()
+            keys = list(st.keys())
             keys.sort()
             for key in keys:
-                print "\t\"%s\" : \"%s\","%(key, st[key][0]) 
+                print("\t\"%s\" : \"%s\","%(key, st[key][0])) 
             
     
 
     sss = '''{\\r\\fscx110\\fscy120\\fsp2\\t(400,550,\\1a&HFF&)}р{\\r\\fscx110\\fscy120\\fsp2\\t(100,250,\\1a&HFF&)}е{\\rfscx110\\fscy120\\fsp2\\t(350,500,\\1a&HFF&)}д{\\r\\fscx110\\fscy120\\fsp2\\t(350,500,\\1a&HFF&)}а{\\r\\fscx110\\fscy120\\fsp2\\t(500,650,\\1a&HFF&)}к{\\r\\fscx110\\fscy120\\fsp2\\t(600,750,\\1a&HFF&)}ц{\\fscx110\\fscy120\\fsp2\\t(250,400,\\1a&HFF&)}и{\\r\\fscx110\\fscy120\\fsp2\\t(0,150,\\1a&HFF&)}я: {\\r\\fscx110\\fscy120\\fsp2\\t(550,700,\\1a&HFF&)}n{\\r\\fscx110\\fscy120\\fsp2\\t(50,200,\\1a&HFF&)}e{\\r\\fscx110\\fscy120\\fsp2\\t(650,800,\\1a&HFF&)}u{\\r\\fscx110\\fscy120\\fsp2\\t(200,350,\\1a&HFF&)}t{\\r\\fscx110\\fscy120\\fsp2\\t(300,600,\\1a&HFF&)}r{\\r\\fscx110\\fscy120\\fsp2\\t(700,850,\\1a&HFF&)}a{\\r\\fscx110\\fscy120\\fsp2\\t(250,400,\\1a&HFF&)}l'''
     tmp = re.sub(r'\{\\[^\}]*\}', '', sss)
-    print '\n-------------'
-    print unicode(tmp, 'utf-8').encode('ascii', 'xmlcharrefreplace')
+    print('\n-------------')
+    print(str(tmp, 'utf-8').encode('ascii', 'xmlcharrefreplace'))
     
     linetext = '{\p1\fscx76.25\fscy97.5\frz328.141\pos(578,189)}m -105 68 l -91 39 l -77 68 l -80 68 l -84 59 l -98 59 l -102 68 m -73 68 l -73 39 l -64 39 b -54 39 -48 44 -48 54 b -48 65 -55 68 -64 68 m -32 68 l -45 39 l -41 39 l -32 61 l -22 39 l -19 39 m -18 68 b -21 68 -21 66 -21 62 b -22 60 -22 59 -20 56 b -17 51 -15 41 -10 36 b -9 34 -9 29 -7 26 l -9 25 l -4 16 b -5 16 -7 15 -6 14 b -5 13 -8 13 -9 13 b -12 11 -13 10 -13 6 b -11 4 -11 -2 -10 -6 b -10 -8 -7 -8 -5 -9 b -3 -10 -3 -11 -3 -12 b -3 -14 -5 -14 -7 -12 b -7 -14 -10 -12 -12 -13 b -10 -15 -9 -15 -8 -16 l -11 -16 b -9 -17 -7 -18 -7 -21 b -7 -24 -7 -26 -5 -28 b -4 -29 -1 -29 0 -27 l -1 -30 b 1 -28 3 -29 2 -26 b 4 -27 6 -26 7 -24 b 7 -27 10 -26 12 -28 b 10 -24 13 -24 14 -21 b 15 -18 14 -15 12 -13 b 19 -10 9 -8 14 -6 b 13 -6 11 -6 10 -7 b 12 -10 8 -10 7 -11 l 6 -14 b 5 -12 4 -11 2 -10 b 2 -9 5 -9 8 -8 b 15 -3 19 1 19 2 b 19 4 17 7 9 7 b 13 13 12 18 14 20 b 14 21 13 22 12 22 b 13 27 12 31 12 34 b 13 44 11 51 10 55 l 10 58 b 12 59 10 61 10 62 b 11 67 10 68 7 68 b 5 68 3 67 3 65 b 3 63 6 62 7 58 b 7 51 7 47 7 39 b 7 35 6 30 5 26 b 4 26 2 26 1 26 b -3 33 -4 37 -8 42 b -10 48 -11 50 -17 58 b -17 61 -16 63 -13 66 b -13 68 -16 68 -17 68 m 16 68 l 16 39 l 36 61 l 36 39 l 39 39 l 39 68 l 19 47 l 19 68 m 49 68 l 49 41 l 43 41 l 43 39 l 58 39 l 58 41 l 52 41 l 52 68 m 61 68 l 74 39 l 88 68 l 85 68 l 81 59 l 68 59 l 64 68 m 110 54 l 122 54 b 123 65 113 69 107 69 b 102 69 92 65 92 54 b 92 45 99 39 107 39 b 114 39 117 41 121 44 l 119 47 b 115 44 113 42 107 42 b 101 42 95 46 95 54 b 95 63 103 66 107 66 b 113 66 118 64 119 57 l 110 57 m 128 68 l 128 39 l 145 39 l 145 42 l 131 42 l 131 51 l 145 51 l 145 54 l 131 54 l 131 65 l 145 65 l 145 68 m -86 56 l -91 46 l -96 56 m -70 42 l -70 66 l -65 66 b -59 66 -50 63 -51 54 b -51 46 -57 42 -65 42 m 79 56 l 74 45 l 69 56 m -4 11 b -4 8 -5 6 -6 4 b -7 4 -9 8 -7 9 m 6 3 b 6 4 6 5 7 5 b 8 4 11 3 12 2 b 10 1 8 0 6 -2 {\p0}'
     linetext = re.sub(r'\{\\[^\}]*\}', '', linetext)
     linetext = re.sub(r'([lmb](\s\-{0,1}\d+){2,6}\s{0,1}){2,}', '', linetext)    # m 0 0 l 0 150 l 250 150 l 250 0
     linetext = re.sub(r'm\s\-{0,1}\d+\s+\-{0,1}\d+\s+s(\s+\-{0,1}\d+){14}\s+c', '', linetext)
-    print "-%s-"%linetext
+    print("-%s-"%linetext)
 
 

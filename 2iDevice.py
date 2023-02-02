@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 # writed by derand
@@ -134,11 +134,8 @@ Global options:
                 where first - start time, second - duration (not required)
                 Use "tagging_mode" for split only
     -sleep_between_files    [int]    pause between encoding files
-<<<<<<< HEAD
     -test_mode        test mode, show only commands and don't execute them (default: disabled)
     -vcodec  [string]    video codec (libx264 - default)
-=======
->>>>>>> 6bbf8edbc1c299f28b228c4551d34d3474ba5813
 
 Video options:
     -vfile        [str]    set video filename. If not set try search in current dir. 
@@ -233,17 +230,17 @@ class LogToFile(object):
         self.releaseLog()
 
     def put(self, text, flush=True):
-        if self.__log_file<>None:
+        if self.__log_file!=None:
             self.__log_file.write(text)
             if flush:
                 self.flush()
 
     def flush(self):
-        if self.__log_file<>None:
+        if self.__log_file!=None:
             self.__log_file.flush()        
 
     def isSetted(self):
-        return self.__log_file<>None
+        return self.__log_file!=None
 
     def file_name(self):
         return self.__file_name
@@ -254,7 +251,7 @@ class LogToFile(object):
         self.__log_file = open(logFileName, 'w')
 
     def releaseLog(self):
-        if self.__log_file<>None:
+        if self.__log_file!=None:
             self.__log_file.close()
             self.__log_file = None
 
@@ -317,11 +314,11 @@ class Video2iDevice(object):
                     waitParam = True
                 # help param or wrong
                 if ckey=='h' or ckey=='json_pipe':
-                    print help
+                    print(help)
                     sys.exit(0)
                 # version param
                 if ckey=='v':
-                    print "Version: %s"%STTNGS['version']
+                    print("Version: %s"%STTNGS['version'])
                     sys.exit(0)
                 # single or not param 
                 if ckey=='info':
@@ -383,7 +380,7 @@ class Video2iDevice(object):
                     if len(tmp)>0:
                         tmp[-1][-1][ckey] = shlex.split(el)
                 elif ckey=='web_optimization':
-                    STTNGS[ckey] = el<>'0'
+                    STTNGS[ckey] = el!='0'
                 elif ckey=='stream_prefix':
                     tmp = STTNGS['fadd']
                     if len(tmp)>0:
@@ -396,7 +393,7 @@ class Video2iDevice(object):
                 elif ckey == 'vcodec':
                     STTNGS[ckey] = el
                 else:
-                    if STTNGS.has_key(ckey):
+                    if ckey in STTNGS:
                         if type(STTNGS[ckey])==type([]):
                             STTNGS[ckey].append(el)
                         elif type(STTNGS[ckey])==type(123):
@@ -415,7 +412,7 @@ class Video2iDevice(object):
                         STTNGS[ckey] = el
                 saveP = True
         if STTNGS['vv']:
-            print STTNGS
+            print(STTNGS)
 
 
     def loadSettingsFile(self, filename):
@@ -424,7 +421,7 @@ class Video2iDevice(object):
             encoding = fileCoding.file_encoding(filename)
             file = codecs.open(filename, mode='r', encoding=encoding)
         except:
-            print 'error open file %s'%filename
+            print('error open file %s'%filename)
             sys.exit(1)
         inside_key = False
         save_key = ''
@@ -440,7 +437,7 @@ class Video2iDevice(object):
                 if _tmp[-1]==arrSymb:
                     if inside_key:
                         if STTNGS['vv']:
-                            print _tmp
+                            print(_tmp)
                         #rv[save_key] = json.loads(_tmp)
                         rv[save_key] = json_ex.JsonReader().read(_tmp)
                         inside_key = False
@@ -467,7 +464,7 @@ class Video2iDevice(object):
         return rv
 
     def __printCmd(self, cmd):
-        print ': \033[1;32m%s\033[00m'%cmd
+        print(': \033[1;32m%s\033[00m'%cmd)
         self.log.put('\n: \033[1;32m%s\033[00m\n'%cmd, True)
 
     def __exeFfmpegCmd(self, params, percentagePrefix=None):
@@ -524,13 +521,13 @@ class Video2iDevice(object):
                 else:
                     #frame=  491 fps= 20 q=23.0 size=    2228kB time=00:00:18.01 bitrate=1013.0kbits/s dup=2 drop=0
                     time_re =  time_re_compiled.search(line)
-                    process_catched = time_re<>None
+                    process_catched = time_re!=None
                     if time_re:
                         time = timeToMs(time_re.groups()[0:4])
                         try:
                             if time>duration:
                                 time = duration
-                        except Exception, e:
+                        except Exception as e:
                             p.kill()
                             raise e
                     if line[:len('[libx264')]=='[libx264':
@@ -544,18 +541,18 @@ class Video2iDevice(object):
                     s = line
                 else:
                     if process_catched:
-                        if percentagePrefix<>None:
+                        if percentagePrefix!=None:
                             s = percentagePrefix
                         s += '  %.2f%% %s   '%(float(time)*100.0/float(duration), line)
                     elif tmp_process_catched:
-                        if percentagePrefix<>None:
+                        if percentagePrefix!=None:
                             s = percentagePrefix
                         s += '  %.2f%% %s   '%(float(duration)*100.0/float(duration), tmp_line)
                 if len(s):
                     sys.stdout.write(s+ch)
                     sys.stdout.flush()
                 if ch=='\n':
-                    if tmp_line<>None and tmp_line[-1]=='\r':
+                    if tmp_line!=None and tmp_line[-1]=='\r':
                         self.log.put(tmp_line, False)
                     self.log.put(line+ch, True)
                 #print line
@@ -567,22 +564,22 @@ class Video2iDevice(object):
             else:
                 line += ch
             if retcode is not None and not STTNGS['vv']:
-                print
+                print()
                 for l in libx264_log_settings:
-                    print l
+                    print(l)
                 if len(libx264_log_settings)>0 and len(libx264_log):
-                     print '--- h264 log ---'
+                     print('--- h264 log ---')
                 for l in libx264_log:
-                    print l
+                    print(l)
                 break
-        if retcode<>0:
-            print cmd
+        if retcode!=0:
+            print(cmd)
             sys.exit()
         return (retcode, libx264_log, libx264_log_settings)
 
     def __exeCmd(self, cmd, check_exit_code=True):
         cmd_str = add_separator_to_filepath(cmd[0])
-        print cmd
+        print(cmd)
         for i in range(1,len(cmd)):
             if cmd[i].find(' ')==-1:
                 cmd_str += ' %s'%cmd[i]
@@ -604,7 +601,7 @@ class Video2iDevice(object):
                 #line = line.strip()
                 sys.stdout.write(line+ch)
                 if ch=='\n':
-                    if tmp_line<>None and tmp_line[-1]=='\r':
+                    if tmp_line!=None and tmp_line[-1]=='\r':
                         self.log.put(tmp_line, False)
                     self.log.put(line+ch, True)
                 tmp_line = line+ch
@@ -613,9 +610,9 @@ class Video2iDevice(object):
                 line += ch
             if retcode is not None and len(ch)==0:
                 break
-        if check_exit_code and retcode<>0:
-            print cmd
-            print 'Exit code: %d'%retcode
+        if check_exit_code and retcode!=0:
+            print(cmd)
+            print('Exit code: %d'%retcode)
             sys.exit()
         return retcode
 
@@ -632,9 +629,9 @@ class Video2iDevice(object):
         srch = None
         tr = None
         rv = {}
-        if STTNGS.has_key('track'):
+        if 'track' in STTNGS:
             tr = int(STTNGS['track'])
-        if STTNGS.has_key('TRACK_REGEX'):
+        if 'TRACK_REGEX' in STTNGS:
             for p in STTNGS['TRACK_REGEX']:
                 srch = re.compile(p).search(fn)
                 if srch!=None:
@@ -643,9 +640,9 @@ class Video2iDevice(object):
                 tr = int(srch.groups()[0])+STTNGS['add2TrackIdx']
         rv['track'] = tr
         trs = None
-        if STTNGS.has_key('tracks'):
+        if 'tracks' in STTNGS:
             trs = int(STTNGS['tracks'])
-        if STTNGS.has_key('TRACKS_REGEX'):
+        if 'TRACKS_REGEX' in STTNGS:
             for p in STTNGS['TRACKS_REGEX']:
                 srch = re.compile(p).search(fn)
                 if srch!=None:
@@ -653,7 +650,7 @@ class Video2iDevice(object):
             if srch!=None:
                 trs = int(srch.groups()[0])
         rv['tracks'] = trs
-        if tr==None and not rv.has_key('season'):
+        if tr==None and 'season' not in rv:
             srch = re.compile('[sS](\d{2})[eE](\d{2})').search(fn)
             if srch!=None:
                 tr = int(srch.groups()[1])+STTNGS['add2TrackIdx']
@@ -662,17 +659,17 @@ class Video2iDevice(object):
         return rv
 
     def __has_iTunMOVI(self):
-        rv = STTNGS.has_key('copy_warning') or STTNGS.has_key('studio')
+        rv = 'copy_warning' in STTNGS or 'studio' in STTNGS
         for key in self.__iTunMOVI_arrayKeys:
             rv = rv or len(STTNGS[key])>0
         return rv
 
     def __iTunMOVI_XML(self):
         rv = """<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple Computer//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\">\n  <dict>\n"""
-        if STTNGS.has_key('copy_warning'):
+        if 'copy_warning' in STTNGS:
             rv += "    <key>copy-warning</key>\n    <string>%s</string>\n"%STTNGS['copy_warning']
 
-        if STTNGS.has_key('studio'):
+        if 'studio' in STTNGS:
             rv += "    <key>studio</key>\n    <string>%s</string>\n"%STTNGS['studio']
 
         for tag in self.__iTunMOVI_arrayKeys:
@@ -695,7 +692,7 @@ class Video2iDevice(object):
             }
             info = self.tagTrackInfo(fn)
             for option in atomicParsleyOptions:
-                if STTNGS.has_key(option):
+                if option in STTNGS:
                     #prms[option] = ' "%s"'%STTNGS[option]
                     prms[option] = STTNGS[option]
                 #prms = __add_param(STTNGS, '--%s'%option, option, prms)
@@ -710,16 +707,16 @@ class Video2iDevice(object):
                     #prms += ' --tracknum %d --TVEpisodeNum %d'%(track, track)
                     prms['tracknum'] = '%d'%track
                     prms['TVEpisodeNum'] = '%d'%track
-                if STTNGS.has_key('episodes_titles') and len(STTNGS['episodes_titles'])>(track-1):
+                if 'episodes_titles' in STTNGS and len(STTNGS['episodes_titles'])>(track-1):
                     title = '%s'%STTNGS['episodes_titles'][track-1].replace("`", '_')
                     #prms += ' --TVEpisode %s'%title
                     #prms += ' --title %s'%title
                     prms['TVEpisode'] = title
                     prms['title'] = title
-                elif STTNGS.has_key('episodes') and len(STTNGS['episodes'])>(track-1):
+                elif 'episodes' in STTNGS and len(STTNGS['episodes'])>(track-1):
                     epInfo = STTNGS['episodes'][track-1]
                     for option in atomicParsleyOptions:
-                        if epInfo.has_key(option):
+                        if option in epInfo:
                             if option=='title':
                                 prms['TVEpisode'] = '%s'%epInfo[option]
                             prms[option] = '%s'%epInfo[option]
@@ -730,7 +727,7 @@ class Video2iDevice(object):
                     prms['TVEpisode'] = '%s'%title
 
             cmd = [AtomicParsley_path, fn, ]
-            for p in prms.keys():
+            for p in list(prms.keys()):
                 cmd.append('--%s'%p)
                 cmd.append(prms[p])
             if self.__has_iTunMOVI():
@@ -774,13 +771,13 @@ class Video2iDevice(object):
         return rv
 
     def rename(self, fn):
-        if not STTNGS.has_key('out_file'):
+        if 'out_file' not in STTNGS:
             return None
         name = STTNGS['out_file']
         info =  self.tagTrackInfo(fn)
         (tr, trs) = (info['track'], info['tracks'])
         if name.find('[SEASON]')>-1:
-            if STTNGS.has_key('TVSeasonNum'):
+            if 'TVSeasonNum' in STTNGS:
                 name = name.replace('[SEASON]', STTNGS['TVSeasonNum'])
         if name.find('[EPISODE_ID]')>-1:
             if tr!=None:
@@ -790,7 +787,7 @@ class Video2iDevice(object):
                 name = name.replace('[EPISODE_COUNT]', '%02d'%trs)
         if name.find('[NAME]')>-1:
             if tr!=None:
-                if STTNGS.has_key('episodes_titles') and len(STTNGS['episodes_titles'])>(tr-1):
+                if 'episodes_titles' in STTNGS and len(STTNGS['episodes_titles'])>(tr-1):
                     name = name.replace('[NAME]', STTNGS['episodes_titles'][tr-1])
         #cmd = 'mv "%s" "%s"'%(fn, name)
         #self.__printCmd(cmd)
@@ -833,7 +830,7 @@ class Video2iDevice(object):
         return rv
 
     def __videoFfmpegParamsQuality(self, fileName, _map, crf=0, _pass=0, hQuality=True):
-        if  crf<>0:
+        if  crf!=0:
             'CRF mode'
             ffmpeg_params = self.__videoFfmpegParamsCRF(fileName, _map, crf)
             ffmpeg_params_add = [#'-s', '%dx%d'%(_w,_h),
@@ -884,7 +881,7 @@ class Video2iDevice(object):
                 val = None
                 try:
                     idx = current_params.index(param)
-                except Exception, e:
+                except Exception as e:
                     pass
                 if user_params[0][0]!='-':
                     val = user_params[0]
@@ -922,7 +919,7 @@ class Video2iDevice(object):
             ass_fn = '%s/%s'%(STTNGS['temp_dir'], os.path.basename(fn))
             #shutil.copyfile(fn, ass_fn)
             self.__copyFileAndChangeEncoding(fn, ass_fn)
-        elif isMatroshkaMedia(fn) and hardsub_stream.params.has_key('mkvinfo_trackNumber'):
+        elif isMatroshkaMedia(fn) and 'mkvinfo_trackNumber' in hardsub_stream.params:
             if hardsub_stream.format().upper()=='ASS' or hardsub_stream.format().upper()=='SSA':
                 ass_fn = '%s/%s.%s'%(STTNGS['temp_dir'], os.path.basename(fn), hardsub_stream.format().lower())
                 #cmd = mkvtoolnix_path + 'mkvextract tracks "%s" %s:"%s"'%(fn, hardsub_stream.params['mkvinfo_trackNumber'], ass_fn)
@@ -953,14 +950,14 @@ class Video2iDevice(object):
 
 
     def cVideo(self, iFile, stream, oFile):
-        print stream.params
+        print(stream.params)
         w = stream.params['width']
         h = stream.params['height']
-        if stream.params.has_key('dwidth') and stream.params.has_key('dheight'):
+        if 'dwidth' in stream.params and 'dheight' in stream.params:
             w = stream.params['dwidth']
             h = stream.params['dheight']
     
-        if STTNGS.has_key('s'):
+        if 's' in STTNGS:
             res = STTNGS['s'].split('x')
             if res[0]=='*':
                 (_h, _w) = video_size_convert(h, w, int(res[1]))
@@ -978,36 +975,36 @@ class Video2iDevice(object):
         #if STTNGS.has_key('s'):
         #    video_filters.append({'scale': '%d:%d'%(_w, _h)})
 
-        print '\033[1;33m %dx%d  ==> %dx%d \033[00m'%(w,h, _w,_h)
+        print('\033[1;33m %dx%d  ==> %dx%d \033[00m'%(w,h, _w,_h))
 
         passes = [1,2]
-        if STTNGS.has_key('passes'):
+        if 'passes' in STTNGS:
             passes = []
             for el in STTNGS['passes'].split(':'):
                 passes.append(int(el))
 
         copyFlag = STTNGS['vcopy']
-        if stream.params.has_key('extended'):
-            if stream.params['extended'].has_key('copy'):
+        if 'extended' in stream.params:
+            if 'copy' in stream.params['extended']:
                 copyFlag = copyFlag or stream.params['extended']['copy']
 
         if copyFlag:
             passes = [1]
 
         crf = 0
-        if STTNGS.has_key('crf'):
+        if 'crf' in STTNGS:
             crf = STTNGS['crf']
         else:
-            if stream.params.has_key('extended'):
-                if stream.params['extended'].has_key('crf'):
+            if 'extended' in stream.params:
+                if 'crf' in stream.params['extended']:
                     crf = stream.params['extended']['crf']
-        if crf<>0:
+        if crf!=0:
             passes = [0]
         elif passes == [1]:
             passes = [None]
 
         hardsub_streams = []
-        if stream.params.has_key('hardsub_streams'):
+        if 'hardsub_streams' in stream.params:
             hardsub_streams = stream.params['hardsub_streams']
 
         items2Delete = []
@@ -1024,7 +1021,7 @@ class Video2iDevice(object):
 
                 #if len(os_ffmpeg_prms):
                 #    ffmpeg_params_add[len(ffmpeg_params_add):] = os_ffmpeg_prms
-                if STTNGS.has_key('vr'):
+                if 'vr' in STTNGS:
                     ffmpeg_params_add[len(ffmpeg_params_add):] = ['-r', '%.3f'%STTNGS['vr']]
                     #cmd = '%s -r %.3f'%(cmd, STTNGS['vr'])
 
@@ -1036,25 +1033,25 @@ class Video2iDevice(object):
                         #ffmpeg_params_add[len(ffmpeg_params_add):] = ['-vf', 'ass=%s'%ass_fn]
                         video_filters.append({'ass': '%s'%add_separator_to_filepath(ass_fn)})
                     else:
-                        print 'Can\'t set stream', hardsub_stream, 'as hardsub.'
+                        print('Can\'t set stream', hardsub_stream, 'as hardsub.')
                         sys.exit(1)
                         hardsub_stream.params['extended']['hardsub'] = False
-                if STTNGS.has_key('crop'):
+                if 'crop' in STTNGS:
                     #ffmpeg_params_add[len(ffmpeg_params_add):] = ['-vf', 'crop=%s'%STTNGS['crop']]
                     video_filters.append({'crop': STTNGS['crop']})
-                if STTNGS.has_key('s'):
+                if 's' in STTNGS:
                     video_filters.append({'scale': '%d:%d'%(_w, _h)})
                 if len(video_filters)>0:
                     ffmpeg_params_add.append('-vf')
                     filter_val = ''
                     for filter_dict in video_filters:
-                        filter_name = filter_dict.keys()[0]
+                        filter_name = list(filter_dict.keys())[0]
                         filter_val += '%s=%s,'%(filter_name, filter_dict[filter_name])
                     ffmpeg_params_add.append(filter_val[:-1])
                 ffmpeg_params[len(ffmpeg_params):] = ffmpeg_params_add
             ffmpeg_params.append('"%s"'%oFile)
 
-            if stream.params.has_key('extended') and stream.params['extended'].has_key('ffmpeg_coding_params'):
+            if 'extended' in stream.params and 'ffmpeg_coding_params' in stream.params['extended']:
                 ffmpeg_params = self.__mergeFfmpegParams(ffmpeg_params, stream.params['extended']['ffmpeg_coding_params'])
 
             #cmd = '%s "%s"'%(cmd, oFile)
@@ -1062,7 +1059,7 @@ class Video2iDevice(object):
             #self.__printCmd(cmd)
             if STTNGS['vc']:
                 stream_prefix = None
-                if stream.params.has_key('extended') and stream.params['extended'].has_key('stream_prefix'):
+                if 'extended' in stream.params and 'stream_prefix' in stream.params['extended']:
                     stream_prefix = stream.params['extended']['stream_prefix']
                 self.__exeFfmpegCmd(ffmpeg_params, stream_prefix)
                 #p = os.popen(cmd)
@@ -1080,8 +1077,8 @@ class Video2iDevice(object):
                         items2Delete.append(d)
                         #shutil.copyfile('ffmpeg2pass-0.log', '%s/ffmpeg2pass-0.log'%d)
                         #shutil.copyfile('x264_2pass.log.temp', '%s/x264_2pass.log.temp'%d)
-                    except Exception, e:
-                        print e
+                    except Exception as e:
+                        print(e)
         for itm in items2Delete:
             d = 'pass%d'%_pass
             try:
@@ -1089,7 +1086,7 @@ class Video2iDevice(object):
                     os.rmdir(itm)
                 else:
                     os.remove(itm)
-            except Exception, e:
+            except Exception as e:
                 pass
 
 
@@ -1127,28 +1124,28 @@ class Video2iDevice(object):
         ab = STTNGS['ab']
         copyFlag = False
         vol = 256
-        if stream.params.has_key('extended'):
-            if stream.params['extended'].has_key('ar'):
+        if 'extended' in stream.params:
+            if 'ar' in stream.params['extended']:
                 ar = stream.params['extended']['ar']
-            if stream.params['extended'].has_key('ab'):
+            if 'ab' in stream.params['extended']:
                 ab = stream.params['extended']['ab']
-            if stream.params['extended'].has_key('vol'):
+            if 'vol' in stream.params['extended']:
                 vol = int(stream.params['extended']['vol'])
-            if stream.params['extended'].has_key('copy'):
+            if 'copy' in stream.params['extended']:
                 copyFlag = stream.params['extended']['copy']
         else:
             copyFlag = STTNGS['acopy']
-        if stream.params.has_key('frequency') and ar>stream.params['frequency']:
+        if 'frequency' in stream.params and ar>stream.params['frequency']:
             ar = stream.params['frequency']
-        if stream.params.has_key('bitrate') and ab>stream.params['bitrate']:
+        if 'bitrate' in stream.params and ab>stream.params['bitrate']:
             ab = stream.params['bitrate']
-        if stream.params.has_key('vol'):
+        if 'vol' in stream.params:
             vol = int(stream.params['vol'])
 
         cmd = None
         ffmpeg_params = []
         ffmpeg_params_add = []
-        if copyFlag or (stream.format().lower()=='aac' and stream.params.has_key('channels') and stream.params['channels']=='2' and stream.params.has_key('bitrate') and stream.params['bitrate']==ab and stream.params.has_key('frequency') and stream.params['frequency']==ar):
+        if copyFlag or (stream.format().lower()=='aac' and 'channels' in stream.params and stream.params['channels']=='2' and 'bitrate' in stream.params and stream.params['bitrate']==ab and 'frequency' in stream.params and stream.params['frequency']==ar):
             #cmd = ffmpeg_path + ' -y -i "%s" -map %s -vn -acodec copy "%s"'%(iFile, stream[1], oFile)
             ffmpeg_params = self.__audioFfmpegParamsCopy(iFile, stream.trackID)
         else:
@@ -1162,7 +1159,7 @@ class Video2iDevice(object):
             ffmpeg_params[len(ffmpeg_params):] = ['-strict', 'experimental']
         ffmpeg_params.append('"%s"'%oFile)
 
-        if stream.params.has_key('extended') and stream.params['extended'].has_key('ffmpeg_coding_params'):
+        if 'extended' in stream.params and 'ffmpeg_coding_params' in stream.params['extended']:
             ffmpeg_params = self.__mergeFfmpegParams(ffmpeg_params, stream.params['extended']['ffmpeg_coding_params'])
 
         #cmd = 'ffmpeg -y -i "%s" -map %s -vn -acodec copy -strict experimental "%s"'%(iFile, stream[1], oFile)
@@ -1170,11 +1167,11 @@ class Video2iDevice(object):
         #self.__printCmd(cmd)
         if STTNGS['ac']:
             stream_prefix = None
-            if stream.params.has_key('extended') and stream.params['extended'].has_key('stream_prefix'):
+            if 'extended' in stream.params and 'stream_prefix' in stream.params['extended']:
                 stream_prefix = stream.params['extended']['stream_prefix']
             #p = os.popen(cmd)
             #if p.close() is not None:
-            if self.__exeFfmpegCmd(ffmpeg_params, stream_prefix)[0]<>0:
+            if self.__exeFfmpegCmd(ffmpeg_params, stream_prefix)[0]!=0:
                 #cmd = ffmpeg_path + ' -y -i "%s" -map %s -vn -acodec ac3 -ab 448k  -ar %d  -ac 6 -threads %d ./tmp.ac3'%(iFile, stream[1], ar, STTNGS['threads'])
                 tmp_fn = '%s/tmp.ac3'%STTNGS['temp_dir']
                 ffmpeg_params = self.__audioFfmpegParamsTmpAc3(iFile, stream.trackID, 448, ar, STTNGS['threads'])
@@ -1189,17 +1186,17 @@ class Video2iDevice(object):
                 ffmpeg_params = ffmpeg_params_add
                 try:
                     idx = ffmpeg_params.index('-i')
-                except Exception, e:
+                except Exception as e:
                     raise e
                 ffmpeg_params[idx+1] = '"%s"'%tmp_fn
                 try:
                     idx = ffmpeg_params.index('-map')
-                except Exception, e:
+                except Exception as e:
                     raise e
                 del ffmpeg_params[idx:idx+2]
                 ffmpeg_params.append('"%s"'%oFile)
 
-                if stream.params.has_key('extended') and stream.params['extended'].has_key('ffmpeg_coding_params'):
+                if 'extended' in stream.params and 'ffmpeg_coding_params' in stream.params['extended']:
                     ffmpeg_params = self.__mergeFfmpegParams(ffmpeg_params, stream.params['extended']['ffmpeg_coding_params'])
 
                 #cmd = ffmpeg_path + ' ' + ' '.join(ffmpeg_params)
@@ -1211,7 +1208,7 @@ class Video2iDevice(object):
                 os.remove(tmp_fn)
 
     def cSubs(self, iFile, stream, informer, prms, oFile):
-        if stream.params.has_key('extended') and stream.params['extended'].has_key('hardsub'):
+        if 'extended' in stream.params and 'hardsub' in stream.params['extended']:
             if stream.params['extended']['hardsub']:
                 return None
             else:
@@ -1228,8 +1225,8 @@ class Video2iDevice(object):
         elif ext=='ttxt':
             copyfile(iFile, oFile)
         elif ext=='mp4' or ext=='m4v':
-            if stream.params.get('extended', {}).has_key('copy'):
-                print 'subtitle from .mp4 files always copy'
+            if 'copy' in stream.params.get('extended', {}):
+                print('subtitle from .mp4 files always copy')
 
             # TODO: extract or copy subtitles on ttxt format
             track_id = stream.params.get('mp4_track_id')
@@ -1253,7 +1250,7 @@ class Video2iDevice(object):
                 tmpFile = fileName + '_track%d'%track_id
             return tmpFile
         else:
-            if isMatroshkaMedia(iFile) and stream.params.has_key('mkvinfo_trackNumber'):
+            if isMatroshkaMedia(iFile) and 'mkvinfo_trackNumber' in stream.params:
                 if stream.format().upper()=='ASS' or stream.format().upper()=='SSA':
                     assFileName = oFile+'.ass'
                     #cmd = mkvtoolnix_path + 'mkvextract tracks "%s" %s:"%s"'%(iFile, stream.params['mkvinfo_trackNumber'], assFileName)
@@ -1295,7 +1292,7 @@ class Video2iDevice(object):
                 #self.__printCmd(cmd)
                 if STTNGS['sc']:
                     stream_prefix = None
-                    if stream.params.has_key('extended') and stream.params['extended'].has_key('stream_prefix'):
+                    if 'extended' in stream.params and 'stream_prefix' in stream.params['extended']:
                         stream_prefix = stream.params['extended']['stream_prefix']
                     self.__exeFfmpegCmd(ffmpeg_params, stream_prefix)
                     #p = os.popen(cmd)
@@ -1323,20 +1320,20 @@ class Video2iDevice(object):
             strm = None
             if s.isdigit():
                 idx = int(s)
-                tmp = filter(lambda a: a.type == tt, streams)
+                tmp = [a for a in streams if a.type == tt]
                 if idx < len(tmp):
                     strm = tmp[idx]
             elif len(s)>0:
-                tmp = filter(lambda a: a.type==tt and a.language==s, streams)
+                tmp = [a for a in streams if a.type==tt and a.language==s]
                 if len(tmp) > 0:
                     strm = tmp[0]
             else:
-                tmp = filter(lambda a: a.type==tt, streams)
+                tmp = [a for a in streams if a.type==tt]
                 if len(tmp) > 0:
                     strm = tmp[0]
-            if strm <> None:
+            if strm != None:
                 return strm
-        print 'Can\'t found stream #%s'%streamId
+        print('Can\'t found stream #%s'%streamId)
         sys.exit(1)
         return streams[streamId]
 
@@ -1349,17 +1346,17 @@ class Video2iDevice(object):
             nn = path+nn
         #ext = nn.split('.')[-1].lower()
         if not os.path.exists(nn):
-            print 'file "%s" not exist'%nn
+            print('file "%s" not exist'%nn)
             sys.exit(1)
         _fi = self.mediainformer.fileInfo(nn)
         _fi.streams[0].params['GlobalTrackNum'] = currentTrack
         name = None
-        if fadd[-1].has_key('sname'):
+        if 'sname' in fadd[-1]:
             name = fadd[-1]['sname']
 
         # get stream info
         stream = None
-        if fadd[2].has_key('stream'):
+        if 'stream' in fadd[2]:
             #stream = _fi.streams[fadd[2]['stream']]
             stream = self.__streamById(fadd[2]['stream'], _fi.streams)
         else:
@@ -1369,7 +1366,7 @@ class Video2iDevice(object):
                 if tmp_stream.type==fadd[0]:
                     stream = tmp_stream
                     break
-        if stream<>None:
+        if stream!=None:
             stream.params['extended'] = fadd[-1]
             stream.params['filename'] = _fi.filename
             stream.params['informer'] = _fi.informer
@@ -1377,10 +1374,10 @@ class Video2iDevice(object):
         return stream
 
     def splitMedia(self, filename):
-        if STTNGS.has_key('ss'):
-            print '------ Split Media ------'
+        if 'ss' in STTNGS:
+            print('------ Split Media ------')
             fi = self.mediainformer.fileInfo(filename)
-            vstreams = filter(lambda s: s.type == 0, fi.streams)
+            vstreams = [s for s in fi.streams if s.type == 0]
             if len(vstreams):
                 import uuid
                 ext = filename.split('.')[-1].lower()
@@ -1412,31 +1409,31 @@ class Video2iDevice(object):
         currentTrackIdx = 0
         trackID = 0
         if STTNGS['vv']:
-            print
+            print()
         info =  self.tagTrackInfo(os.path.basename(fi.filename))
         cmd = [mp4box_path, ]
         for f in files:
             def trackDelay(trackID):
                 key = 'delay%d'%trackID    
                 rv = 0        
-                if STTNGS.has_key(key):
+                if key in STTNGS:
                     rv = STTNGS[key]
-                if STTNGS.has_key('episodes') and info.has_key('track') and type(info['track'])==type(1):
+                if 'episodes' in STTNGS and 'track' in info and type(info['track'])==type(1):
                     eid = info['track']-1
-                    if STTNGS['episodes'][eid].has_key(key):
+                    if key in STTNGS['episodes'][eid]:
                         rv = STTNGS['episodes'][eid][key]
                 return rv
 
             stream = f[2]
             delay = 0
-            if stream.params.has_key('extended'):
-                if stream.params['extended'].has_key('delay'):
+            if 'extended' in stream.params:
+                if 'delay' in stream.params['extended']:
                     delay = stream.params['extended']['delay']
             if delay==0:
                 delay = trackDelay(trackID)
 
             if stream!=None:
-                if stream.params.has_key('extended') and stream.params['extended'].has_key('lang'):
+                if 'extended' in stream.params and 'lang' in stream.params['extended']:
                     (l, currentTrackIdx) = self.getLang(currentTrackIdx, stream.params['extended']['lang'])
                     l = stream.params['extended']['lang'] 
                 else:
@@ -1444,14 +1441,14 @@ class Video2iDevice(object):
             else:
                 (l, currentTrackIdx) = self.getLang(currentTrackIdx)
             addCmd2 = f[1]
-            if l <> 'und':
+            if l != 'und':
                 addCmd2 += ':lang=%s'%l
             #addCmd2 += ' -add "%s":lang=%s'%(string.replace(f[1], '0.0', '0:0'), l,)
             if delay!=0:
                 addCmd2 += ':delay=%d'%delay
             if f[0]>0:
                 addCmd2 += ':group=%d'%f[0]
-            if stream.params.has_key('name') and stream.params['name']<>None:
+            if 'name' in stream.params and stream.params['name']!=None:
                 addCmd2+=':name=%s'%stream.params['name']
             if f[0]==0:
                 addCmd2 += ve
@@ -1480,7 +1477,7 @@ class Video2iDevice(object):
         currentTrackIdx = 0
         trackID = 0
         if STTNGS['vv']:
-            print
+            print()
         info =  self.tagTrackInfo(os.path.basename(fi.filename))
         cmd = [ffmpeg_path, '-y', ]
         for f in files:
@@ -1502,10 +1499,10 @@ class Video2iDevice(object):
         name = STTNGS['temp_dir']+'/'+'.'.join(os.path.basename(fi.filename).split('.')[:-1])+'.'+STTNGS['format']
         ret_code = self.createMPEGusingMP4Box(files, fi, name)
 
-        if ret_code <> 0:
+        if ret_code != 0:
             rv = self.createMPEGusingFfmpeg(files, fi, name)
-            if rv <> 0:
-                print 'Merge streams failed, code:', rv
+            if rv != 0:
+                print('Merge streams failed, code:', rv)
                 sys.exit(rv)
 
         self.iTagger(name)
@@ -1536,8 +1533,8 @@ class Video2iDevice(object):
             cmd.append(f[1])
         retcode = self.__exeCmd(cmd, False)
         if retcode>1:
-            print cmd
-            print 'Exit with code: %d'%retcode
+            print(cmd)
+            print('Exit with code: %d'%retcode)
             sys.exit()
         return name
 
@@ -1568,13 +1565,13 @@ class Video2iDevice(object):
         media_file_names = set()
         for i in strms:
             stream = self.__streamById(i, fi.streams)
-            if stream.params.has_key('extended') and stream.params['extended'].has_key('hardsub'):
+            if 'extended' in stream.params and 'hardsub' in stream.params['extended']:
                 stream.params['filename'] = fi.filename
                 hardsub_stream.append(stream)
             media_file_names.add(fi.filename)
         for fadd in STTNGS['fadd']:
             stream = self.__streamFromFAdd(fadd, fi)
-            if stream.params.has_key('extended') and stream.params['extended'].has_key('hardsub'):
+            if 'extended' in stream.params and 'hardsub' in stream.params['extended']:
                 hardsub_streams.append(stream)
             media_file_names.add(stream.params['filename'])
         for x in media_file_names:
@@ -1590,7 +1587,7 @@ class Video2iDevice(object):
             stream = self.__streamById(i, fi.streams)
             stream.params['GlobalTrackNum'] = currentTrack
             if STTNGS['vv']:
-                print stream
+                print(stream)
 
             if stream.type==0:
                 if len(hardsub_streams)>0:
@@ -1606,11 +1603,11 @@ class Video2iDevice(object):
             elif stream.type==2:
                 ttxtName = out_fn+'_%s.ttxt'%stream.trackID
                 tmpFile = self.cSubs(fi.filename, stream, fi.informer, {}, ttxtName)
-                if tmpFile<>None:
+                if tmpFile!=None:
                     files.append((2, tmpFile, stream))
                     findSubs = False
             if STTNGS['vv']:
-                print '----------------------------------------', currentTrack
+                print('----------------------------------------', currentTrack)
             currentTrack+=1
     
         # add external streams
@@ -1618,15 +1615,15 @@ class Video2iDevice(object):
         for add in STTNGS['fadd']:
             stream = self.__streamFromFAdd(add, fi, currentTrack)
             if stream==None:
-                print "Can't find stream (type: %d) in file %s or incorrect number"%(add[0], nn)
+                print("Can't find stream (type: %d) in file %s or incorrect number"%(add[0], nn))
                 sys.exit(1)
 
             out_fn = '%s/%s_%s'%(STTNGS['temp_dir'], os.path.basename(stream.params['filename']), stream.trackID)
-            if stream.params['name']<>None and stream.params['name']!='':
+            if stream.params['name']!=None and stream.params['name']!='':
                 if len(stream.params['name']):
                     out_fn = '%s_%s'%(out_fn, stream.params['name'])
 
-            print add
+            print(add)
             if add[0]==0:
                 out_fn = out_fn + '.mp4'
                 if len(hardsub_streams)>0:
@@ -1644,12 +1641,12 @@ class Video2iDevice(object):
                 out_fn = out_fn + '.ttxt'
                 #files.append((2, out_fn, stream))
                 tmpFile = self.cSubs(stream.params['filename'], stream, stream.params['informer'], add[2], out_fn)
-                if tmpFile<>None:
+                if tmpFile!=None:
                     files.append((2, tmpFile, stream))
                     findSubs = False
 
             if STTNGS['vv']:
-                print '----------------------------------------', currentTrack
+                print('----------------------------------------', currentTrack)
             currentTrack+=1
 
         '''
@@ -1673,7 +1670,7 @@ class Video2iDevice(object):
             
         #print 'files: ',files
         if STTNGS['vv']:
-            print
+            print()
 
         # write streams to output file
         format = STTNGS['format'].lower()
@@ -1691,7 +1688,7 @@ class Video2iDevice(object):
                 try:
                     os.unlink(f[1])
                 except OSError as e:
-                    print('Can\'t remove file: %s'%f[1])
+                    print(('Can\'t remove file: %s'%f[1]))
                 
 
         return name
@@ -1702,7 +1699,7 @@ class Video2iDevice(object):
             Processing one media file
         '''
         filename = fi.filename
-        if STTNGS.has_key('tagging_mode'):
+        if 'tagging_mode' in STTNGS:
             self.splitMedia(filename)
             self.iTagger(filename)
         else:
@@ -1717,13 +1714,13 @@ class Video2iDevice(object):
 
     def correct_profile(self, video, **kwargs):
         if kwargs.get('dry_run', False):
-            print " ".join([sq(x) for x in (kwargs['argv0'], '--correct-profile-only', video)])
+            print(" ".join([sq(x) for x in (kwargs['argv0'], '--correct-profile-only', video)]))
         else:
             level_string = struct.pack('b', int('29', 16))
             fobj = open(video, 'r+b')
             try:
                 fobj.seek(7)
-                print 1, 'correcting profile:', video
+                print(1, 'correcting profile:', video)
                 fobj.write(level_string)
             finally:
                 fobj.close()
@@ -1760,26 +1757,26 @@ if __name__=='__main__':
             yep = True
     if len(STTNGS['tfile'])>0:
         TAGS = converter.loadSettingsFile(STTNGS['tfile'])
-        for key,val in TAGS.items():
+        for key,val in list(TAGS.items()):
             #if type(val)==type(''):
             #    val = unicode(val, 'utf-8')
             if key=='TRACK_REGEX' or key=='TRACKS_REGEX':
-                if not STTNGS.has_key(key):
+                if key not in STTNGS:
                     STTNGS[key] = val.split(';')
             else:
-                if not STTNGS.has_key(key):
+                if key not in STTNGS:
                     STTNGS[key] = val
     #print STTNGS['subStyleColors']
     converter.getSettings(argv)
 
-    if STTNGS.has_key('out_path'):
+    if 'out_path' in STTNGS:
         os.chdir(STTNGS['out_path'])
 
-    if STTNGS.has_key('log_file'):
+    if 'log_file' in STTNGS:
         converter.log.initLogByFileName(STTNGS['log_file'])
     converter.log.put('argv: %s\n'%argv.__str__(), True)
 
-    if not STTNGS.has_key('threads'):
+    if 'threads' not in STTNGS:
         STTNGS['threads'] = os.sysconf('SC_NPROCESSORS_CONF')
     if converter.log.isSetted():
         import platform
@@ -1790,7 +1787,7 @@ if __name__=='__main__':
     if STTNGS['temp_dir'][-1]=='/':
         STTNGS['temp_dir'] = STTNGS['temp_dir'][:-1]
     if not os.path.exists(STTNGS['temp_dir']):
-        print os.mkdir(STTNGS['temp_dir'])
+        print(os.mkdir(STTNGS['temp_dir']))
 
 
     converter.mediainformer.artwork_path = STTNGS['temp_dir']
@@ -1798,21 +1795,21 @@ if __name__=='__main__':
     c = 0
     for fn in STTNGS['files']:
         if STTNGS['vv']:
-            print '\n------------------------ %s ------------------------'%fn
-        if STTNGS.has_key('info'):
+            print('\n------------------------ %s ------------------------'%fn)
+        if 'info' in STTNGS:
             fi = converter.mediainformer.fileInfo(fn)
             #fi.streams = map(lambda x: [x.type, x.trackID[x.trackID.index(converter.mediainformer.mapStreamSeparatedSymbol(fi.filename))+1:], x.language, x.params], fi.streams)
             #print type(fi['streams'][2][1])
             #sys.exit()
             if STTNGS['info']=='json':
-                print json_ex.write(fi.dump('dict'))
+                print(json_ex.write(fi.dump('dict')))
             elif STTNGS['info']=='short':
-                print fi.dump('short')
+                print(fi.dump('short'))
             else:
-                print fi.dump()
+                print(fi.dump())
         else:
             if STTNGS['sleep_between_files'] > 0 and c > 0:
-                print 'Sleeping...'
+                print('Sleeping...')
                 time.sleep(STTNGS['sleep_between_files'])
             if STTNGS['streams']=='none':
                 #fi = {'filename': fn, 'informer': 'no need'}
@@ -1823,8 +1820,8 @@ if __name__=='__main__':
         c += 1
     tm = time.time()-startTime
     time_str = '%02d:%02d:%.3f'%(tm/60/60, tm%(60*60)/60, int(tm%60)+(tm-int(tm)))
-    if not (STTNGS.has_key('info') and not STTNGS['vv']):
-        print 'time %s'%time_str
+    if not ('info' in STTNGS and not STTNGS['vv']):
+        print('time %s'%time_str)
 
     converter.log.put('time %s\n'%time_str, True)
 

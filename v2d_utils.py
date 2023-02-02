@@ -609,7 +609,7 @@ LANGUAGES_DICT = {
 
 if __name__=='__main__':
     keys = sorted(LANGUAGES_DICT.keys())
-    print '[NSDictionary dictionaryWithObjectsAndKeys:'
+    print('[NSDictionary dictionaryWithObjectsAndKeys:')
     for key in keys:
-        print '@"%s", @"%s",'%(LANGUAGES_DICT[key], key)
-    print 'nil];'
+        print('@"%s", @"%s",'%(LANGUAGES_DICT[key], key))
+    print('nil];')
