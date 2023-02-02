@@ -134,8 +134,11 @@ Global options:
 				where first - start time, second - duration (not required)
 				Use "tagging_mode" for split only
 	-sleep_between_files	[int]	pause between encoding files
+<<<<<<< HEAD
 	-test_mode		test mode, show only commands and don't execute them (default: disabled)
 	-vcodec  [string]	video codec (libx264 - default)
+=======
+>>>>>>> 6bbf8edbc1c299f28b228c4551d34d3474ba5813
 
 Video options:
 	-vfile		[str]	set video filename. If not set try search in current dir. 
