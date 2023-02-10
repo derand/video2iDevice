@@ -133,7 +133,7 @@ Bugs
                     p = Popen(cmd, stdout=PIPE, stderr=STDOUT)
                     while True:
                         retcode = p.poll()
-                        line = p.stdout.readline()
+                        line = p.stdout.readline().decode("utf-8")
                         if retcode is not None and len(line)==0:
                             break
                     tm += duration/shots_count

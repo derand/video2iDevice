@@ -36,6 +36,13 @@ class cStream(object):
         self.language = language
         self.params = params
 
+    @property
+    def trackId_short(self):
+        r = re.search(r"(\d+)$", self.trackID)
+        if r is not None:
+            return r.group()
+        return None
+
     def __str__(self):
         rv = ''
         if self.type==0:
@@ -68,7 +75,7 @@ class cStream(object):
                 val = '%s'%self.params[key]
                 rv += '%s: %s\n'%(key, val.rjust(40-len(key)))
         elif mode=='short':
-            tid = self.trackID.split(':')[-1]
+            tid = self.trackId_short
             rv = 'Stream %s: '%tid
             language_str = self.params.get('Language') or self.language
             if language_str:
@@ -92,7 +99,7 @@ class cStream(object):
         elif mode=='dict':
             rv = {
             'type': self.type,
-            'trackID': self.trackID[self.trackID.index(':')+1:],
+            'trackID': self.trackId_short,
             'language': self.language,
             'params': self.params
             }

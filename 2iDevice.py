@@ -13,7 +13,7 @@
 #
 
 
-__version__ = '0.5.4'
+__version__ = '0.6.0'
 __author__ = 'Andrey Derevyagin'
 __maintainer__ = 'Andrey Derevyagin'
 __email__ = '2derand+2idevice@gmail.com'
@@ -510,7 +510,7 @@ class Video2iDevice(object):
         while True:
             retcode = p.poll() #returns None while subprocess is running
             #print p.stdout, p.stderr
-            ch = p.stdout.read(1)
+            ch = p.stdout.read(1).decode("utf-8")
             if ch=='\r' or ch=='\n':
                 line = line.strip()
                 process_catched = False
@@ -596,7 +596,7 @@ class Video2iDevice(object):
         retcode = 0
         while True:
             retcode = p.poll()
-            ch = p.stdout.read(1)
+            ch = p.stdout.read(1).decode("utf-8")
             if ch=='\r' or ch=='\n':
                 #line = line.strip()
                 sys.stdout.write(line+ch)
@@ -1581,7 +1581,7 @@ class Video2iDevice(object):
 
         sConverter = subConverter(STTNGS)
         currentTrack = 0
-        out_fn = '%s/%s'%(STTNGS['temp_dir'], name)
+        out_fn_base = '%s/%s'%(STTNGS['temp_dir'], name)
         for i in strms:
             #stream = fi.streams[i]
             stream = self.__streamById(i, fi.streams)
@@ -1593,16 +1593,21 @@ class Video2iDevice(object):
                 if len(hardsub_streams)>0:
                     stream.params['hardsub_streams'] = hardsub_streams
                     hardsub_streams = []
-                files.append((0, out_fn+'_%s.mp4'%stream.trackID, stream))
+                #files.append((0, out_fn_base+'_%s.mp4'%stream.trackID, stream))
+                out_fn = '{fn}_{track}.mp4'.format(fn=out_fn_base, track=stream.trackId_short)
+                files.append((0, out_fn, stream))
                 self.cVideo(fi.filename, stream, files[-1][1])
 
             elif stream.type==1:
-                files.append((1, out_fn+'_%s.aac'%stream.trackID, stream))
+                #files.append((1, out_fn_base+'_%s.aac'%stream.trackID, stream))
+                out_fn = '{fn}_{track}.aac'.format(fn=out_fn_base, track=stream.trackId_short)
+                files.append((1, out_fn, stream))
                 self.cAudio(fi.filename, stream, files[-1][1])
 
             elif stream.type==2:
-                ttxtName = out_fn+'_%s.ttxt'%stream.trackID
-                tmpFile = self.cSubs(fi.filename, stream, fi.informer, {}, ttxtName)
+                #ttxtName = out_fn_base+'_%s.ttxt'%stream.trackID
+                out_fn = '{fn}_{track}.ttxt'.format(fn=out_fn_base, track=stream.trackId_short)
+                tmpFile = self.cSubs(fi.filename, stream, fi.informer, {}, out_fn)
                 if tmpFile!=None:
                     files.append((2, tmpFile, stream))
                     findSubs = False
@@ -1618,7 +1623,7 @@ class Video2iDevice(object):
                 print("Can't find stream (type: %d) in file %s or incorrect number"%(add[0], nn))
                 sys.exit(1)
 
-            out_fn = '%s/%s_%s'%(STTNGS['temp_dir'], os.path.basename(stream.params['filename']), stream.trackID)
+            out_fn = '%s/%s_%s'%(STTNGS['temp_dir'], os.path.basename(stream.params['filename']), stream.trackId_short)
             if stream.params['name']!=None and stream.params['name']!='':
                 if len(stream.params['name']):
                     out_fn = '%s_%s'%(out_fn, stream.params['name'])
