@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 # writed by derand (2derand@gmail.com)
@@ -9,10 +9,7 @@ import struct
 
 
 def swapBytes(bytes):
-    rv = ''
-    for i in bytes:
-        rv = i+rv
-    return rv
+    return bytes[::-1]
 
 def getSectionInfo(f):
     pos = f.tell()
@@ -34,7 +31,7 @@ if len(sys.argv)!=2:
 
 fn = sys.argv[1]
 fs = os.path.getsize(fn)
-f = open(fn, 'r')
+f = open(fn, 'rb')
 
 pos = f.tell()
 info = (0,'',0)

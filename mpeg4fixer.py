@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 # writed by derand (2derand@gmail.com)
@@ -12,22 +12,19 @@ class mpeg4fixer:
         pass
 
     def __swapBytes(self, bytes):
-            rv = ''
-            for i in bytes:
-                rv = i+rv
-            return rv
+        return bytes[::-1]
 
     def __getSectionInfo(self, f):
             pos = f.tell()
             tmp = f.read(8)
             sz = struct.unpack('I', self.__swapBytes(tmp[:4]))[0]
             name = tmp[4:]
-            #print '%08d %s %8d'%(pos, name, sz)
+            #print('%08d %s %8d'%(pos, name, sz))
             return (sz, name, pos)
 
     def fixFlagsAndSubs(self, fn, fixVideoDuration=False):
         SBTL = 1819566707
-        f = open(fn, 'r+')
+        f = open(fn, 'rb+')
         fs = os.path.getsize(fn)
         mvhd_pos = 0
         movie_dur = 0
@@ -123,7 +120,7 @@ class mpeg4fixer:
 
     def __getFileStruct(self, fn):
         rv = []
-        f = open(fn, 'r')
+        f = open(fn, 'rb')
         fs = os.path.getsize(fn)
         gi = (0,'',0)
         while (gi[2]+gi[0])<fs:
@@ -216,9 +213,9 @@ class mpeg4fixer:
             else:
                 streams.append(gi)
 
-        f = open(fn, 'r')
+        f = open(fn, 'rb')
         of_name = '%s.tmp'%fn.split('/')[-1]
-        fo = open(of_name, 'w+')
+        fo = open(of_name, 'wb+')
         trackCounter = 0
         for i in range(len(streams)):
             gi = streams[i]
