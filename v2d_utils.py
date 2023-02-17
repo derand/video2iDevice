@@ -8,48 +8,48 @@ import os
 import re
 
 if sys.platform == 'darwin':
-	script_dir = os.path.dirname(os.path.realpath(__file__))
-	ffmpeg_path = script_dir + '/binary/ffmpeg'
-	mp4box_path = script_dir + '/binary/MP4Box'
-	AtomicParsley_path = script_dir + '/binary/AtomicParsley'
-	mkvtoolnix_path = script_dir + '/binary/mkvtoolnix/'
-	mediainfo_path = script_dir + '/binary/mediainfo'
+    script_dir = os.path.dirname(os.path.realpath(__file__))
+    ffmpeg_path = script_dir + '/binary/ffmpeg'
+    mp4box_path = script_dir + '/binary/MP4Box'
+    AtomicParsley_path = script_dir + '/binary/AtomicParsley'
+    mkvtoolnix_path = script_dir + '/binary/mkvtoolnix/'
+    mediainfo_path = script_dir + '/binary/mediainfo'
 else:
-	ffmpeg_path = 'ffmpeg'
-	mp4box_path = 'MP4Box'
-	AtomicParsley_path = 'AtomicParsley'
-	mkvtoolnix_path = ''
-	mediainfo_path = 'mediainfo'
+    ffmpeg_path = 'ffmpeg'
+    mp4box_path = 'MP4Box'
+    AtomicParsley_path = 'AtomicParsley'
+    mkvtoolnix_path = ''
+    mediainfo_path = 'mediainfo'
 
 
 def add_separator_to_filepath(filepath):
-	return re.escape(filepath)
-	#for c in '\\ ()[]&":\'`':
-	#	filepath = filepath.replace(c, '\\%s'%c)
-	#return filepath
+    return re.escape(filepath)
+    #for c in '\\ ()[]&":\'`':
+    #    filepath = filepath.replace(c, '\\%s'%c)
+    #return filepath
 
 
 
 def video_size_convert(real1, real2, out1):
-	out2 = (real2*out1)/real1
-	if out2%16>7:
-		out2 += 16-out2%16
-	else:
-		out2 -= out2%16
-	return (out1, out2)
+    out2 = (real2*out1)/real1
+    if out2%16>7:
+        out2 += 16-out2%16
+    else:
+        out2 -= out2%16
+    return (out1, out2)
 
 
 
 def send_xmpp_message(from_uid, password, to_uid, message):
-	try:
-		import xmpp
-		jid = xmpp.protocol.JID(from_uid)
-		cl = xmpp.Client(jid.getDomain(), debug=[])
-		cl.connect()
-		cl.auth(jid.getNode(), password)
-		cl.send(xmpp.protocol.Message(to_uid, message, typ='chat'))
-	except:
-		pass
+    try:
+        import xmpp
+        jid = xmpp.protocol.JID(from_uid)
+        cl = xmpp.Client(jid.getDomain(), debug=[])
+        cl.connect()
+        cl.auth(jid.getNode(), password)
+        cl.send(xmpp.protocol.Message(to_uid, message, typ='chat'))
+    except:
+        pass
 
 
 
@@ -608,8 +608,8 @@ LANGUAGES_DICT = {
 }
 
 if __name__=='__main__':
-	keys = sorted(LANGUAGES_DICT.keys())
-	print '[NSDictionary dictionaryWithObjectsAndKeys:'
-	for key in keys:
-		print '@"%s", @"%s",'%(LANGUAGES_DICT[key], key)
-	print 'nil];'
+    keys = sorted(LANGUAGES_DICT.keys())
+    print('[NSDictionary dictionaryWithObjectsAndKeys:')
+    for key in keys:
+        print('@"%s", @"%s",'%(LANGUAGES_DICT[key], key))
+    print('nil];')
