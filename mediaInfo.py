@@ -895,7 +895,7 @@ class MediaInformer:
         val = ''
         while True:
             retcode = p.poll()
-            line = p.stdout.readline()
+            line = p.stdout.readline().decode('UTF-8')
             srch = re.compile('Atom \"(.{4,5})\"').search(line)
             if srch!=None:
                 if key!=None:
@@ -979,7 +979,7 @@ class MediaInformer:
             srch_txt = 'Extracted artwork to file:'
             while True:
                 retcode = p.poll()
-                line = p.stdout.readline()
+                line = p.stdout.readline().decode('UTF-8')
                 if line.find(srch_txt)!=-1:
                     ap_params['artwork'] = line[line.find(srch_txt)+len(srch_txt):].strip()
                     #p.kill()

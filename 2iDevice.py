@@ -510,7 +510,10 @@ class Video2iDevice(object):
         while True:
             retcode = p.poll() #returns None while subprocess is running
             #print p.stdout, p.stderr
-            ch = p.stdout.read(1).decode("utf-8")
+            try:
+                ch = p.stdout.read(1).decode("utf-8")
+            except UnicodeDecodeError as e:
+                ch = ''
             if ch=='\r' or ch=='\n':
                 line = line.strip()
                 process_catched = False
@@ -596,7 +599,10 @@ class Video2iDevice(object):
         retcode = 0
         while True:
             retcode = p.poll()
-            ch = p.stdout.read(1).decode("utf-8")
+            try:
+                ch = p.stdout.read(1).decode("utf-8")
+            except UnicodeDecodeError as e:
+                ch = ''
             if ch=='\r' or ch=='\n':
                 #line = line.strip()
                 sys.stdout.write(line+ch)
