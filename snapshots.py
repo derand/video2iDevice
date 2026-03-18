@@ -12,7 +12,9 @@ __copyright__ = 'Copyright © 2010-2012, Andrey Derevyagin'
 import os
 import sys
 from mediaInfo import cMediaInfo, MediaInformer
-from v2d_utils import *
+from v2d_utils import (ffmpeg_path, mkvtoolnix_path, mediainfo_path,
+                       AtomicParsley_path, add_separator_to_filepath,
+                       video_size_convert)
 from subprocess import Popen, PIPE, STDOUT
 
 
@@ -94,7 +96,7 @@ Bugs
         if 'mediaDuration' in fi.general:
             duration = fi.general['mediaDuration']
             if duration>shots_count:
-                tm = duration/(shots_count*2)
+                tm = duration//(shots_count*2)
                 
                 cmd = [ffmpeg_path, '-ss', '',  '-i', fn, '-y']
                 if vcodec=='png':
@@ -103,7 +105,7 @@ Bugs
                 elif vcodec=='jpeg':
                     cmd.append('-vcodec')
                     cmd.append('mjpeg')
-                cmd[len(cmd):] = ['-an', '-f', 'image2', '-vframes:v', '1', '']
+                cmd.extend(['-an', '-f', 'image2', '-vframes:v', '1', ''])
 
                 if _w>0 or _h>0:
                     stream = fi.video_stream()
@@ -136,5 +138,5 @@ Bugs
                         line = p.stdout.readline().decode("utf-8")
                         if retcode is not None and len(line)==0:
                             break
-                    tm += duration/shots_count
+                    tm += duration//shots_count
                     i += 1

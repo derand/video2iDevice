@@ -28,7 +28,6 @@ import os
 import re
 import getopt
 import glob
-import string
 import json_ex
 import os.path
 import time
@@ -47,7 +46,10 @@ import shlex
 import codecs
 
 from mediaInfo import cStream, cMediaInfo, cChapter, MediaInformer, isMatroshkaMedia
-from v2d_utils import *
+from v2d_utils import (ffmpeg_path, mp4box_path, AtomicParsley_path,
+                       mkvtoolnix_path, mediainfo_path,
+                       add_separator_to_filepath, video_size_convert,
+                       send_xmpp_message)
 
 
 STTNGS = {
@@ -365,7 +367,7 @@ class Video2iDevice(object):
                         tmp[-1][-1]['delay'] = int(el)
                 elif ckey=='lang':
                     tmp = STTNGS['fadd']
-                    if string.find(el, ':')==-1 and len(tmp)>0:
+                    if el.find(':')==-1 and len(tmp)>0:
                         tmp[-1][-1]['lang'] = el
                     else:
                         STTNGS[ckey] = el
@@ -394,11 +396,11 @@ class Video2iDevice(object):
                     STTNGS[ckey] = el
                 else:
                     if ckey in STTNGS:
-                        if type(STTNGS[ckey])==type([]):
+                        if isinstance(STTNGS[ckey], list):
                             STTNGS[ckey].append(el)
-                        elif type(STTNGS[ckey])==type(123):
+                        elif isinstance(STTNGS[ckey], int):
                             STTNGS[ckey] = int(el)
-                        elif type(STTNGS[ckey])==type(1.23):
+                        elif isinstance(STTNGS[ckey], float):
                             STTNGS[ckey] = float(el)
                         else:
                             STTNGS[ckey] = el
@@ -812,7 +814,7 @@ class Video2iDevice(object):
 
     def __videoFfmpegParamsCopy(self, fileName, _map):
         rv = self.__videoFfmpegParamsBase(fileName, _map)
-        rv[len(rv):] = ['-vcodec', 'copy']
+        rv.extend(['-vcodec', 'copy'])
         return rv
 
     def __videoFfmpegParamsPasses(self, fileName, _map, _pass):
@@ -825,14 +827,14 @@ class Video2iDevice(object):
                 '-flags', '+loop',
                 '-cmp','chroma',
                 '-me_method','full'])
-        rv[len(rv):] = add
+        rv.extend(add)
         return rv
 
     def __videoFfmpegParamsCRF(self, fileName, _map, crf):
         rv = self.__videoFfmpegParamsBase(fileName, _map)
         add = ['-vcodec', STTNGS['vcodec'],
                '-crf', '%s'%crf]
-        rv[len(rv):] = add
+        rv.extend(add)
         return rv
 
     def __videoFfmpegParamsQuality(self, fileName, _map, crf=0, _pass=0, hQuality=True):
@@ -851,8 +853,8 @@ class Video2iDevice(object):
                                  '-bufsize', '"%d k"'%int(STTNGS['b']*2.5),
                                  '-refs', '%d'%STTNGS['refs'],
                                  '-threads', '%s'%STTNGS['threads']]
-            ffmpeg_params_add[len(ffmpeg_params_add):] = os_ffmpeg_prms
-        ffmpeg_params[len(ffmpeg_params):] = ffmpeg_params_add
+            ffmpeg_params_add.extend(os_ffmpeg_prms)
+        ffmpeg_params.extend(ffmpeg_params_add)
         ffmpeg_params_add = []
         if hQuality:
             ''' HIGHT QUALITY '''
@@ -875,7 +877,7 @@ class Video2iDevice(object):
                                  '-level', '3.1',
                                  '-profile:v', 'baseline']
             #cmd = ffmpeg_path + ' -y -i "%s" -pass %d -map %s -an  -vcodec "libx264" -b:v "%d k" -s "%dx%d" -flags "+loop" -cmp "+chroma" -partitions "+parti4x4+partp8x8+partb8x8" -subq 6  -trellis 0  -refs %d  -coder 0  -me_range 16  -g 240   -keyint_min 25  -sc_threshold 40 -i_qfactor 0.71 -maxrate  "%d k" -bufsize "%d k" -rc_eq "blurCplx^(1-qComp)" -qcomp 0.6 -me_method full -b_strategy 1 %s -level 3.1 -threads %d -profile baseline '%(iFile, _pass, stream[1], STTNGS['b'], _w,_h, STTNGS['refs'], STTNGS['b'], STTNGS['b']*2.5, os_ffmpeg_prms, STTNGS['threads'])
-        ffmpeg_params[len(ffmpeg_params):] = ffmpeg_params_add
+        ffmpeg_params.extend(ffmpeg_params_add)
         return ffmpeg_params
 
     def __mergeFfmpegParams(self, current_params, user_params):
@@ -1026,9 +1028,9 @@ class Video2iDevice(object):
                 ffmpeg_params_add = ['-an']
 
                 #if len(os_ffmpeg_prms):
-                #    ffmpeg_params_add[len(ffmpeg_params_add):] = os_ffmpeg_prms
+                #    ffmpeg_params_add.extend(os_ffmpeg_prms)
                 if 'vr' in STTNGS:
-                    ffmpeg_params_add[len(ffmpeg_params_add):] = ['-r', '%.3f'%STTNGS['vr']]
+                    ffmpeg_params_add.extend(['-r', '%.3f'%STTNGS['vr']])
                     #cmd = '%s -r %.3f'%(cmd, STTNGS['vr'])
 
                 # video filters section
@@ -1054,7 +1056,7 @@ class Video2iDevice(object):
                         filter_name = list(filter_dict.keys())[0]
                         filter_val += '%s=%s,'%(filter_name, filter_dict[filter_name])
                     ffmpeg_params_add.append(filter_val[:-1])
-                ffmpeg_params[len(ffmpeg_params):] = ffmpeg_params_add
+                ffmpeg_params.extend(ffmpeg_params_add)
             ffmpeg_params.append('"%s"'%oFile)
 
             if 'extended' in stream.params and 'ffmpeg_coding_params' in stream.params['extended']:
@@ -1104,24 +1106,24 @@ class Video2iDevice(object):
 
     def __audioFfmpegParamsCopy(self, fileName, _map):
         rv = self.__audioFfmpegParamsBase(fileName, _map)
-        rv[len(rv):] = ['-acodec', 'copy']
+        rv.extend(['-acodec', 'copy'])
         return rv
 
     def __audioFfmpegParamsAac(self, fileName, _map, _ab, _ar):
         rv = self.__audioFfmpegParamsBase(fileName, _map)
-        rv[len(rv):] = ['-acodec', 'aac', #'libfaac',
+        rv.extend(['-acodec', 'aac', #'libfaac',
                         '-ac', '2',
                         '-ab', '%dk'%_ab,
-                        '-ar', '%d'%_ar]
+                        '-ar', '%d'%_ar])
         return rv
 
     def __audioFfmpegParamsTmpAc3(self, filename, _map, _ab, _ar, _threads):
         rv = self.__audioFfmpegParamsBase(filename, _map)
-        rv[len(rv):] = ['-acodec', 'ac3',
+        rv.extend(['-acodec', 'ac3',
                         '-ac', '6',
                         '-ab', '%dk'%_ab,
                         '-ar', '%d'%_ar,
-                        '-threads', '%d'%_threads]
+                        '-threads', '%d'%_threads])
         return rv
 
     def cAudio(self, iFile, stream, oFile):
@@ -1159,10 +1161,10 @@ class Video2iDevice(object):
             ffmpeg_params = self.__audioFfmpegParamsAac(iFile, stream.trackID, ab, ar)
             ffmpeg_params_add = ['-threads', '%d'%STTNGS['threads']]
             if vol!=256:
-                ffmpeg_params_add[len(ffmpeg_params_add):] = ['-vol', '%d'%vol]
-            ffmpeg_params[len(ffmpeg_params):] = ffmpeg_params_add
+                ffmpeg_params_add.extend(['-vol', '%d'%vol])
+            ffmpeg_params.extend(ffmpeg_params_add)
             ffmpeg_params_add = ffmpeg_params
-            ffmpeg_params[len(ffmpeg_params):] = ['-strict', 'experimental']
+            ffmpeg_params.extend(['-strict', 'experimental'])
         ffmpeg_params.append('"%s"'%oFile)
 
         if 'extended' in stream.params and 'ffmpeg_coding_params' in stream.params['extended']:
@@ -1399,7 +1401,7 @@ class Video2iDevice(object):
                 ffmpeg_params = self.__videoFfmpegParamsQuality(tmp_fn, None, crf, 0, not lowQuality)
                 ss_tmp = STTNGS['ss'].split('/')
                 ss = ss_tmp[0]
-                ffmpeg_params[len(ffmpeg_params):] = ['-acodec', 'copy', '-ss', ss]
+                ffmpeg_params.extend(['-acodec', 'copy', '-ss', ss])
                 if len(ss_tmp)>1:
                     ffmpeg_params.append('-t')
                     ffmpeg_params.append(ss_tmp[1])
@@ -1424,7 +1426,7 @@ class Video2iDevice(object):
                 rv = 0        
                 if key in STTNGS:
                     rv = STTNGS[key]
-                if 'episodes' in STTNGS and 'track' in info and type(info['track'])==type(1):
+                if 'episodes' in STTNGS and 'track' in info and isinstance(info['track'], int):
                     eid = info['track']-1
                     if key in STTNGS['episodes'][eid]:
                         rv = STTNGS['episodes'][eid][key]
@@ -1492,7 +1494,7 @@ class Video2iDevice(object):
             cmd.append('-i')
             cmd.append(addCmd2)
 
-        cmd[len(cmd):] = ['-c:v', 'copy', '-c:a', 'copy', '-bsf:a', 'aac_adtstoasc', '-strict', 'experimental']
+        cmd.extend(['-c:v', 'copy', '-c:a', 'copy', '-bsf:a', 'aac_adtstoasc', '-strict', 'experimental'])
         cmd.append(name)
         #cmd = mp4box_path + ' %s "%s" -new'%(addCmd2, name)
         #self.__printCmd(cmd)
@@ -1830,7 +1832,7 @@ if __name__=='__main__':
             converter.fileProcessing(fi)
         c += 1
     tm = time.time()-startTime
-    time_str = '%02d:%02d:%.3f'%(tm/60/60, tm%(60*60)/60, int(tm%60)+(tm-int(tm)))
+    time_str = '%02d:%02d:%.3f'%(tm//60//60, tm%(60*60)//60, int(tm%60)+(tm-int(tm)))
     if not ('info' in STTNGS and not STTNGS['vv']):
         print('time %s'%time_str)
 

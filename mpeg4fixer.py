@@ -6,6 +6,7 @@
 import os
 import sys
 import struct
+import shutil
 
 class mpeg4fixer:
     def __init__(self):
@@ -18,8 +19,7 @@ class mpeg4fixer:
             pos = f.tell()
             tmp = f.read(8)
             sz = struct.unpack('I', self.__swapBytes(tmp[:4]))[0]
-            name = tmp[4:]
-            #print('%08d %s %8d'%(pos, name, sz))
+            name = tmp[4:].rstrip(b'\x00')
             return (sz, name, pos)
 
     def fixFlagsAndSubs(self, fn, fixVideoDuration=False):
@@ -33,33 +33,33 @@ class mpeg4fixer:
         moov_sz = 0
         while (pos+moov_sz)<fs:
             (moov_sz, name, pos) = self.__getSectionInfo(f)
-            if name=='moov':
+            if name==b'moov':
                 vtrack = False
                 atrack = False
                 strack = False
                 header_sz = pos+moov_sz
-                si = (0,'',0)
+                si = (0,b'',0)
                 while (si[2]+si[0])<(pos+moov_sz):
                     si = self.__getSectionInfo(f)
-                    if si[1]=='mvhd':
+                    if si[1]==b'mvhd':
                         mvhd_pos = si[2]
                         f.seek(si[2]+24)
                         movie_dur = struct.unpack('I', self.__swapBytes(f.read(4)))[0]
                         print('duration: ', movie_dur)
 
-                    if si[1]=='trak':
+                    if si[1]==b'trak':
                         tkhd_pos = 0
                         hdlr_pos = 0
-                        tsi = (0,'',0)
+                        tsi = (0,b'',0)
                         while (tsi[2]+tsi[0])<(si[2]+si[0]):
                             tsi = self.__getSectionInfo(f)
-                            if tsi[1]=='tkhd':
+                            if tsi[1]==b'tkhd':
                                 tkhd_pos = tsi[2]
-                            if tsi[1]=='mdia':
-                                mtsi = (0,'',0)
+                            if tsi[1]==b'mdia':
+                                mtsi = (0,b'',0)
                                 while (mtsi[2]+mtsi[0])<(tsi[2]+tsi[0]):
                                     mtsi = self.__getSectionInfo(f)
-                                    if mtsi[1]=='hdlr':
+                                    if mtsi[1]==b'hdlr':
                                         hdlr_pos = mtsi[2]
                                     f.seek(mtsi[0]+mtsi[2])
 
@@ -68,7 +68,7 @@ class mpeg4fixer:
                             f.seek(hdlr_pos+16)
                             ttype = f.read(4)
                             trackflags=15
-                            if ttype=='text' or ttype=='sblt':
+                            if ttype==b'text' or ttype==b'sblt':
                                 f.seek(hdlr_pos+16)
                                 f.write(struct.pack('I', SBTL))
                                 f.seek(tkhd_pos+40)
@@ -77,7 +77,7 @@ class mpeg4fixer:
                                 if strack: trackflags -= 1
                                 strack = True
                                 f.write(self.__swapBytes(struct.pack('I', trackflags)))
-                            if ttype=='vide':
+                            if ttype==b'vide':
                                 f.seek(tkhd_pos+8)
                                 if vtrack: trackflags -= 1
                                 vtrack = True
@@ -85,7 +85,7 @@ class mpeg4fixer:
                                 f.seek(tkhd_pos+28)
                                 d = struct.unpack('I', self.__swapBytes(f.read(4)))[0]
                                 if d>video_dur: video_dur=d
-                            if ttype=='soun':
+                            if ttype==b'soun':
                                 f.seek(tkhd_pos+8)
                                 if atrack:trackflags -= 1
                                 atrack = True
@@ -122,11 +122,11 @@ class mpeg4fixer:
         rv = []
         f = open(fn, 'rb')
         fs = os.path.getsize(fn)
-        gi = (0,'',0)
+        gi = (0,b'',0)
         while (gi[2]+gi[0])<fs:
             gi = self.__getSectionInfo(f)
             add = [gi[0], gi[1], gi[2], ]
-            if gi[1]=='moov':
+            if gi[1]==b'moov':
                 add2 = []
                 mi = (0,'',0)
                 while (mi[2]+mi[0])<(gi[2]+gi[0]):
@@ -143,10 +143,10 @@ class mpeg4fixer:
         (sz, name, pos) = si[:3]
         fo.seek(0, 2)
         fo.write(self.__swapBytes(struct.pack('I', sz)))
-        fo.write('free')
+        fo.write(b'free')
         sz -= 8
         while sz>0:
-            fo.write('x')
+            fo.write(b'x')
             sz -= 1
         '''
         buffSz = 1024*1024
@@ -177,27 +177,27 @@ class mpeg4fixer:
         for i in range(len(fstruct)):
             gi = fstruct[i]
             print('%012d +%s(%d)'%(gi[2], gi[1], gi[0]))
-            if gi[1]=='moov': moovIdx = i
-            if gi[1]=='mdat': mdatIdx = i
+            if gi[1]==b'moov': moovIdx = i
+            if gi[1]==b'mdat': mdatIdx = i
         moveMoov = False
         if moovIdx < mdatIdx:
             gi = fstruct[moovIdx+1]
-            moveMoov = (gi[1]=='free') and ((gi[0]-8)<addSize)
+            moveMoov = (gi[1]==b'free') and ((gi[0]-8)<addSize)
         print(moveMoov)
         i = len(fstruct)-1
-        while fstruct[i][1]=='free':
+        while fstruct[i][1]==b'free':
             del fstruct[i]
             i-=1
         if moveMoov:
             gi = fstruct[moovIdx]
-            gi[1] = 'free'
-            add = (gi[0]+addSize, 'moov', gi[2], gi[3])
+            gi[1] = b'free'
+            add = (gi[0]+addSize, b'moov', gi[2], gi[3])
             fstruct.append(add)
         else:
             for i in [moovIdx-1, moovIdx+1]:
                 if i>-1 and i<len(fstruct):
                     gi = fstruct[i]
-                    if gi[1]=='free':
+                    if gi[1]==b'free':
                         if (gi[0]-8)>addSize:
                             gi[0] -= addSize
                             fstruct[moovIdx][0] += addSize
@@ -208,7 +208,7 @@ class mpeg4fixer:
                             gi[0] = 8
         streams = []
         for gi in fstruct:
-            if gi[1]=='free' and streams[-1][1]=='free':
+            if gi[1]==b'free' and streams[-1][1]==b'free':
                 streams[-1][0] += gi[0]
             else:
                 streams.append(gi)
@@ -220,20 +220,21 @@ class mpeg4fixer:
         for i in range(len(streams)):
             gi = streams[i]
             print('%012d +%s(%d)'%(gi[2], gi[1], gi[0]))
-            if gi[1]=='moov':
+            if gi[1]==b'moov':
                 fo.write(self.__swapBytes(struct.pack('I', gi[0])))
-                fo.write('moov')
+                fo.write(b'moov')
                 for mi in gi[3]:
                     self.__copySection(mi, f, fo)
-                    if mi[1]=='trak':
+                    if mi[1]==b'trak':
                         if names[trackCounter]!=None:
                             print('%012d   %s(%d)\t%s'%(mi[2], mi[1], mi[0], names[trackCounter]))
-                            nsz = len(names[trackCounter]) + 16
+                            name_bytes = names[trackCounter].encode('utf-8') if isinstance(names[trackCounter], str) else names[trackCounter]
+                            nsz = len(name_bytes) + 16
                             fo.write(self.__swapBytes(struct.pack('I', nsz)))
-                            fo.write('udta')
+                            fo.write(b'udta')
                             fo.write(self.__swapBytes(struct.pack('I', nsz-8)))
-                            fo.write('name')
-                            fo.write(names[trackCounter])
+                            fo.write(b'name')
+                            fo.write(name_bytes)
                             fo.seek(-1*(mi[0]+nsz), 2)
                             nsz = mi[0]+nsz
                             fo.write(self.__swapBytes(struct.pack('I', nsz)))
@@ -242,14 +243,13 @@ class mpeg4fixer:
                         trackCounter += 1
                     else:
                         print('%012d   %s(%d)'%(mi[2], mi[1], mi[0]))
-            elif gi[1]=='free':
+            elif gi[1]==b'free':
                 self.__writeFreeBlock(gi, fo)
             else:
                 self.__copySection(gi, f, fo)
         f.close()
         fo.close()
-        cmd = 'mv "%s" "%s"'%(of_name, fn)
-        os.system(cmd)
+        shutil.move(of_name, fn)
         return None
 
 if __name__=='__main__':

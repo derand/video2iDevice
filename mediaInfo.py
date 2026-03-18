@@ -13,7 +13,8 @@ import fileCoding
 import math
 from subprocess import Popen, PIPE, STDOUT
 
-from v2d_utils import *
+from v2d_utils import (ffmpeg_path, mp4box_path, mkvtoolnix_path,
+                       mediainfo_path, LANGUAGES_DICT)
 
 
 def isMatroshkaMedia(file_name):
@@ -223,11 +224,11 @@ class cChapter(object):
 
     def humanTime(self):
         tm = self.time
-        _hours = tm/(60*60*1000)
+        _hours = tm//(60*60*1000)
         tm = tm%(60*60*1000)
-        _min = tm/(60*1000)
+        _min = tm//(60*1000)
         tm = tm%(60*1000)
-        _sec = tm/1000
+        _sec = tm//1000
         _msec = tm%1000
         return (_hours, _min, _sec, _msec)
 

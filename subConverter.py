@@ -8,7 +8,7 @@ import re
 import glob
 import sys
 import os
-import string
+import shutil
 import fileCoding
 
 STTNGS = {
@@ -96,7 +96,7 @@ class subConverter:
         (i, ms) = divmod(i, 1000)
         (i, s) = divmod(i, 60)
         (h, m) = divmod(i, 60)
-        return '%02d:%02d:%02d,%02d0'%(h,m,s,ms/10)
+        return '%02d:%02d:%02d,%02d0'%(h,m,s,ms//10)
     
     def mergeSubs(self, sub, add, anywayNeedSpace):
         tmp = ''
@@ -124,11 +124,11 @@ class subConverter:
                 if not self.__compareLines(arr[-1], val):
                     arr.append(val)
             else:
-                l = len(arr)/2+len(arr)%2
+                l = len(arr)//2+len(arr)%2
                 i = l
                 while l>1:
                     s = '%s %d'%(s,i)
-                    l = l/2 + l%2
+                    l = l//2 + l%2
                     if x>self.time2int(arr[i][1]):
                         if (i+l)>=len(arr): l=len(arr)-i-1
                         i += l
@@ -204,9 +204,9 @@ class subConverter:
         for l in lines:
             curr = ( l[1], l[2] )
             if self.time2int(curr[0])<self.time2int(last[1]):
-                newStop = self.time2int(last[0]) + 4*(self.time2int(last[1])-self.time2int(last[0]))/5
+                newStop = self.time2int(last[0]) + 4*(self.time2int(last[1])-self.time2int(last[0]))//5
                 if self.time2int(curr[0])>=newStop:
-                    newStop = self.time2int(curr[0])+(self.time2int(last[1])-self.time2int(curr[0]))/2
+                    newStop = self.time2int(curr[0])+(self.time2int(last[1])-self.time2int(curr[0]))//2
                     minTime = self.int2time(newStop+20)
                     last = (last[0], self.int2time(newStop))
                     curr = (minTime, curr[1])
@@ -244,7 +244,7 @@ class subConverter:
     def convertL2srtFormat(self, l):
         txt = l[3]
         for style in l[4]:
-            if style[0][0]=='#' and string.upper(style[0][1:])!='FFFFFF':
+            if style[0][0]=='#' and style[0][1:].upper()!='FFFFFF':
                 txt = '<font color="%s">%s</font>'%(style[0], txt)
             if style[0][0]=='i':
                 txt = '<i>%s</i>'%(txt)
@@ -863,7 +863,7 @@ class subConverter:
         for i in range(len(lines)):
             val = lines[i]
             if len(val[3].split('\n'))>2:
-                tmp = string.join(val[3].split('\n'), ' ')
+                tmp = ' '.join(val[3].split('\n'))
                 val = (val[0], val[1], val[2], tmp, val[4])
                 lines[i] = val
         
@@ -939,9 +939,7 @@ class subConverter:
         self.writeOut2srt(tmp_fn, lines)
 
         if fname_srt1==fname_srt2 or fname_srt2==None:
-            cmd = 'mv "%s" "%s"'%(tmp_fn, fname_srt1)
-            print(cmd)
-            os.system(cmd)
+            shutil.move(tmp_fn, fname_srt1)
         return fname_srt2
 
     def readAssStyles(self, fname_ass, styles={}):

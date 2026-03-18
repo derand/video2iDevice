@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
 
-import string
-import types
 
 
 
@@ -215,7 +213,7 @@ class JsonReader(object):
         done = self._peek() == '}'
         while not done:
             key = self._read()
-            if type(key) is not bytes:
+            if not isinstance(key, str):
                 raise ReadException("Not a valid JSON object key (should be a string): %s" % key)
             self._eatWhitespace()
             ch = self._next()
@@ -235,7 +233,7 @@ class JsonReader(object):
 
     def _eatWhitespace(self):
         p = self._peek()
-        while p is not None and p in string.whitespace or p == '/':
+        while p is not None and (p in ' \t\n\r\f\v' or p == '/'):
             if p == '/':
                 self._readComment()
             else:
@@ -294,7 +292,7 @@ class JsonWriter(object):
             obj = obj.replace('\t', r'\t')
             self._append(obj)
             self._append('"')
-        elif ty is int or ty is int:
+        elif ty is int:
             self._append(str(obj))
         elif ty is float:
             self._append(r"%f" % obj)
