@@ -52,9 +52,13 @@
     - [x] `2iDevice.py`: `correct_profile()` try/finally → `with`
 
 ## Priority 2: High (Structural Improvements)
-- [ ] **Замінити глобальний STTNGS на dataclass**
-    - [ ] Створити `ConversionSettings` dataclass
-    - [ ] Передавати settings явно замість глобальних змінних
+- [x] **Замінити глобальний STTNGS на dataclass**
+    - [x] Створено `ConversionSettings` dataclass з ~80 типізованих полів
+    - [x] Статичні поля з дефолтами, Optional поля (None = не задано)
+    - [x] Включено всі AtomicParsley/iTunes metadata поля
+    - [x] Backward-compatible: `__getitem__`, `__setitem__`, `__contains__`, `get()`
+    - [x] `STTNGS = ConversionSettings(version=__version__)` — весь існуючий код працює
+    - [x] Додано `import struct` (був відсутній, але використовувався в `correct_profile()`)
 - [ ] **Переписати CLI парсинг з argparse**
     - [ ] `2iDevice.py`: замінити ручний парсинг `sys.argv` на `argparse`
     - [ ] `snapshots.py`: аналогічно

@@ -44,6 +44,9 @@ from mpeg4fixer import mpeg4fixer
 import select
 import shlex
 import codecs
+import struct
+from dataclasses import dataclass, field
+from typing import Optional, List, Any, Dict
 
 from mediaInfo import cStream, cMediaInfo, cChapter, MediaInformer, isMatroshkaMedia
 from v2d_utils import (ffmpeg_path, mp4box_path, AtomicParsley_path,
@@ -52,41 +55,140 @@ from v2d_utils import (ffmpeg_path, mp4box_path, AtomicParsley_path,
                        send_xmpp_message)
 
 
-STTNGS = {
-    'version' : __version__,
-#    'threads':    3,
-    'files':    [],
-    'ac':        True,
-    'vc':        True,
-    'sc':        True,
-    'lang':        '',
-    'ar':        48000,
-    'ab':        128,
-    'b':        960,
-    'refs':        2,
-    'tn':        False,
-    'streams':    '',
-    'tfile':    '',
-    'fd':        False,
-    'fadd':        [],
-    'format':    'm4v',
-    'add2TrackIdx': 0,
-    'vcodec':    'libx264',
-    'vcopy':    False,
-    'acopy':    False,
-    'vr':        23.976,
-    'ctf':        False,
-    'vv':        False,
-    'web_optimization': True,
-    'temp_dir': '.',
-    'encodingTool': '2iDevice',
-    'cast':             [],
-    'directors':        [],
-    'producers':        [],
-    'codirectors':        [],
-    'screenwriters':    [],
-    'sleep_between_files': 0,
-}
+@dataclass
+class ConversionSettings:
+    """Conversion settings and metadata for video2iDevice."""
+
+    # --- Core conversion flags ---
+    version: str = ''
+    files: List[str] = field(default_factory=list)
+    ac: bool = True          # convert audio streams
+    vc: bool = True          # convert video streams
+    sc: bool = True          # convert subtitle streams
+    lang: str = ''           # languages separated by ':'
+    ar: int = 48000          # audio sample rate (Hz)
+    ab: int = 128            # audio bitrate (kbps)
+    b: int = 960             # video bitrate (kbps)
+    refs: int = 2            # reference frames
+    tn: bool = False         # disable tagging
+    streams: str = ''        # stream selection
+    tfile: str = ''          # tags settings file path
+    fd: bool = False         # fix video duration
+    fadd: list = field(default_factory=list)  # per-stream additions
+    format: str = 'm4v'      # output format (m4v, mp4, mkv)
+    add2TrackIdx: int = 0
+    vcodec: str = 'libx264'
+    vcopy: bool = False      # copy video stream without re-encoding
+    acopy: bool = False      # copy audio stream without re-encoding
+    vr: float = 23.976       # video frame rate (fps)
+    ctf: bool = False        # clear temp files after converting
+    vv: bool = False         # verbose/debug mode
+    web_optimization: bool = True
+    temp_dir: str = '.'
+    encodingTool: str = '2iDevice'
+    cast: List[str] = field(default_factory=list)
+    directors: List[str] = field(default_factory=list)
+    producers: List[str] = field(default_factory=list)
+    codirectors: List[str] = field(default_factory=list)
+    screenwriters: List[str] = field(default_factory=list)
+    sleep_between_files: int = 0
+
+    # --- Optional runtime fields (None = not set) ---
+    threads: Optional[int] = None
+    info: Optional[str] = None
+    track: Optional[int] = None
+    tracks: Optional[int] = None
+    TRACK_REGEX: Optional[List[str]] = None
+    TRACKS_REGEX: Optional[List[str]] = None
+    episodes_titles: Optional[List[str]] = None
+    episodes: Optional[Any] = None
+    out_file: Optional[str] = None
+    out_path: Optional[str] = None
+    log_file: Optional[str] = None
+    copy_warning: Optional[str] = None
+    studio: Optional[str] = None
+    test_mode: Optional[bool] = None
+    tagging_mode: Optional[bool] = None
+    ss: Optional[str] = None
+    crf: Optional[Any] = None
+    s: Optional[str] = None
+    passes: Optional[str] = None
+    crop: Optional[str] = None
+    ffmpeg_coding_params: Optional[List[str]] = None
+    subStyleColors: Optional[Any] = None
+    subReplace: Optional[Dict] = None
+    ASSremoveItems: Optional[Any] = None
+
+    # --- AtomicParsley / iTunes metadata fields ---
+    artist: Optional[str] = None
+    title: Optional[str] = None
+    album: Optional[str] = None
+    genre: Optional[str] = None
+    tracknum: Optional[str] = None
+    disk: Optional[str] = None
+    comment: Optional[str] = None
+    year: Optional[str] = None
+    lyrics: Optional[str] = None
+    lyricsFile: Optional[str] = None
+    composer: Optional[str] = None
+    copyright: Optional[str] = None
+    grouping: Optional[str] = None
+    artwork: Optional[str] = None
+    bpm: Optional[str] = None
+    albumArtist: Optional[str] = None
+    compilation: Optional[str] = None
+    hdvideo: Optional[str] = None
+    advisory: Optional[str] = None
+    stik: Optional[str] = None
+    description: Optional[str] = None
+    longdesc: Optional[str] = None
+    storedesc: Optional[str] = None
+    TVNetwork: Optional[str] = None
+    TVShowName: Optional[str] = None
+    TVEpisode: Optional[str] = None
+    TVSeasonNum: Optional[str] = None
+    TVEpisodeNum: Optional[str] = None
+    podcastFlag: Optional[str] = None
+    category: Optional[str] = None
+    keyword: Optional[str] = None
+    podcastURL: Optional[str] = None
+    podcastGUID: Optional[str] = None
+    purchaseDate: Optional[str] = None
+    encodedBy: Optional[str] = None
+    apID: Optional[str] = None
+    cnID: Optional[str] = None
+    geID: Optional[str] = None
+    xID: Optional[str] = None
+    gapless: Optional[str] = None
+    contentRating: Optional[str] = None
+    Rating: Optional[str] = None
+
+    # --- Dict-compatible interface (backward compatibility) ---
+
+    def __getitem__(self, key: str) -> Any:
+        try:
+            return getattr(self, key)
+        except AttributeError:
+            raise KeyError(key)
+
+    def __setitem__(self, key: str, value: Any) -> None:
+        setattr(self, key, value)
+
+    def __contains__(self, key: str) -> bool:
+        try:
+            return getattr(self, key) is not None
+        except AttributeError:
+            return False
+
+    def get(self, key: str, default: Any = None) -> Any:
+        try:
+            val = getattr(self, key)
+            return val if val is not None else default
+        except AttributeError:
+            return default
+
+
+STTNGS = ConversionSettings(version=__version__)
 
 atomicParsleyOptions = ('artist', 'title', 'album', 'genre', 'tracknum', 'disk', 'comment', 'year', 'lyrics', 'lyricsFile', 'composer',
  'copyright', 'grouping', 'artwork', 'bpm', 'albumArtist', 'compilation', 'hdvideo', 'advisory', 'stik', 'description', 'longdesc',
