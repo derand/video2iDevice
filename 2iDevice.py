@@ -374,152 +374,153 @@ class Video2iDevice(object):
         saveP = False
         waitParam = False
         for el in argv:
-            if len(el)>0 and el[0]=='-' and not waitParam:
+            if len(el) > 0 and el[0] == '-' and not waitParam:
                 ckey = el[1:]
-                if ckey=="th":
-                    ckey='threads'
-                if ckey=="et":
-                    ckey='episodes_titles'
-                saveP = False
-                if ckey=='nconvert' or ckey=='cn':
-                    STTNGS['ac'] = False
-                    STTNGS['vc'] = False
-                    STTNGS['sc'] = False
-                    saveP = True
-                if ckey=='vn':
-                    STTNGS['vc'] = False
-                    saveP = True
-                if ckey=='an':
-                    STTNGS['ac'] = False
-                    saveP = True
-                if ckey=='sn':
-                    STTNGS['sc'] = False
-                    saveP = True
-                # stream and global single params
-                if ckey=='vcopy' or ckey=='acopy':
-                    tmp = STTNGS['fadd']
-                    if len(tmp)>0:
-                        tmp[-1][-1]['copy'] = True
-                    else:
-                        STTNGS[ckey] = True
-                    saveP = True
-                # stream single params
-                if ckey=='copy' or ckey=='hardsub':
-                    tmp = STTNGS['fadd']
-                    if len(tmp)>0:
-                        tmp[-1][-1][ckey] = True
-                    saveP = True
-                # global single params
-                if ckey=='tn' or ckey=='fd' or ckey=='ctf' or ckey=='vv' or ckey=='tagging_mode' or ckey=='test_mode':
-                    STTNGS[ckey] = True
-                    saveP = True
-                # params that can be started from '-' symbol
-                if ckey=='addTimeDiff' or ckey=='add2TrackIdx' or ckey=='ffmpeg_coding_params':
-                    waitParam = True
-                # help param or wrong
-                if ckey=='h' or ckey=='json_pipe':
-                    print(help)
-                    sys.exit(0)
-                # version param
-                if ckey=='v':
-                    print("Version: %s"%STTNGS['version'])
-                    sys.exit(0)
-                # single or not param 
-                if ckey=='info':
-                    STTNGS[ckey] = None
-                if ckey=='info1':
-                    STTNGS['info'] = 'short'
-                    saveP = True
+                if ckey == "th":
+                    ckey = 'threads'
+                if ckey == "et":
+                    ckey = 'episodes_titles'
+                saveP, waitParam = self._apply_flag(ckey)
             else:
                 waitParam = False
                 if saveP:
                     ckey = 'files'
-                if ckey=='vfile' or ckey=='afile' or ckey=='sfile':
-                    tt=2
-                    if ckey=='afile': tt=1
-                    if ckey=='vfile': tt=0
-                    STTNGS['fadd'].append((tt, el, {}))
-                elif ckey=='episodes_titles' or ckey=='TRACK_REGEX' or ckey=='TRACKS_REGEX':
-                    STTNGS[ckey] = el.split(';')
-                elif ckey=='stream':
-                    tmp = STTNGS['fadd']
-                    if len(tmp)>0:
-                        tmp[-1][-1]['stream'] = el
-                elif ckey=='sname':
-                    tmp = STTNGS['fadd']
-                    if len(tmp)>0:
-                        tmp[-1][-1]['sname'] = el
-                elif ckey=='ar' and len(STTNGS['fadd'])>0:
-                    tmp = STTNGS['fadd']
-                    tmp[-1][-1]['ar'] = int(el)
-                elif ckey=='ab' and len(STTNGS['fadd'])>0:
-                    tmp = STTNGS['fadd']
-                    tmp[-1][-1]['ab'] = int(el)
-                elif ckey=='addTimeDiff' and len(STTNGS['fadd'])>0:
-                    tmp = STTNGS['fadd']
-                    if tmp[-1][0]==2:
-                        tmp[-1][-1]['addTimeDiff'] = int(el)
-                elif ckey=='avol':
-                    tmp = STTNGS['fadd']
-                    if len(tmp)>0:
-                        tmp[-1][-1]['vol'] = el
-                elif ckey=='delay':
-                    tmp = STTNGS['fadd']
-                    if len(tmp)>0:
-                        tmp[-1][-1]['delay'] = int(el)
-                elif ckey=='lang':
-                    tmp = STTNGS['fadd']
-                    if el.find(':')==-1 and len(tmp)>0:
-                        tmp[-1][-1]['lang'] = el
-                    else:
-                        STTNGS[ckey] = el
-                elif ckey=='crf':
-                    tmp = STTNGS['fadd']
-                    if len(tmp)>0:
-                        tmp[-1][-1]['crf'] = el
-                    else:
-                        STTNGS[ckey] = el
-                elif ckey=='ffmpeg_coding_params':
-                    tmp = STTNGS['fadd']
-                    if len(tmp)>0:
-                        tmp[-1][-1][ckey] = shlex.split(el)
-                elif ckey=='web_optimization':
-                    STTNGS[ckey] = el!='0'
-                elif ckey=='stream_prefix':
-                    tmp = STTNGS['fadd']
-                    if len(tmp)>0:
-                        tmp[-1][-1][ckey] = el
-                elif ckey in self.__iTunMOVI_arrayKeys:
-                    for tmp in el.split(','):
-                        STTNGS[ckey].append(tmp.strip())
-                elif ckey=='threads':
-                    STTNGS[ckey] = int(el)
-                elif ckey == 'vcodec':
-                    STTNGS[ckey] = el
-                else:
-                    if ckey in STTNGS:
-                        if isinstance(STTNGS[ckey], list):
-                            STTNGS[ckey].append(el)
-                        elif isinstance(STTNGS[ckey], int):
-                            STTNGS[ckey] = int(el)
-                        elif isinstance(STTNGS[ckey], float):
-                            STTNGS[ckey] = float(el)
-                        else:
-                            STTNGS[ckey] = el
-                            '''
-                            if ckey=='format':
-                                STTNGS[ckey] = el
-                            else:
-                                STTNGS[ckey] += el
-                            '''
-                    else:
-                        STTNGS[ckey] = el
+                self._apply_value(ckey, el)
                 saveP = True
         if STTNGS['vv']:
             print(STTNGS)
 
+    def _apply_flag(self, ckey):
+        """Process a valueless flag argument (starts with '-').
+        Returns (saveP, waitParam)."""
+        saveP = False
+        waitParam = False
+        if ckey == 'nconvert' or ckey == 'cn':
+            STTNGS['ac'] = False
+            STTNGS['vc'] = False
+            STTNGS['sc'] = False
+            saveP = True
+        if ckey == 'vn':
+            STTNGS['vc'] = False
+            saveP = True
+        if ckey == 'an':
+            STTNGS['ac'] = False
+            saveP = True
+        if ckey == 'sn':
+            STTNGS['sc'] = False
+            saveP = True
+        # stream and global single params
+        if ckey == 'vcopy' or ckey == 'acopy':
+            tmp = STTNGS['fadd']
+            if len(tmp) > 0:
+                tmp[-1][-1]['copy'] = True
+            else:
+                STTNGS[ckey] = True
+            saveP = True
+        # stream single params
+        if ckey == 'copy' or ckey == 'hardsub':
+            tmp = STTNGS['fadd']
+            if len(tmp) > 0:
+                tmp[-1][-1][ckey] = True
+            saveP = True
+        # global single params
+        if ckey in ('tn', 'fd', 'ctf', 'vv', 'tagging_mode', 'test_mode'):
+            STTNGS[ckey] = True
+            saveP = True
+        # params whose value may start with '-'
+        if ckey in ('addTimeDiff', 'add2TrackIdx', 'ffmpeg_coding_params'):
+            waitParam = True
+        # help / version
+        if ckey == 'h' or ckey == 'json_pipe':
+            print(help)
+            sys.exit(0)
+        if ckey == 'v':
+            print("Version: %s" % STTNGS['version'])
+            sys.exit(0)
+        # info flags
+        if ckey == 'info':
+            STTNGS[ckey] = None
+        if ckey == 'info1':
+            STTNGS['info'] = 'short'
+            saveP = True
+        return saveP, waitParam
 
-    def loadSettingsFile(self, filename):
+    def _apply_value(self, ckey, el):
+        """Apply a parsed value to STTNGS for the current key."""
+        if ckey == 'vfile' or ckey == 'afile' or ckey == 'sfile':
+            tt = 2
+            if ckey == 'afile': tt = 1
+            if ckey == 'vfile': tt = 0
+            STTNGS['fadd'].append((tt, el, {}))
+        elif ckey in ('episodes_titles', 'TRACK_REGEX', 'TRACKS_REGEX'):
+            STTNGS[ckey] = el.split(';')
+        elif ckey == 'stream':
+            tmp = STTNGS['fadd']
+            if len(tmp) > 0:
+                tmp[-1][-1]['stream'] = el
+        elif ckey == 'sname':
+            tmp = STTNGS['fadd']
+            if len(tmp) > 0:
+                tmp[-1][-1]['sname'] = el
+        elif ckey == 'ar' and len(STTNGS['fadd']) > 0:
+            STTNGS['fadd'][-1][-1]['ar'] = int(el)
+        elif ckey == 'ab' and len(STTNGS['fadd']) > 0:
+            STTNGS['fadd'][-1][-1]['ab'] = int(el)
+        elif ckey == 'addTimeDiff' and len(STTNGS['fadd']) > 0:
+            if STTNGS['fadd'][-1][0] == 2:
+                STTNGS['fadd'][-1][-1]['addTimeDiff'] = int(el)
+        elif ckey == 'avol':
+            tmp = STTNGS['fadd']
+            if len(tmp) > 0:
+                tmp[-1][-1]['vol'] = el
+        elif ckey == 'delay':
+            tmp = STTNGS['fadd']
+            if len(tmp) > 0:
+                tmp[-1][-1]['delay'] = int(el)
+        elif ckey == 'lang':
+            tmp = STTNGS['fadd']
+            if el.find(':') == -1 and len(tmp) > 0:
+                tmp[-1][-1]['lang'] = el
+            else:
+                STTNGS[ckey] = el
+        elif ckey == 'crf':
+            tmp = STTNGS['fadd']
+            if len(tmp) > 0:
+                tmp[-1][-1]['crf'] = el
+            else:
+                STTNGS[ckey] = el
+        elif ckey == 'ffmpeg_coding_params':
+            tmp = STTNGS['fadd']
+            if len(tmp) > 0:
+                tmp[-1][-1][ckey] = shlex.split(el)
+        elif ckey == 'web_optimization':
+            STTNGS[ckey] = el != '0'
+        elif ckey == 'stream_prefix':
+            tmp = STTNGS['fadd']
+            if len(tmp) > 0:
+                tmp[-1][-1][ckey] = el
+        elif ckey in self.__iTunMOVI_arrayKeys:
+            for tmp in el.split(','):
+                STTNGS[ckey].append(tmp.strip())
+        elif ckey == 'threads':
+            STTNGS[ckey] = int(el)
+        elif ckey == 'vcodec':
+            STTNGS[ckey] = el
+        else:
+            if ckey in STTNGS:
+                if isinstance(STTNGS[ckey], list):
+                    STTNGS[ckey].append(el)
+                elif isinstance(STTNGS[ckey], int):
+                    STTNGS[ckey] = int(el)
+                elif isinstance(STTNGS[ckey], float):
+                    STTNGS[ckey] = float(el)
+                else:
+                    STTNGS[ckey] = el
+            else:
+                STTNGS[ckey] = el
+
+
+    def load_configuration_from_file(self, filename):
         file = 0 
         try:
             encoding = fileCoding.file_encoding(filename)
@@ -569,7 +570,7 @@ class Video2iDevice(object):
         print(': \033[1;32m%s\033[00m'%cmd)
         self.log.put('\n: \033[1;32m%s\033[00m\n'%cmd, True)
 
-    def __exeFfmpegCmd(self, params, percentagePrefix=None):
+    def execute_ffmpeg_command(self, params, percentagePrefix=None):
         def timeToMs(hoursMinsSecMs_array):
             hours = int(hoursMinsSecMs_array[0])
             mins = int(hoursMinsSecMs_array[1])
@@ -791,7 +792,7 @@ class Video2iDevice(object):
         return rv
 
 
-    def iTagger(self, fn):
+    def tag_file(self, fn):
         if not STTNGS['tn']:
             #prms = ' --copyright "derand"'
             prms = {
@@ -1043,11 +1044,11 @@ class Video2iDevice(object):
 
                 ass_fn = '%s/%s.ass'%(STTNGS['temp_dir'], os.path.basename(fn))
                 cmd = ['-y', '-i', srt_fn, ass_fn]
-                self.__exeFfmpegCmd(cmd)
+                self.execute_ffmpeg_command(cmd)
         elif file_ext=='.srt':
                 ass_fn = '%s/%s.ass'%(STTNGS['temp_dir'], os.path.basename(fn))
                 cmd = ['-y', '-i', fn, ass_fn]
-                self.__exeFfmpegCmd(cmd)
+                self.execute_ffmpeg_command(cmd)
         else:
             # TODO: there can be added other subtitle format
             return None
@@ -1169,7 +1170,7 @@ class Video2iDevice(object):
                 stream_prefix = None
                 if 'extended' in stream.params and 'stream_prefix' in stream.params['extended']:
                     stream_prefix = stream.params['extended']['stream_prefix']
-                self.__exeFfmpegCmd(ffmpeg_params, stream_prefix)
+                self.execute_ffmpeg_command(ffmpeg_params, stream_prefix)
                 #p = os.popen(cmd)
                 #p.close()
 
@@ -1279,7 +1280,7 @@ class Video2iDevice(object):
                 stream_prefix = stream.params['extended']['stream_prefix']
             #p = os.popen(cmd)
             #if p.close() is not None:
-            if self.__exeFfmpegCmd(ffmpeg_params, stream_prefix)[0]!=0:
+            if self.execute_ffmpeg_command(ffmpeg_params, stream_prefix)[0]!=0:
                 #cmd = ffmpeg_path + ' -y -i "%s" -map %s -vn -acodec ac3 -ab 448k  -ar %d  -ac 6 -threads %d ./tmp.ac3'%(iFile, stream[1], ar, STTNGS['threads'])
                 tmp_fn = '%s/tmp.ac3'%STTNGS['temp_dir']
                 ffmpeg_params = self.__audioFfmpegParamsTmpAc3(iFile, stream.trackID, 448, ar, STTNGS['threads'])
@@ -1288,7 +1289,7 @@ class Video2iDevice(object):
                 #self.__printCmd(cmd)
                 #p = os.popen(cmd)
                 #p.close()
-                self.__exeFfmpegCmd(ffmpeg_params, stream_prefix)
+                self.execute_ffmpeg_command(ffmpeg_params, stream_prefix)
                     
                 #cmd = ffmpeg_path + ' -y -i ./tmp.ac3 -vn -acodec libfaac -ab %dk  -ar %d  -ac 2 -threads %d %s "%s"'%(ab, ar, STTNGS['threads'], add_params, oFile)
                 ffmpeg_params = ffmpeg_params_add
@@ -1311,7 +1312,7 @@ class Video2iDevice(object):
                 #self.__printCmd(cmd)
                 #p = os.popen(cmd)
                 #p.close()
-                self.__exeFfmpegCmd(ffmpeg_params, stream_prefix)
+                self.execute_ffmpeg_command(ffmpeg_params, stream_prefix)
                     
                 os.remove(tmp_fn)
 
@@ -1402,7 +1403,7 @@ class Video2iDevice(object):
                     stream_prefix = None
                     if 'extended' in stream.params and 'stream_prefix' in stream.params['extended']:
                         stream_prefix = stream.params['extended']['stream_prefix']
-                    self.__exeFfmpegCmd(ffmpeg_params, stream_prefix)
+                    self.execute_ffmpeg_command(ffmpeg_params, stream_prefix)
                     #p = os.popen(cmd)
                     #p.close()
                     sConverter = subConverter(STTNGS)
@@ -1506,7 +1507,7 @@ class Video2iDevice(object):
                     ffmpeg_params.append('-t')
                     ffmpeg_params.append(ss_tmp[1])
                 ffmpeg_params.append(filename)
-                self.__exeFfmpegCmd(ffmpeg_params)
+                self.execute_ffmpeg_command(ffmpeg_params)
                 #os.unlink(tmp_fn)
 
     def createMPEGusingMP4Box(self, files, fi, name):
@@ -1613,7 +1614,7 @@ class Video2iDevice(object):
                 print('Merge streams failed, code:', rv)
                 sys.exit(rv)
 
-        self.iTagger(name)
+        self.tag_file(name)
         
         self.log.put('Fixing flags on result mpeg file...\n')
         if not STTNGS.get('test_mode'):
@@ -1814,7 +1815,7 @@ class Video2iDevice(object):
         filename = fi.filename
         if 'tagging_mode' in STTNGS:
             self.splitMedia(filename)
-            self.iTagger(filename)
+            self.tag_file(filename)
         else:
             filename = self.encodeMedia(fi)
 
@@ -1866,7 +1867,7 @@ if __name__=='__main__':
         if el=='-tfile':
             yep = True
     if len(STTNGS['tfile'])>0:
-        TAGS = converter.loadSettingsFile(STTNGS['tfile'])
+        TAGS = converter.load_configuration_from_file(STTNGS['tfile'])
         for key,val in list(TAGS.items()):
             #if type(val)==type(''):
             #    val = unicode(val, 'utf-8')

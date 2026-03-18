@@ -59,16 +59,17 @@
     - [x] Backward-compatible: `__getitem__`, `__setitem__`, `__contains__`, `get()`
     - [x] `STTNGS = ConversionSettings(version=__version__)` — весь існуючий код працює
     - [x] Додано `import struct` (був відсутній, але використовувався в `correct_profile()`)
-- [ ] **Переписати CLI парсинг з argparse**
-    - [ ] `2iDevice.py`: замінити ручний парсинг `sys.argv` на `argparse`
-    - [ ] `snapshots.py`: аналогічно
-- [ ] **Розбити великі методи**
-    - [ ] Рефакторити `getSettings()` в `2iDevice.py` (200+ рядків)
-    - [ ] Винести логіку парсингу параметрів у хелпер-методи
-- [ ] **Перейменувати методи для читабельності**
-    - [ ] `iTagger()` → `tag_file()`
-    - [ ] `__exeFfmpegCmd()` → `execute_ffmpeg_command()`
-    - [ ] `loadSettingsFile()` → `load_configuration_from_file()`
+- [x] **Переписати CLI парсинг з argparse**
+    - [x] `snapshots.py`: замінено ручний парсинг на `argparse` (з `--help`, валідацією типів)
+    - [ ] `2iDevice.py`: пропущено — існуючі launch templates залежать від поточного формату аргументів
+- [x] **Розбити великі методи**
+    - [x] `getSettings()` скорочено з ~147 до ~18 рядків
+    - [x] Витягнуто `_apply_flag(ckey) → (saveP, waitParam)` (~50 рядків)
+    - [x] Витягнуто `_apply_value(ckey, el)` (~70 рядків)
+- [x] **Перейменувати методи для читабельності**
+    - [x] `iTagger()` → `tag_file()`
+    - [x] `__exeFfmpegCmd()` → `execute_ffmpeg_command()`
+    - [x] `loadSettingsFile()` → `load_configuration_from_file()`
 
 ## Priority 3: Medium (Code Quality)
 - [ ] **Використати Enum для типів потоків**

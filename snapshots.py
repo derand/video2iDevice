@@ -11,6 +11,7 @@ __copyright__ = 'Copyright © 2010-2012, Andrey Derevyagin'
 
 import os
 import sys
+import argparse
 from mediaInfo import cMediaInfo, MediaInformer
 from v2d_utils import (ffmpeg_path, mkvtoolnix_path, mediainfo_path,
                        AtomicParsley_path, add_separator_to_filepath,
@@ -34,59 +35,49 @@ def __print_cmd(cmd):
     print(cmd_str)
 
 
-if __name__=='__main__':
-    if len(sys.argv)==1:
-        print('usage:\n  %s <options> <media files> '%os.path.basename(sys.argv[0]))
-        print('where <options>:')
-        print('   -c     <int>        shots count by file')
-        print('   -d     <str>        snapshots directory (default "%s")'%snapshots_dir)
-        print('   -s     <int>x<int>  snapshot size, can looks like ("*x320", "960x*"")')
-        print('   -f     <str>        snapshots file format, png(default) or jpeg')
-        print('''
-Author
-    Writed by %s (%s)
+def _parse_size(value):
+    """Parse size argument like '1280x720', '*x320', '960x*'."""
+    parts = value.split('x')
+    if len(parts) != 2:
+        raise argparse.ArgumentTypeError("Size must be in WxH format, e.g. '1280x720', '*x320'")
+    return parts
 
-Copyright
-    %s
-  
-Bugs
-    If you feel you have found a bug in "%s", please email me %s
-'''%(__author__, __email__, __copyright__, os.path.basename(sys.argv[0]), __email__))
-        sys.exit(0)
-    files = []
-    i = 1
-    _w = 0
-    _h = 0
-    vcodec = 'png'
-    out_ext = 'png'
-    while i < len(sys.argv):
-        arg = sys.argv[i]
-        if arg=='-c':
-            i += 1
-            shots_count = int(sys.argv[i])
-        elif arg=='-d':
-            i += 1
-            snapshots_dir = sys.argv[i]
-            if snapshots_dir[-1]=='/':
-                snapshots_dir = snapshots_dir[:-1]
-        elif arg=='-s':
-            i += 1
-            res = sys.argv[i].split('x')
-            if res[0]=='*':
-                _h =  int(res[1])
-            elif res[1]=='*':
-                _w = int(res[0])
-            else:
-                _w = int(res[0])
-                _h = int(res[1])
-        elif arg=='-f':
-            i += 1
-            if sys.argv[i].lower()=='jpeg' or sys.argv[i].lower()=='jpg':
-                vcodec = 'jpeg'
-                out_ext = 'jpg'
-        else:
-            files.append(arg)
-        i += 1
+
+if __name__=='__main__':
+    parser = argparse.ArgumentParser(
+        prog=os.path.basename(sys.argv[0]),
+        description='Take snapshots from video files.',
+        epilog='Author: %s (%s)\n%s' % (__author__, __email__, __copyright__),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    parser.add_argument('files', nargs='+', metavar='file', help='media files to process')
+    parser.add_argument('-c', dest='shots_count', type=int, default=shots_count,
+                        metavar='INT', help='shots count per file (default: %(default)s)')
+    parser.add_argument('-d', dest='snapshots_dir', default=snapshots_dir,
+                        metavar='DIR', help='snapshots directory (default: %(default)s)')
+    parser.add_argument('-s', dest='size', type=_parse_size, default=None,
+                        metavar='WxH', help="snapshot size, e.g. '1280x720', '*x320', '960x*'")
+    parser.add_argument('-f', dest='fmt', choices=['png', 'jpeg', 'jpg'], default='png',
+                        metavar='FMT', help='output format: png (default) or jpeg/jpg')
+
+    args = parser.parse_args()
+
+    files = args.files
+    shots_count = args.shots_count
+    snapshots_dir = args.snapshots_dir.rstrip('/')
+
+    _w, _h = 0, 0
+    if args.size:
+        w_str, h_str = args.size
+        _w = 0 if w_str == '*' else int(w_str)
+        _h = 0 if h_str == '*' else int(h_str)
+
+    if args.fmt.lower() in ('jpeg', 'jpg'):
+        vcodec = 'jpeg'
+        out_ext = 'jpg'
+    else:
+        vcodec = 'png'
+        out_ext = 'png'
     if not os.path.exists(snapshots_dir):
         os.mkdir(snapshots_dir)
     for fn in files:
