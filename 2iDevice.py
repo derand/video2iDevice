@@ -28,7 +28,7 @@ import os
 import re
 import getopt
 import glob
-import json_ex
+import json
 import os.path
 import time
 import shutil
@@ -440,8 +440,7 @@ class Video2iDevice(object):
                     if inside_key:
                         if STTNGS['vv']:
                             print(_tmp)
-                        #rv[save_key] = json.loads(_tmp)
-                        rv[save_key] = json_ex.JsonReader().read(_tmp)
+                        rv[save_key] = json.loads(_tmp)
                         inside_key = False
             else:
                 tmp = line.split('=',1)
@@ -452,8 +451,7 @@ class Video2iDevice(object):
                     if val[0]=='[': arrSymb=']'
                     if val[0]=='{': arrSymb='}'
                     if val[-1]==arrSymb:
-                        #rv[key] = json.loads(_tmp)
-                        rv[key] = json_ex.JsonReader().read(val)
+                        rv[key] = json.loads(val)
                     else:
                         save_key  =key
                         _tmp = val
@@ -1730,13 +1728,10 @@ class Video2iDevice(object):
             print(" ".join([sq(x) for x in (kwargs['argv0'], '--correct-profile-only', video)]))
         else:
             level_string = struct.pack('b', int('29', 16))
-            fobj = open(video, 'r+b')
-            try:
+            with open(video, 'r+b') as fobj:
                 fobj.seek(7)
                 print(1, 'correcting profile:', video)
                 fobj.write(level_string)
-            finally:
-                fobj.close()
 
 
 
@@ -1756,7 +1751,7 @@ if __name__=='__main__':
         i, o, e = select.select([sys.stdin], [], [], 3)
         if i:
             if JSON_pipe:
-                argv = json_ex.JsonReader().read(sys.stdin.read())
+                argv = json.loads(sys.stdin.read())
             else:
                 argv = shlex.split(sys.stdin.read())
         else:
@@ -1815,7 +1810,7 @@ if __name__=='__main__':
             #print type(fi['streams'][2][1])
             #sys.exit()
             if STTNGS['info']=='json':
-                print(json_ex.write(fi.dump('dict')))
+                print(json.dumps(fi.dump('dict')))
             elif STTNGS['info']=='short':
                 print(fi.dump('short'))
             else:

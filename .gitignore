@@ -1,6 +1,6 @@
 
 # auth files #
-constants.py
+.env
 
 # python compiled files #
 *.pyc

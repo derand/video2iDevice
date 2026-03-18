@@ -200,46 +200,45 @@ class subConverter:
         last_elems = None
         merged = False
         minTime = None
-        fo = open(fname_srt,'w')
-        for l in lines:
-            curr = ( l[1], l[2] )
-            if self.time2int(curr[0])<self.time2int(last[1]):
-                newStop = self.time2int(last[0]) + 4*(self.time2int(last[1])-self.time2int(last[0]))//5
-                if self.time2int(curr[0])>=newStop:
-                    newStop = self.time2int(curr[0])+(self.time2int(last[1])-self.time2int(curr[0]))//2
-                    minTime = self.int2time(newStop+20)
-                    last = (last[0], self.int2time(newStop))
-                    curr = (minTime, curr[1])
-                    if self.time2int(curr[0])>self.time2int(curr[1]):
-                        curr = (curr[1], curr[0])
+        with open(fname_srt,'w') as fo:
+            for l in lines:
+                curr = ( l[1], l[2] )
+                if self.time2int(curr[0])<self.time2int(last[1]):
+                    newStop = self.time2int(last[0]) + 4*(self.time2int(last[1])-self.time2int(last[0]))//5
+                    if self.time2int(curr[0])>=newStop:
+                        newStop = self.time2int(curr[0])+(self.time2int(last[1])-self.time2int(curr[0]))//2
+                        minTime = self.int2time(newStop+20)
+                        last = (last[0], self.int2time(newStop))
+                        curr = (minTime, curr[1])
+                        if self.time2int(curr[0])>self.time2int(curr[1]):
+                            curr = (curr[1], curr[0])
+                        if s!='':
+                            fo.write('%d\n%s --> %s\n%s\n\n'%(num, last[0], last[1], self.postProcessing(s)))
+                            num += 1
+                        merged = False
+                        s=l[3]
+                    else:
+                        s = self.mergeSubs(s,l[3], l[0]!=last_elems[0])
+                        if self.time2int(curr[0])>self.time2int(last[0]):
+                            curr = (last[0], curr[1])
+                        if self.time2int(curr[1])<self.time2int(last[1]):
+                            curr = (curr[0], last[1])
+                        if minTime != None:
+                            curr = (minTime, curr[1])
+                        merged = True
+                else:
                     if s!='':
                         fo.write('%d\n%s --> %s\n%s\n\n'%(num, last[0], last[1], self.postProcessing(s)))
                         num += 1
+                    minTime = None
                     merged = False
                     s=l[3]
-                else:
-                    s = self.mergeSubs(s,l[3], l[0]!=last_elems[0])
-                    if self.time2int(curr[0])>self.time2int(last[0]):
-                        curr = (last[0], curr[1])
-                    if self.time2int(curr[1])<self.time2int(last[1]):
-                        curr = (curr[0], last[1])
-                    if minTime != None:
-                        curr = (minTime, curr[1])
-                    merged = True
-            else:
-                if s!='':
-                    fo.write('%d\n%s --> %s\n%s\n\n'%(num, last[0], last[1], self.postProcessing(s)))
-                    num += 1
-                minTime = None
-                merged = False
-                s=l[3]
-            last = curr
-            last_elems = l
-
-        if s!='':
-            fo.write('%d\n%s --> %s\n%s\n\n'%(num, last[0], last[1], self.postProcessing(s)))
-
-        fo.close()
+                last = curr
+                last_elems = l
+    
+            if s!='':
+                fo.write('%d\n%s --> %s\n%s\n\n'%(num, last[0], last[1], self.postProcessing(s)))
+    
 
     def convertL2srtFormat(self, l):
         txt = l[3]
@@ -284,67 +283,66 @@ class subConverter:
                 i[j] = self.convertL2srtFormat(i[j])
 
         num = 1
-        fo = open(fname_srt,'w')
-        emptyLine = '<font color="#383838">.</font>'
-        for i in subs:
-            maxLines = 0
-            minTm = i[0][1]
-            maxTm = minTm
-            for l in i:
-                x=0
-                for j in i:
-                     if  (self.time2int(l[1])>=self.time2int(j[1])) and (self.time2int(l[1])<self.time2int(j[2])):
-                        x+=1
-                if maxLines<x: maxLines=x
-                if self.time2int(l[1])<self.time2int(minTm): minTm = l[1]
-                if self.time2int(l[2])>self.time2int(maxTm): maxTm = l[2]
-            lastTm = minTm
-            _prew = []
-            while self.time2int(lastTm)<self.time2int(maxTm):
-                linesByTime = []
-                tm = None
-                for j in i:
-                    if (self.time2int(j[1])>self.time2int(lastTm)) and (self.time2int(j[1])<self.time2int(tm) or tm==None):
-                        tm = j[1]
-                    if (self.time2int(j[2])>self.time2int(lastTm)) and (self.time2int(j[2])<self.time2int(tm) or tm==None):
-                        tm = j[2]
-                for j in i:
-                    if  ((self.time2int(lastTm)>=self.time2int(j[1])) and (self.time2int(lastTm)<self.time2int(j[2]))):
-                        linesByTime.append(j)
-
-                s = []
-                _now = []
-                for j in range(maxLines):
-                    s.append(emptyLine)
-                    _now.append(None)
-                tmp = []
-                for l in linesByTime: tmp.append(l)
-                for k in range(len(_prew)):
-                    for n in range(len(tmp)):
-                        if tmp[n]==_prew[k]:
-                            s[k] = tmp[n][3]
-                            _now[k] = tmp[n]
-                            tmp.remove(tmp[n])
-                            break
-                for l in tmp:
-                    j=0
-                    while s[j]!=emptyLine:
-                        j+=1
-                    s[j] = l[3]
-                    _now[j] = l
-                _prew = _now
-                while s[0]==emptyLine:
-                    s = s[1:]
-
-                #print "%s\t%s\t%s"%(lastTm, tm, " \t ".join(s))
-                if s!='':
-                    if self.time2int(lastTm)<self.time2int(tm):
-                        fo.write('%d\n%s --> %s\n%s\n\n'%(num, lastTm.encode('utf-8'), tm.encode('utf-8'), self.postProcessing("\n".join(s))) )
-                        num += 1
-                #lastTm = self.int2time(self.time2int(tm)+20)
-                lastTm = tm
-
-        fo.close()
+        with open(fname_srt,'w') as fo:
+            emptyLine = '<font color="#383838">.</font>'
+            for i in subs:
+                maxLines = 0
+                minTm = i[0][1]
+                maxTm = minTm
+                for l in i:
+                    x=0
+                    for j in i:
+                         if  (self.time2int(l[1])>=self.time2int(j[1])) and (self.time2int(l[1])<self.time2int(j[2])):
+                            x+=1
+                    if maxLines<x: maxLines=x
+                    if self.time2int(l[1])<self.time2int(minTm): minTm = l[1]
+                    if self.time2int(l[2])>self.time2int(maxTm): maxTm = l[2]
+                lastTm = minTm
+                _prew = []
+                while self.time2int(lastTm)<self.time2int(maxTm):
+                    linesByTime = []
+                    tm = None
+                    for j in i:
+                        if (self.time2int(j[1])>self.time2int(lastTm)) and (self.time2int(j[1])<self.time2int(tm) or tm==None):
+                            tm = j[1]
+                        if (self.time2int(j[2])>self.time2int(lastTm)) and (self.time2int(j[2])<self.time2int(tm) or tm==None):
+                            tm = j[2]
+                    for j in i:
+                        if  ((self.time2int(lastTm)>=self.time2int(j[1])) and (self.time2int(lastTm)<self.time2int(j[2]))):
+                            linesByTime.append(j)
+    
+                    s = []
+                    _now = []
+                    for j in range(maxLines):
+                        s.append(emptyLine)
+                        _now.append(None)
+                    tmp = []
+                    for l in linesByTime: tmp.append(l)
+                    for k in range(len(_prew)):
+                        for n in range(len(tmp)):
+                            if tmp[n]==_prew[k]:
+                                s[k] = tmp[n][3]
+                                _now[k] = tmp[n]
+                                tmp.remove(tmp[n])
+                                break
+                    for l in tmp:
+                        j=0
+                        while s[j]!=emptyLine:
+                            j+=1
+                        s[j] = l[3]
+                        _now[j] = l
+                    _prew = _now
+                    while s[0]==emptyLine:
+                        s = s[1:]
+    
+                    #print "%s\t%s\t%s"%(lastTm, tm, " \t ".join(s))
+                    if s!='':
+                        if self.time2int(lastTm)<self.time2int(tm):
+                            fo.write('%d\n%s --> %s\n%s\n\n'%(num, lastTm.encode('utf-8'), tm.encode('utf-8'), self.postProcessing("\n".join(s))) )
+                            num += 1
+                    #lastTm = self.int2time(self.time2int(tm)+20)
+                    lastTm = tm
+    
 
 
     def writeOut2ttxt(self, fname_ttxt, lines):
@@ -360,195 +358,194 @@ class subConverter:
         subs = self.groupByTime(lines)
 
         num = 1
-        fo = open(fname_ttxt,'w')
-        fo.write('''<?xml version="1.0" encoding="UTF-8" ?>
-
-<TextStream version="1.1">
-<TextStreamHeader width="400" height="60" layer="0" translation_x="0" translation_y="0">
-<TextSampleDescription horizontalJustification="center" verticalJustification="bottom" backColor="0 0 0 0" verticalText="no" fillTextRegion="no" continuousKaraoke="no" scroll="None">
-
-<FontTable>
-<FontTableEntry fontName="Serif" fontID="1"/>
-</FontTable>
-
-<TextBox top="0" left="0" bottom="60" right="400"/>
-<Style styles="Normal" fontID="1" fontSize="18" color="ff ff ff ff"/>
-
-</TextSampleDescription>
-</TextStreamHeader>''')
-        lastSubTm = '00:00:00.000'
-        for i in subs:
-            maxLines = 0
-            minTm = i[0][1]
-            maxTm = minTm
-            for l in i:
-                x=0
-                for j in i:
-                     if  (self.time2int(l[1])>=self.time2int(j[1])) and (self.time2int(l[1])<self.time2int(j[2])):
-                        x+=1
-                if maxLines<x: maxLines=x
-                if self.time2int(l[1])<self.time2int(minTm): minTm = l[1]
-                if self.time2int(l[2])>self.time2int(maxTm): maxTm = l[2]
-            lastTm = minTm
-            _prew = []
-            #print ""
-            while self.time2int(lastTm)<self.time2int(maxTm):
-                linesByTime = []
-                tm = None
-                for j in i:
-                    if (self.time2int(j[1])>self.time2int(lastTm)) and (self.time2int(j[1])<self.time2int(tm) or tm==None):
-                        tm = j[1]
-                    if (self.time2int(j[2])>self.time2int(lastTm)) and (self.time2int(j[2])<self.time2int(tm) or tm==None):
-                        tm = j[2]
-                for j in i:
-                    if  ((self.time2int(lastTm)>=self.time2int(j[1])) and (self.time2int(lastTm)<self.time2int(j[2]))):
-                        linesByTime.append(j)
-                #print maxLines,linesByTime
-
-                s = []
-                _now = []
-                for j in range(maxLines):
-                    s.append(None)
-                    _now.append(None)
-                tmp = []
-                for l in linesByTime: tmp.append(l)
-                for k in range(len(_prew)):
-                    #break
-                    for n in range(len(tmp)):
-                        if tmp[n]==_prew[k]:
-                            s[k] = tmp[n]
-                            _now[k] = tmp[n]
-                            tmp.remove(tmp[n])
-                            break
-                for l in tmp:
-                    j=0
-                    while s[j]!=None:
-                        j+=1
-                    s[j] = l
-                    _now[j] = l
-                _prew = _now
-                while s[0]==None:
-                    s = s[1:]
-
-                #print s
-                if s!=[]:
-                    if self.time2int(lastTm)<self.time2int(tm):
-                        tmFrom = (lastTm[:-4]+'.'+lastTm[-3:]).encode('utf-8')
-                        tmTo = (tm[:-4]+'.'+tm[-3:]).encode('utf-8')
-                        #print tmFrom, tmTo
-                        #sub = '¶¶¶¶¶¶¶¶¶¶¶¶¶¶¶¶¶¶¶¶¶¶¶¶В¶¶¶¶¶¶¶¶¶¶¶¶¶¶¶¶¶¶¶¶¶¶¶а¶'
-                        #__tags = [[0, 50, 'color="38 38 38 40"'],]
-                        sub = ''
-                        __tags = []
-                        for l in s:
-                            subStyles = ''
-                            subLen = len(str(sub, 'utf-8'))
-                            if l==None:
-                                color = '38 38 38 00'
-                                subStyles =' color="%s"'%color
-                                if len(sub):
-                                    sub = '%s\n¶'%sub
-                                    __tags.append([subLen+1, subLen+2, subStyles])
-                                else:
-                                    sub = '¶'
-                                    __tags.append([subLen, subLen+1, subStyles])
-                            else:
-                                add = l[3].replace('&lt;', '<').replace('&gt;', '>')
-                                #print '--', l[0], l[1], l[2], l[3], l[4]
-                                _len = len(str(add, 'utf-8'))
-                                if len(l[4]):
-                                    for style in l[4]:
-                                        _start = 0
-                                        _end = _len
-                                        color = 'ffffff'
-                                        subStyles = ''
-                                        __inc = 0
-                                        for j in range(len(style[0])):
-                                            if style[0][j]=='#':
-                                                color = style[0][j+1:j+7]
-                                                j+=6
-                                            elif style[0][j]=='i':
-                                                subStyles = subStyles+',Italic'
-                                            elif style[0][j]=='u':
-                                                pass
-                                            elif style[0][j]=='<':
-                                                add = '<%s>'%add
-                                                __inc+=1
-                                            elif style[0][j]=='[':
-                                                add = '[%s]'%add
-                                                __inc+=1
-                                        
-                                        # set style lenght
-                                        if len(style)>2:
-                                            _start = style[1]
-                                            _end = style[2]
-
-                                        # fix styles length if changed line length
-                                        if __inc>0:
-                                            for j in range(len(__tags)):
-                                                val = __tags[j]
-                                                if len(sub) and (subLen+1)==val[0]:
-                                                    val[1] += 1
-                                                if len(sub)==0 and subLen==val[0]:
-                                                    val[1] += 1
-                                                if len(sub) and (subLen+1+_len)==val[1]:
-                                                    val[1] += 1
-                                                if len(sub)==0 and (subLen+_len)==val[0]:
-                                                    val[1] += 1
-                                                __tags[j] = val
-                                            _end += __inc*2
+        with open(fname_ttxt,'w') as fo:
+            fo.write('''<?xml version="1.0" encoding="UTF-8" ?>
     
-                                        if len(subStyles)>0: subStyles = ' styles="%s"'%subStyles[1:]
-                                        color = '%s %s %s ff'%(color[0:2], color[2:4], color[4:6])
-                                        color = color.lower()
-                                        if color!='ff ff ff ff':
-                                            subStyles = subStyles+' color="%s"'%color
-                                        #subLen = len(unicode(sub, 'utf-8'))
-                                        if len(sub):
-                                            #sub = '%s\n%s'%(sub, add)
-                                            if len(subStyles)>0:
-                                                if len(__tags):
-                                                    __lastStyle = __tags[-1]
-                                                    if __lastStyle[2]==subStyles and __lastStyle[1]==(subLen+_start):
-                                                        __lastStyle[1] = subLen+1+_end
+    <TextStream version="1.1">
+    <TextStreamHeader width="400" height="60" layer="0" translation_x="0" translation_y="0">
+    <TextSampleDescription horizontalJustification="center" verticalJustification="bottom" backColor="0 0 0 0" verticalText="no" fillTextRegion="no" continuousKaraoke="no" scroll="None">
+    
+    <FontTable>
+    <FontTableEntry fontName="Serif" fontID="1"/>
+    </FontTable>
+    
+    <TextBox top="0" left="0" bottom="60" right="400"/>
+    <Style styles="Normal" fontID="1" fontSize="18" color="ff ff ff ff"/>
+    
+    </TextSampleDescription>
+    </TextStreamHeader>''')
+            lastSubTm = '00:00:00.000'
+            for i in subs:
+                maxLines = 0
+                minTm = i[0][1]
+                maxTm = minTm
+                for l in i:
+                    x=0
+                    for j in i:
+                         if  (self.time2int(l[1])>=self.time2int(j[1])) and (self.time2int(l[1])<self.time2int(j[2])):
+                            x+=1
+                    if maxLines<x: maxLines=x
+                    if self.time2int(l[1])<self.time2int(minTm): minTm = l[1]
+                    if self.time2int(l[2])>self.time2int(maxTm): maxTm = l[2]
+                lastTm = minTm
+                _prew = []
+                #print ""
+                while self.time2int(lastTm)<self.time2int(maxTm):
+                    linesByTime = []
+                    tm = None
+                    for j in i:
+                        if (self.time2int(j[1])>self.time2int(lastTm)) and (self.time2int(j[1])<self.time2int(tm) or tm==None):
+                            tm = j[1]
+                        if (self.time2int(j[2])>self.time2int(lastTm)) and (self.time2int(j[2])<self.time2int(tm) or tm==None):
+                            tm = j[2]
+                    for j in i:
+                        if  ((self.time2int(lastTm)>=self.time2int(j[1])) and (self.time2int(lastTm)<self.time2int(j[2]))):
+                            linesByTime.append(j)
+                    #print maxLines,linesByTime
+    
+                    s = []
+                    _now = []
+                    for j in range(maxLines):
+                        s.append(None)
+                        _now.append(None)
+                    tmp = []
+                    for l in linesByTime: tmp.append(l)
+                    for k in range(len(_prew)):
+                        #break
+                        for n in range(len(tmp)):
+                            if tmp[n]==_prew[k]:
+                                s[k] = tmp[n]
+                                _now[k] = tmp[n]
+                                tmp.remove(tmp[n])
+                                break
+                    for l in tmp:
+                        j=0
+                        while s[j]!=None:
+                            j+=1
+                        s[j] = l
+                        _now[j] = l
+                    _prew = _now
+                    while s[0]==None:
+                        s = s[1:]
+    
+                    #print s
+                    if s!=[]:
+                        if self.time2int(lastTm)<self.time2int(tm):
+                            tmFrom = (lastTm[:-4]+'.'+lastTm[-3:]).encode('utf-8')
+                            tmTo = (tm[:-4]+'.'+tm[-3:]).encode('utf-8')
+                            #print tmFrom, tmTo
+                            #sub = '¶¶¶¶¶¶¶¶¶¶¶¶¶¶¶¶¶¶¶¶¶¶¶¶В¶¶¶¶¶¶¶¶¶¶¶¶¶¶¶¶¶¶¶¶¶¶¶а¶'
+                            #__tags = [[0, 50, 'color="38 38 38 40"'],]
+                            sub = ''
+                            __tags = []
+                            for l in s:
+                                subStyles = ''
+                                subLen = len(str(sub, 'utf-8'))
+                                if l==None:
+                                    color = '38 38 38 00'
+                                    subStyles =' color="%s"'%color
+                                    if len(sub):
+                                        sub = '%s\n¶'%sub
+                                        __tags.append([subLen+1, subLen+2, subStyles])
+                                    else:
+                                        sub = '¶'
+                                        __tags.append([subLen, subLen+1, subStyles])
+                                else:
+                                    add = l[3].replace('&lt;', '<').replace('&gt;', '>')
+                                    #print '--', l[0], l[1], l[2], l[3], l[4]
+                                    _len = len(str(add, 'utf-8'))
+                                    if len(l[4]):
+                                        for style in l[4]:
+                                            _start = 0
+                                            _end = _len
+                                            color = 'ffffff'
+                                            subStyles = ''
+                                            __inc = 0
+                                            for j in range(len(style[0])):
+                                                if style[0][j]=='#':
+                                                    color = style[0][j+1:j+7]
+                                                    j+=6
+                                                elif style[0][j]=='i':
+                                                    subStyles = subStyles+',Italic'
+                                                elif style[0][j]=='u':
+                                                    pass
+                                                elif style[0][j]=='<':
+                                                    add = '<%s>'%add
+                                                    __inc+=1
+                                                elif style[0][j]=='[':
+                                                    add = '[%s]'%add
+                                                    __inc+=1
+                                            
+                                            # set style lenght
+                                            if len(style)>2:
+                                                _start = style[1]
+                                                _end = style[2]
+    
+                                            # fix styles length if changed line length
+                                            if __inc>0:
+                                                for j in range(len(__tags)):
+                                                    val = __tags[j]
+                                                    if len(sub) and (subLen+1)==val[0]:
+                                                        val[1] += 1
+                                                    if len(sub)==0 and subLen==val[0]:
+                                                        val[1] += 1
+                                                    if len(sub) and (subLen+1+_len)==val[1]:
+                                                        val[1] += 1
+                                                    if len(sub)==0 and (subLen+_len)==val[0]:
+                                                        val[1] += 1
+                                                    __tags[j] = val
+                                                _end += __inc*2
+        
+                                            if len(subStyles)>0: subStyles = ' styles="%s"'%subStyles[1:]
+                                            color = '%s %s %s ff'%(color[0:2], color[2:4], color[4:6])
+                                            color = color.lower()
+                                            if color!='ff ff ff ff':
+                                                subStyles = subStyles+' color="%s"'%color
+                                            #subLen = len(unicode(sub, 'utf-8'))
+                                            if len(sub):
+                                                #sub = '%s\n%s'%(sub, add)
+                                                if len(subStyles)>0:
+                                                    if len(__tags):
+                                                        __lastStyle = __tags[-1]
+                                                        if __lastStyle[2]==subStyles and __lastStyle[1]==(subLen+_start):
+                                                            __lastStyle[1] = subLen+1+_end
+                                                        else:
+                                                            __tags.append([subLen+_start, subLen+1+_end, subStyles])
                                                     else:
                                                         __tags.append([subLen+_start, subLen+1+_end, subStyles])
-                                                else:
-                                                    __tags.append([subLen+_start, subLen+1+_end, subStyles])
-                                                #tags = '%s<Style fromChar="%d" toChar="%d" %s/>'%(tags, subLen+1+_start, subLen+1+_end, subStyles)
-                                        else:
-                                            #sub = '%s'%add
-                                            if len(subStyles)>0:
-                                                __tags.append([subLen+_start, subLen+_end, subStyles])
-                                                #tags = '%s<Style fromChar="%d" toChar="%d" %s/>'%(tags, subLen+_start, subLen+_end, subStyles)
-                                if len(sub):
-                                    sub = '%s\n%s'%(sub, add)
-                                else:
-                                    sub = '%s'%add
-
-                        tags = ''
-                        #for __t in sorted(__tags, key=lambda el: el[1]-el[0]):
-                        for __t in __tags:
-                            tags = '%s<Style fromChar="%d" toChar="%d" %s/>'%(tags, __t[0], __t[1], __t[2])
-                                
-                        #sub = sub.replace('<', '&lt;').replace('>', '&gt;').replace('¶', '&nbsp;')
-                        #sub = sub.replace('<', '&lt;').replace('>', '&gt;').replace('¶', ' ')
-                        sub = sub.replace('<', '&lt;').replace('>', '&gt;').replace('¶', '.')
-                        if lastSubTm!=tmFrom:
-                            fo.write('\n<TextSample sampleTime="%s" xml:space="preserve"></TextSample>'%lastSubTm)
-                        #print'%s%s'%(sub,tags.encode('utf-8'))
-                        fo.write('\n<TextSample sampleTime="%s" xml:space="preserve">%s%s</TextSample>'%(tmFrom, sub, tags.encode('utf-8')))
-                        lastSubTm = tmTo
-                        #fo.write('%d\n%s --> %s\n%s\n\n'%(num, lastTm.encode('utf-8'), tm.encode('utf-8'), self.postProcessing("\n".join(s))) )
-                        #str = self.postProcessing("\n".join(s))
-                        #print len(unicode(str, 'utf-8')), str
-                        num += 1
-                #lastTm = self.int2time(self.time2int(tm)+20)
-                lastTm = tm
-
-        fo.write('\n<TextSample sampleTime="%s" xml:space="preserve"></TextSample>'%lastSubTm)
-        fo.write('\n</TextStream>\n');
-        fo.close()
+                                                    #tags = '%s<Style fromChar="%d" toChar="%d" %s/>'%(tags, subLen+1+_start, subLen+1+_end, subStyles)
+                                            else:
+                                                #sub = '%s'%add
+                                                if len(subStyles)>0:
+                                                    __tags.append([subLen+_start, subLen+_end, subStyles])
+                                                    #tags = '%s<Style fromChar="%d" toChar="%d" %s/>'%(tags, subLen+_start, subLen+_end, subStyles)
+                                    if len(sub):
+                                        sub = '%s\n%s'%(sub, add)
+                                    else:
+                                        sub = '%s'%add
+    
+                            tags = ''
+                            #for __t in sorted(__tags, key=lambda el: el[1]-el[0]):
+                            for __t in __tags:
+                                tags = '%s<Style fromChar="%d" toChar="%d" %s/>'%(tags, __t[0], __t[1], __t[2])
+                                    
+                            #sub = sub.replace('<', '&lt;').replace('>', '&gt;').replace('¶', '&nbsp;')
+                            #sub = sub.replace('<', '&lt;').replace('>', '&gt;').replace('¶', ' ')
+                            sub = sub.replace('<', '&lt;').replace('>', '&gt;').replace('¶', '.')
+                            if lastSubTm!=tmFrom:
+                                fo.write('\n<TextSample sampleTime="%s" xml:space="preserve"></TextSample>'%lastSubTm)
+                            #print'%s%s'%(sub,tags.encode('utf-8'))
+                            fo.write('\n<TextSample sampleTime="%s" xml:space="preserve">%s%s</TextSample>'%(tmFrom, sub, tags.encode('utf-8')))
+                            lastSubTm = tmTo
+                            #fo.write('%d\n%s --> %s\n%s\n\n'%(num, lastTm.encode('utf-8'), tm.encode('utf-8'), self.postProcessing("\n".join(s))) )
+                            #str = self.postProcessing("\n".join(s))
+                            #print len(unicode(str, 'utf-8')), str
+                            num += 1
+                    #lastTm = self.int2time(self.time2int(tm)+20)
+                    lastTm = tm
+    
+            fo.write('\n<TextSample sampleTime="%s" xml:space="preserve"></TextSample>'%lastSubTm)
+            fo.write('\n</TextStream>\n');
 
 
     def getSubStyle(self, st, defStyles):
@@ -648,121 +645,120 @@ class subConverter:
         return (l, styles)
 
     def readAss(self, fname_ass):
-        fi = open(fname_ass)
-        block = 0
-        lines = []
-        black_list = ()
-        if 'ASSremoveItems' in self.__STNGS:
-            black_list = self.__STNGS['ASSremoveItems']
-        subReplace = {}
-        if 'subReplace' in self.__STNGS:
-            subReplace = self.__STNGS['subReplace']
-        lastVal = None
-        styles = {}
-        canMergeLines = True
-        fCoding = fileCoding.file_encoding(fname_ass)
-        for line in fi:
-            if block==2:
-                elems = line.split(',')
-                t =  re.compile('Style:\s*([^,]+)').match(elems[0])
-                if t:
-                    sName = t.groups()[0]
-                    t =  re.compile('\&(H[0-9a-fA-F]{2})([0-9a-fA-F]{6})').match(elems[3])
+        with open(fname_ass) as fi:
+            block = 0
+            lines = []
+            black_list = ()
+            if 'ASSremoveItems' in self.__STNGS:
+                black_list = self.__STNGS['ASSremoveItems']
+            subReplace = {}
+            if 'subReplace' in self.__STNGS:
+                subReplace = self.__STNGS['subReplace']
+            lastVal = None
+            styles = {}
+            canMergeLines = True
+            fCoding = fileCoding.file_encoding(fname_ass)
+            for line in fi:
+                if block==2:
+                    elems = line.split(',')
+                    t =  re.compile('Style:\s*([^,]+)').match(elems[0])
                     if t:
-                        col = t.groups()[1]
-                        styles[sName] = (col,)
-            if line[:8] == 'alogue: ':
-                line = 'Di%s'%line
-            if line[:10] == 'Dialogue: ':
-                block = 3
-            if block==3:
-                #print line
+                        sName = t.groups()[0]
+                        t =  re.compile('\&(H[0-9a-fA-F]{2})([0-9a-fA-F]{6})').match(elems[3])
+                        if t:
+                            col = t.groups()[1]
+                            styles[sName] = (col,)
                 if line[:8] == 'alogue: ':
                     line = 'Di%s'%line
                 if line[:10] == 'Dialogue: ':
-                    line = line[8:]
-                    elems = line.split(',')
-                    linetext = ",".join(elems[9:])
-                    linetext = str(linetext, fCoding)
-
-                    #if len(linetext)>12 and ((linetext[:7]=='{\\bord3') or (linetext[:5]=='{\\be1')) and (len(elems[3])>3 and elems[3][:3]=="ed_"):
-                    #    linetext=''
-                    #if len(linetext)>12 and (linetext[:15]=='{\\fad(200,200)}') and (len(elems[3])>3 and elems[3][:3]=="ed_"):
-                    #    linetext=''
-
-                    linetext = linetext.replace('\\n','\\N')
-                    linetext = linetext.replace('\\N','\n')
-                    linetext = re.sub(r'\{\\[^\}]*\}', '', linetext)
-                    linetext = re.sub(r'([lmb](\s\-{0,1}\d+){2,8}\s{0,1}){2,}', '', linetext)    # m 0 0 l 0 150 l 250 150 l 250 0
-                    linetext = re.sub(r'm\s\-{0,1}\d+\s+\-{0,1}\d+\s+s(\s+\-{0,1}\d+){14}\s+c', '', linetext)    # m 5 0 s 95 0 100 5 100 95 95 100 5 100 0 95 0 5 c
-                    linetext = linetext.replace('\\h','')
-                    linetext = re.sub(r'\{[^\}]*\}', '', linetext)        # remove from subs comments {xxxx}
-
-                    blackCheck = True
-                    subEnd = self.timesrt(elems[2])
-                    if linetext.strip() in subReplace:
-                        v = subReplace[linetext.strip()]
-                        if ('style' not in v) or ('style' in v and v['style']==elems[3].strip()):
-                            linetext = v['text']
-                            if 'duration' in v:
-                                subDuration = v['duration']
-                                subEnd = self.int2time(self.time2int(self.timesrt(elems[1]))+subDuration)
-                            blackCheck = False
-
-                    if blackCheck:
-                        bl = False
-                        for style in black_list:
-                            if style==str(elems[3], 'utf-8'):
-                                bl = True
-                                break
-                        if bl:
-                            continue
-
-                    while linetext.find('\n\n')>=0:
-                        linetext = linetext.replace('\n\n','\n')
-                    tmpStr = ''
-                    canMerge = True
-                    for l in linetext.split('\n'):
-                        ch = '\n'
-                        if l.find(' ')==-1 and l.find('.')==-1 and l.find(',')==-1:
-                            if canMerge:
-                                ch = ' '
-                            canMerge = True
-                        else:
-                            canMerge = False
-                        tmpStr = '%s%s%s'%(tmpStr, ch, l)
-                    linetext = tmpStr.strip()
-                    linetext8 = linetext.encode('utf-8')
-                    #print len(unicode(linetext,'utf-8')),linetext
-                    if len(linetext8)>0:
-                        _style = elems[3].strip()
-                        if _style[0]=='*': _style = _style[1:]
-                        _name = elems[4].strip()
-                        val = [[_style, _name], self.timesrt(elems[1]), subEnd, linetext8, []]
-                        if lastVal!=None:
-                            if canMergeLines and lastVal[0][0]==val[0][0] and lastVal[1]==val[1] and lastVal[2]==lastVal[2] and linetext.find(' ')==-1 and linetext.find('.')==-1 and linetext.find(',')==-1:
-                                lastVal[3] = '%s %s'%(str(lastVal[3], 'utf-8'), linetext)
-                                lastVal[3] = lastVal[3].encode('utf-8')
+                    block = 3
+                if block==3:
+                    #print line
+                    if line[:8] == 'alogue: ':
+                        line = 'Di%s'%line
+                    if line[:10] == 'Dialogue: ':
+                        line = line[8:]
+                        elems = line.split(',')
+                        linetext = ",".join(elems[9:])
+                        linetext = str(linetext, fCoding)
+    
+                        #if len(linetext)>12 and ((linetext[:7]=='{\\bord3') or (linetext[:5]=='{\\be1')) and (len(elems[3])>3 and elems[3][:3]=="ed_"):
+                        #    linetext=''
+                        #if len(linetext)>12 and (linetext[:15]=='{\\fad(200,200)}') and (len(elems[3])>3 and elems[3][:3]=="ed_"):
+                        #    linetext=''
+    
+                        linetext = linetext.replace('\\n','\\N')
+                        linetext = linetext.replace('\\N','\n')
+                        linetext = re.sub(r'\{\\[^\}]*\}', '', linetext)
+                        linetext = re.sub(r'([lmb](\s\-{0,1}\d+){2,8}\s{0,1}){2,}', '', linetext)    # m 0 0 l 0 150 l 250 150 l 250 0
+                        linetext = re.sub(r'm\s\-{0,1}\d+\s+\-{0,1}\d+\s+s(\s+\-{0,1}\d+){14}\s+c', '', linetext)    # m 5 0 s 95 0 100 5 100 95 95 100 5 100 0 95 0 5 c
+                        linetext = linetext.replace('\\h','')
+                        linetext = re.sub(r'\{[^\}]*\}', '', linetext)        # remove from subs comments {xxxx}
+    
+                        blackCheck = True
+                        subEnd = self.timesrt(elems[2])
+                        if linetext.strip() in subReplace:
+                            v = subReplace[linetext.strip()]
+                            if ('style' not in v) or ('style' in v and v['style']==elems[3].strip()):
+                                linetext = v['text']
+                                if 'duration' in v:
+                                    subDuration = v['duration']
+                                    subEnd = self.int2time(self.time2int(self.timesrt(elems[1]))+subDuration)
+                                blackCheck = False
+    
+                        if blackCheck:
+                            bl = False
+                            for style in black_list:
+                                if style==str(elems[3], 'utf-8'):
+                                    bl = True
+                                    break
+                            if bl:
+                                continue
+    
+                        while linetext.find('\n\n')>=0:
+                            linetext = linetext.replace('\n\n','\n')
+                        tmpStr = ''
+                        canMerge = True
+                        for l in linetext.split('\n'):
+                            ch = '\n'
+                            if l.find(' ')==-1 and l.find('.')==-1 and l.find(',')==-1:
+                                if canMerge:
+                                    ch = ' '
+                                canMerge = True
+                            else:
+                                canMerge = False
+                            tmpStr = '%s%s%s'%(tmpStr, ch, l)
+                        linetext = tmpStr.strip()
+                        linetext8 = linetext.encode('utf-8')
+                        #print len(unicode(linetext,'utf-8')),linetext
+                        if len(linetext8)>0:
+                            _style = elems[3].strip()
+                            if _style[0]=='*': _style = _style[1:]
+                            _name = elems[4].strip()
+                            val = [[_style, _name], self.timesrt(elems[1]), subEnd, linetext8, []]
+                            if lastVal!=None:
+                                if canMergeLines and lastVal[0][0]==val[0][0] and lastVal[1]==val[1] and lastVal[2]==lastVal[2] and linetext.find(' ')==-1 and linetext.find('.')==-1 and linetext.find(',')==-1:
+                                    lastVal[3] = '%s %s'%(str(lastVal[3], 'utf-8'), linetext)
+                                    lastVal[3] = lastVal[3].encode('utf-8')
+                                else:
+                                    self.__insert(lines, val)
+                                    lastVal = val
                             else:
                                 self.__insert(lines, val)
                                 lastVal = val
-                        else:
-                            self.__insert(lines, val)
-                            lastVal = val
-                        canMergeLines = (linetext.find(' ')==-1 and linetext.find('.')==-1 and linetext.find(',')==-1)
-
-            line = line.strip()
-            if '[Script Info]' == line:
-                block = 1
-            if ('[V4+ Styles]' == line) or ('[V4 Styles]' == line):
-                block = 2
-            if '[Events]' == line:
-                block = 3
-            #if re.compile('Format\: Layer, Start, End').match(line):
-            #    start = True;
-            #if re.compile('\[Events\]').match(line):
-            #    start = True;
-        fi.close()
+                            canMergeLines = (linetext.find(' ')==-1 and linetext.find('.')==-1 and linetext.find(',')==-1)
+    
+                line = line.strip()
+                if '[Script Info]' == line:
+                    block = 1
+                if ('[V4+ Styles]' == line) or ('[V4 Styles]' == line):
+                    block = 2
+                if '[Events]' == line:
+                    block = 3
+                #if re.compile('Format\: Layer, Start, End').match(line):
+                #    start = True;
+                #if re.compile('\[Events\]').match(line):
+                #    start = True;
 
         c = None
         needFontTag = False;
@@ -788,76 +784,75 @@ class subConverter:
         return lines
 
     def readSrt(self, fname_srt):
-        fi = open(fname_srt)
-        idx = None
-        tm = None
-        txt = None
-        lastLineEmpty = True
-        set = False
-        lines = []
-        subReplace = {}
-        if 'subReplace' in self.__STNGS:
-            subReplace = self.__STNGS['subReplace']
-        subStyle = None
-        fCoding = fileCoding.file_encoding(fname_srt)
-        for line in fi:
-            line = str(line, fCoding).strip()
-            if len(line)>3 and line[:3]=='\xEF\xBB\xBF':
-                line = line[3:]
-
-            line = re.sub(r'\{\\[^\}]*\}', '', line)
-            
-            if len(line)!=0:
+        with open(fname_srt) as fi:
+            idx = None
+            tm = None
+            txt = None
+            lastLineEmpty = True
+            set = False
+            lines = []
+            subReplace = {}
+            if 'subReplace' in self.__STNGS:
+                subReplace = self.__STNGS['subReplace']
+            subStyle = None
+            fCoding = fileCoding.file_encoding(fname_srt)
+            for line in fi:
+                line = str(line, fCoding).strip()
+                if len(line)>3 and line[:3]=='\xEF\xBB\xBF':
+                    line = line[3:]
+    
+                line = re.sub(r'\{\\[^\}]*\}', '', line)
                 
-                subStyle = []
-                if line in subReplace:
-                    if 'text' in subReplace[line]:
-                        line = subReplace[line]['text']
-
-                if lastLineEmpty:
-                    try:
-                        x = int(line)
-                    except:
-                        x = None
-                    if x!=None and txt!=None:
-                        ttt = tm.split('-->')
-                        if len(ttt)==2:
-                            tm1 = ttt[0].strip()
-                            tm2 = ttt[1].strip()
-                            val = (['', ''], tm1, tm2, txt.encode('utf-8'), subStyle)
-                            self.__insert(lines, val)
-                            if len(subStyle)>0:
-                                sys.exit(0)
-                            #print '%d\n-%s\n--%s'%(idx, tm, txt)
-                            #fo.write('%d\n%s\n%s\n\n'%(idx, tm, txt))
-                        idx = x
-                        tm = None
-                        txt = None
-                        set= True
-                    # first
-                    if idx==None and x!=None:
-                        idx = x
-                        set= True
-                if not set:
-                    if tm==None:
-                        tm = line
-                    elif txt==None:
-                        txt = line
-                    else:
-                        txt += '\n%s'%line
-                set= False
-                lastLineEmpty = False
-            else:
-                lastLineEmpty = True
-
-        if idx!=None and tm!=None and txt!=None:
-            ttt = tm.split('-->')
-            if len(ttt)==2:
-                tm1 = ttt[0].strip()
-                tm2 = ttt[1].strip()
-                val = (['', ''], ttt[0].strip(), ttt[1].strip(), txt.encode('utf-8'), subStyle)
-                self.__insert(lines, val)
-        fi.close()
+                if len(line)!=0:
+                    
+                    subStyle = []
+                    if line in subReplace:
+                        if 'text' in subReplace[line]:
+                            line = subReplace[line]['text']
+    
+                    if lastLineEmpty:
+                        try:
+                            x = int(line)
+                        except:
+                            x = None
+                        if x!=None and txt!=None:
+                            ttt = tm.split('-->')
+                            if len(ttt)==2:
+                                tm1 = ttt[0].strip()
+                                tm2 = ttt[1].strip()
+                                val = (['', ''], tm1, tm2, txt.encode('utf-8'), subStyle)
+                                self.__insert(lines, val)
+                                if len(subStyle)>0:
+                                    sys.exit(0)
+                                #print '%d\n-%s\n--%s'%(idx, tm, txt)
+                                #fo.write('%d\n%s\n%s\n\n'%(idx, tm, txt))
+                            idx = x
+                            tm = None
+                            txt = None
+                            set= True
+                        # first
+                        if idx==None and x!=None:
+                            idx = x
+                            set= True
+                    if not set:
+                        if tm==None:
+                            tm = line
+                        elif txt==None:
+                            txt = line
+                        else:
+                            txt += '\n%s'%line
+                    set= False
+                    lastLineEmpty = False
+                else:
+                    lastLineEmpty = True
+    
+            if idx!=None and tm!=None and txt!=None:
+                ttt = tm.split('-->')
+                if len(ttt)==2:
+                    tm1 = ttt[0].strip()
+                    tm2 = ttt[1].strip()
+                    val = (['', ''], ttt[0].strip(), ttt[1].strip(), txt.encode('utf-8'), subStyle)
+                    self.__insert(lines, val)
 
         # join lines in sub if lines > 2
         for i in range(len(lines)):
@@ -943,27 +938,26 @@ class subConverter:
         return fname_srt2
 
     def readAssStyles(self, fname_ass, styles={}):
-        fi = open(fname_ass)
-        block = 0
-        for line in fi:
-            if block==2:
-                elems = line.split(',')
-                t =  re.compile('Style:\s*([^,]+)').match(elems[0])
-                if t:
-                    sName = t.groups()[0]
-                    t =  re.compile('\&(H[0-9a-fA-F]{2})([0-9a-fA-F]{6})').match(elems[3])
+        with open(fname_ass) as fi:
+            block = 0
+            for line in fi:
+                if block==2:
+                    elems = line.split(',')
+                    t =  re.compile('Style:\s*([^,]+)').match(elems[0])
                     if t:
-                        col = t.groups()[1]
-                        styles[sName] = (col,)
-
-            line = line.strip()
-            if '[Script Info]' == line:
-                block = 1
-            if ('[V4+ Styles]' == line) or ('[V4 Styles]' == line):
-                block = 2
-            if '[Events]' == line:
-                block = 3
-        fi.close()
+                        sName = t.groups()[0]
+                        t =  re.compile('\&(H[0-9a-fA-F]{2})([0-9a-fA-F]{6})').match(elems[3])
+                        if t:
+                            col = t.groups()[1]
+                            styles[sName] = (col,)
+    
+                line = line.strip()
+                if '[Script Info]' == line:
+                    block = 1
+                if ('[V4+ Styles]' == line) or ('[V4 Styles]' == line):
+                    block = 2
+                if '[Events]' == line:
+                    block = 3
 
         return styles
 

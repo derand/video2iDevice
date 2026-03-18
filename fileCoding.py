@@ -7,9 +7,8 @@ import os
 import codecs
 
 def file_encoding(filename):
-        data = open(filename, 'rb').read()
-        #with open(filename) as codefile:
-        #data = codefile.read()
+        with open(filename, 'rb') as f:
+            data = f.read()
         try:
             import chardet
             return chardet.detect(data)['encoding']
