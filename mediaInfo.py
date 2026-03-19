@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+"""Media information extraction module using ffmpeg, mkvinfo, mediainfo and MP4Box."""
+
 # writed by derand
 
 
@@ -12,25 +14,39 @@ import re
 import fileCoding
 import math
 from subprocess import Popen, PIPE, STDOUT
+from enum import IntEnum
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 from v2d_utils import (ffmpeg_path, mp4box_path, mkvtoolnix_path,
                        mediainfo_path, LANGUAGES_DICT)
 
 
-def isMatroshkaMedia(file_name):
+class StreamType(IntEnum):
+    """Enumeration of media stream types."""
+
+    VIDEO = 0
+    AUDIO = 1
+    SUBTITLE = 2
+    IMAGE = 3
+
+
+def isMatroshkaMedia(file_name: str) -> bool:
+    """Return True if the file has a Matroska container extension."""
     _, file_ext = os.path.splitext(file_name)
     file_ext = file_ext.lower()
     return file_ext in ('.mkv', '.mk3d', '.mka', '.mks')
 
-def isMP4Media(file_name):
+def isMP4Media(file_name: str) -> bool:
+    """Return True if the file has an MPEG-4 container extension."""
     _, file_ext = os.path.splitext(file_name)
     file_ext = file_ext.lower()
     return file_ext in ('.mp4', '.m4v', '.mov', )
 
 
 class cStream(object):
-    """docstring for cStream"""
-    def __init__(self, stream_type, trackID, language, params):
+    """Represents a single media stream (video, audio, subtitle, or image) within a media file."""
+
+    def __init__(self, stream_type: StreamType, trackID: str, language: Optional[str], params: Dict[str, Any]):
         super(cStream, self).__init__()
         self.type = stream_type
         self.trackID = trackID
@@ -38,7 +54,8 @@ class cStream(object):
         self.params = params
 
     @property
-    def trackId_short(self):
+    def trackId_short(self) -> Optional[str]:
+        """Return the trailing numeric portion of the track ID string."""
         r = re.search(r"(\d+)$", self.trackID)
         if r is not None:
             return r.group()
@@ -46,28 +63,37 @@ class cStream(object):
 
     def __str__(self):
         rv = ''
-        if self.type==0:
+        if self.type==StreamType.VIDEO:
             rv += 'Video:'
-        if self.type==1:
+        if self.type==StreamType.AUDIO:
             rv += 'Audio:'
-        if self.type==2:
+        if self.type==StreamType.SUBTITLE:
             rv += 'Subtitle:'
-        if self.type==3:
+        if self.type==StreamType.IMAGE:
             rv += 'Image:'
         rv += ' %s'%self.trackID
         rv += ', %s'%self.language
         return 'cStream %s'%rv
 
-    def dump(self, mode='string'):
+    def dump(self, mode: str = 'string') -> Union[str, Dict[str, Any]]:
+        """Return stream info formatted as a string, short string, or dict.
+
+        Args:
+            mode: Output format — 'string' for full details, 'short' for a brief
+                one-liner, or 'dict' for a dictionary representation.
+
+        Returns:
+            Formatted stream information in the requested mode.
+        """
         if mode=='string':
             rv = ''
-            if self.type==0:
+            if self.type==StreamType.VIDEO:
                 rv += 'Video stream:\n'
-            if self.type==1:
+            if self.type==StreamType.AUDIO:
                 rv += 'Audio stream:\n'
-            if self.type==2:
+            if self.type==StreamType.SUBTITLE:
                 rv += 'Subtitle stream:\n'
-            if self.type==3:
+            if self.type==StreamType.IMAGE:
                 rv += 'Image:\n'
             rv += 'Track ID: %s\n'%self.trackID.rjust(32)
             val = '%s'%self.language
@@ -83,7 +109,7 @@ class cStream(object):
                 language_str = '(%s)'%language_str
             else:
                 language_str = ''
-            if self.type==0:
+            if self.type==StreamType.VIDEO:
                 fps = 'x'
                 if self.params.get('Frame_rate'):
                     fps = self.params.get('Frame_rate').split(' ')[0]
@@ -91,11 +117,11 @@ class cStream(object):
                         fps = fps.split('.')[0]
                     fps += 'fps'
                 rv += 'V%s, %s, %sx%s @%s, %s'%(language_str, self.params.get('Format') or self.params.get('codec'), self.params.get('width'), self.params.get('height'), fps, self.params.get('Bit_rate'))
-            if self.type==1:
+            if self.type==StreamType.AUDIO:
                 rv += 'A%s, %s, %s, %s'%(language_str, self.params.get('Format') or self.params.get('codec'), self.params.get('Bit_rate'), self.params.get('Sampling_rate'))
-            if self.type==2:
+            if self.type==StreamType.SUBTITLE:
                 rv += 'S%s, %s, \"%s\"'%(language_str, self.params.get('Codec_ID'), self.params.get('Title'), )
-            if self.type==3:
+            if self.type==StreamType.IMAGE:
                 rv += 'I %s, %sx%s'%(self.params.get('codec'), self.params.get('width'), self.params.get('height'))
         elif mode=='dict':
             rv = {
@@ -106,19 +132,21 @@ class cStream(object):
             }
         return rv
 
-    def format(self):
+    def format(self) -> str:
+        """Return the codec or format string for this stream."""
         rv = ''
-        if 'Format' in self.params and self.type!=2:   #  "and self.type!=2" added 2020.02.16
+        if 'Format' in self.params and self.type!=StreamType.SUBTITLE:   #  "and self.type!=2" added 2020.02.16
             rv = self.params['Format']
-        elif 'codec' in self.params and self.type!=2:  #  "and self.type!=2" added 2020.02.16
+        elif 'codec' in self.params and self.type!=StreamType.SUBTITLE:  #  "and self.type!=2" added 2020.02.16
             rv = self.params['codec']
-        elif self.type==2 and ('Codec_ID' in self.params and self.params['Codec_ID'].upper()=='S_TEXT/UTF8') or ('CodecID' in self.params and self.params['CodecID'].upper()=='S_TEXT/UTF8'):
+        elif self.type==StreamType.SUBTITLE and ('Codec_ID' in self.params and self.params['Codec_ID'].upper()=='S_TEXT/UTF8') or ('CodecID' in self.params and self.params['CodecID'].upper()=='S_TEXT/UTF8'):
             rv = 'srt'
         return rv
 
 class cMediaInfo(object):
-    """docstring for cMediaInfo"""
-    def __init__(self, informer, filename):
+    """Container for all media information about a single file, including streams, tags, and chapters."""
+
+    def __init__(self, informer: str, filename: str):
         super(cMediaInfo, self).__init__()
         self.informer = informer
         self.filename = filename
@@ -127,7 +155,8 @@ class cMediaInfo(object):
         self.general = {}
         self.chapters = []   # not used yet
 
-    def stream_add(self, stream):
+    def stream_add(self, stream: cStream) -> None:
+        """Append a stream to the internal stream list."""
         self.streams.append(stream)
 
     def __str__(self):
@@ -136,7 +165,16 @@ class cMediaInfo(object):
             rv = rv + ', %s'%stream
         return rv
 
-    def dump(self, mode='string'):
+    def dump(self, mode: str = 'string') -> Union[str, Dict[str, Any]]:
+        """Return media info formatted as a string, short string, or dict.
+
+        Args:
+            mode: Output format — 'string' for full details, 'short' for a brief
+                summary, or 'dict' for a dictionary representation.
+
+        Returns:
+            Formatted media information in the requested mode.
+        """
         if mode=='string':
             rv = 'Informer:\t%s\nFile Name:\t%s\n\n'%(self.informer, self.filename)
             if len(list(self.general.keys())):
@@ -165,7 +203,6 @@ class cMediaInfo(object):
             h, m = divmod(m, 60)
             tm = '%02d:%02d:%02d'%(h, m, s)
             sz = os.stat(self.filename).st_size
-            #def convert_bytes(bt):
             s = 'BKMGT'
             i = 0 
             while i < len(s): 
@@ -197,22 +234,23 @@ class cMediaInfo(object):
             }
         return rv
 
-    def video_stream(self):
+    def video_stream(self) -> Optional[cStream]:
+        """Return the first video stream, or None if no video stream exists."""
         for stream in self.streams:
-            if stream.type==0:
+            if stream.type==StreamType.VIDEO:
                 return stream
         return None
 
 
 class cChapter(object):
-    """docstring for cChapter"""
-    def __init__(self, time_str, title):
+    """Represents a single chapter entry with a timestamp and title."""
+
+    def __init__(self, time_str: str, title: str):
         super(cChapter, self).__init__()
         self.time = self.__convertTimeString(time_str)
         self.title = title
 
-    def __convertTimeString(self, time_str):
-        ''' _00_00_28920 '''
+    def __convertTimeString(self, time_str: str) -> int:
         _hours = _min = _sec = _msec = 0
         tmp = re.search('_(\d{2})_(\d{2})_(\d{2})(\d{3})', time_str)
         if tmp:
@@ -222,7 +260,8 @@ class cChapter(object):
             _msec = int(tmp.group(4))
         return ((_hours*60+_min)*60+_sec)*1000+_msec
 
-    def humanTime(self):
+    def humanTime(self) -> Tuple[int, int, int, int]:
+        """Return chapter time as a tuple of (hours, minutes, seconds, milliseconds)."""
         tm = self.time
         _hours = tm//(60*60*1000)
         tm = tm%(60*60*1000)
@@ -232,13 +271,23 @@ class cChapter(object):
         _msec = tm%1000
         return (_hours, _min, _sec, _msec)
 
-    def humanTimeStr(self):
+    def humanTimeStr(self) -> str:
+        """Return chapter time as a formatted string 'HH:MM:SS:mmm'."""
         return '%02d:%02d:%02d:%03d'%self.humanTime()
 
     def __str__(self):
         return 'cChapter(%s, "%s")'%(self.humanTimeStr(), self.title)
 
-    def dump(self, mode='string'):
+    def dump(self, mode: str = 'string') -> Union[str, List[Any]]:
+        """Return chapter info as a formatted string or a [time_ms, title] list.
+
+        Args:
+            mode: Output format — 'string' for a formatted line, or 'dict' for
+                a list containing the raw time in milliseconds and the title.
+
+        Returns:
+            Formatted chapter information in the requested mode.
+        """
         if mode=='string':
             key = self.humanTimeStr()
             return '%s: %s'%(key, self.title.rjust(40-len(key)))
@@ -247,7 +296,9 @@ class cChapter(object):
 
 
 class MediaInformer:
-    def __init__(self, ffmpeg_path='ffmpeg', mkvtoolnix_path='', mediainfo_path='mediainfo', atomicParsley_path='AtomicParsley', mp4box_path='MP4Box', artwork_path='.'):
+    """Extracts detailed media information from video files using multiple back-end tools."""
+
+    def __init__(self, ffmpeg_path: str = 'ffmpeg', mkvtoolnix_path: str = '', mediainfo_path: str = 'mediainfo', atomicParsley_path: str = 'AtomicParsley', mp4box_path: str = 'MP4Box', artwork_path: str = '.'):
         self.__ffmpeg_path = ffmpeg_path
         self.__mkvtoolnix_path = mkvtoolnix_path
         self.__mediainfo_path = mediainfo_path
@@ -256,15 +307,13 @@ class MediaInformer:
         self.__map_stream_separated_symbol = None
         self.artwork_path = artwork_path
 
-    def __stringToNumber(self, prm):
-        if prm.find(' ')>-1:
-            prm = prm[:prm.find(' ')]
+    def __stringToNumber(self, prm: str) -> Union[int, float]:
+        prm = prm[:prm.find(' ')]
         if prm.find('.')>-1:
             return float(prm)
         return int(prm)
 
-    def __mediaDuration(self, filename):
-        rv = None
+    def __mediaDuration(self, filename: str) -> Optional[float]:
         duration_re_compiled = re.compile('Duration:\s*(\d{2}):(\d{2}):(\d{2})\.(\d{2})')
         cmd = [self.__ffmpeg_path, '-i', filename]
         p = Popen(cmd, stdout=PIPE, stderr=STDOUT)
@@ -284,7 +333,7 @@ class MediaInformer:
         return rv
 
 
-    def fileInfoUsingFFMPEG(self, filename):
+    def fileInfoUsingFFMPEG(self, filename: str) -> cMediaInfo:
         '''
             Stream #0.0: Video: msmpeg4, yuv420p, 512x384, 23.98 tbr, 23.98 tbn, 23.98 tbc
             Stream #0.0(und): Video: h264 (High), yuv420p, 1280x720 [PAR 1:1 DAR 16:9], 1346 kb/s, 25.46 fps, 24 tbr, 1001 tbn, 2002 tbc
@@ -303,12 +352,9 @@ class MediaInformer:
             Stream #0:19(eng): Video: mjpeg (jpeg / 0x6765706A), yuvj420p(pc, bt470bg), 640x360 [SAR 72:72 DAR 16:9], 1 kb/s, 0k fps, 23.98 tbr, 1k tbn, 1k tbc
         '''
         rv = cMediaInfo('ffmpeg', filename)
-        #rv['filename'] = filename
-        #rv['informer'] = 'ffmpeg'
         searchString = 'Stream #'
         streams = []
         cmd = [self.__ffmpeg_path, '-i', filename]
-        #p = os.popen(self.__ffmpeg_path + ' -i \"%s\" 2>&1'%filename)
         p = Popen(cmd, stdout=PIPE, stderr=STDOUT)
         streamTypes = ['Video:', 'Audio:', 'Subtitle:']
         while True:
@@ -338,7 +384,7 @@ class MediaInformer:
                     self.__map_stream_separated_symbol = name[1]
 
                 prms = {}
-                if tp == 0: #'Video':
+                if tp == StreamType.VIDEO: #'Video':
                     #delete xxx from 'h264 (xxx) (xxx), yuv420p(xxx), 856x480 [SAR 1:1 DAR 107:60], '
                     info = re.sub(r'\(.*?\)', '', l).split(', ')
                     prms['codec'] = info[0].strip()
@@ -354,12 +400,9 @@ class MediaInformer:
                     prms['height'] = self.__stringToNumber(h)
 
                     if prms['codec'] in ('mjpeg', 'png', ) and lng is None:
-                        tp = 3
-                
-                    #if len(prms['codec']>4) and prms['codec'][:4]=='h264':
-                    #    prms['bitrate'] = self.__stringToNumber(info[3])
-                    #    prms['fps'] = self.__stringToNumber(info[4])
-                elif tp == 1: # 'Audio':
+                        tp = StreamType.IMAGE
+
+                elif tp == StreamType.AUDIO: # 'Audio':
                     info = l.split(', ')
                     prms['codec'] = info[0]
                     frequency = info[1]
@@ -375,37 +418,42 @@ class MediaInformer:
                         if bitrate.find(' '):
                             bitrate = bitrate[:bitrate.find(' ')]
                         prms['bitrate'] = int(bitrate)
-                elif tp == 2: #  == 'Subtitle':
+                elif tp == StreamType.SUBTITLE: #  == 'Subtitle':
                     info = l.split(', ')
                     prms['codec'] = info[0].strip().split(' ')[0]
                 else:
                     #continue
                     pass
 
-                #streams.append([tp, name, lng, prms, ])
                 if tp in range(4):
                     streams.append(cStream(tp, name, lng, prms))
             if retcode is not None and len(line)==0:
                 break
         i = len(streams)
         while i>0:
-            if streams[i-1].type!=3:# or streams[i-1].params['codec']!='mjpeg':
+            if streams[i-1].type!=StreamType.IMAGE:# or streams[i-1].params['codec']!='mjpeg':
                 break
             i = i-1
         if i>0 and i!=len(streams):
             streams = streams[:i]
-        #p.close()
-        #rv['streams'] = streams
         rv.streams = streams
         return rv
 
-    def mapStreamSeparatedSymbol(self, filename=None):
+    def mapStreamSeparatedSymbol(self, filename: Optional[str] = None) -> str:
+        """Return the separator character used between stream index components (colon or dot).
+
+        Args:
+            filename: Optional media file path used to detect the separator when
+                it has not been determined yet.
+
+        Returns:
+            The single-character separator, e.g. ':' or '.'.
+        """
         if self.__map_stream_separated_symbol!=None:
             return self.__map_stream_separated_symbol
 
         if filename!=None:
             searchString = 'Stream #'
-            #p = os.popen(self.__ffmpeg_path + ' -i "%s" 2>&1'%filename)
             cmd = [self.__ffmpeg_path, '-i', filename]
             p = Popen(cmd, stdout=PIPE, stderr=STDOUT)
             rv = '+'
@@ -422,7 +470,15 @@ class MediaInformer:
             self.__map_stream_separated_symbol = rv
         return self.__map_stream_separated_symbol
 
-    def fileInfoUsingMKV(self, filename):
+    def fileInfoUsingMKV(self, filename: str) -> cMediaInfo:
+        """Extract stream information from a Matroska file using mkvinfo.
+
+        Args:
+            filename: Path to the Matroska media file.
+
+        Returns:
+            A cMediaInfo object populated with streams found by mkvinfo.
+        """
         def mkvInfoKeyValue(line):
             tmp = line.split(':')
             if len(tmp)==1:
@@ -431,9 +487,6 @@ class MediaInformer:
 
 
         ffmpegMapSeparatedSymbol = self.mapStreamSeparatedSymbol(filename)
-        #rv = {}
-        #rv['filename'] = filename
-        #rv['informer'] = 'mkvinfo'
         rv = cMediaInfo('mkvinfo', filename)
         streams = []
         inTrackSegment = False
@@ -458,7 +511,6 @@ class MediaInformer:
                     if streamType!=None:
                         if lang==None:
                             lang = 'und'
-                        #streams.append([streamType, trackID, lang, prms, ])
                         streams.append(cStream(streamType, trackID, lang, prms))
                         streamType = None
                         trackID = None
@@ -467,7 +519,6 @@ class MediaInformer:
                 if inTrackSegment:
                     (key, val) =  mkvInfoKeyValue(tmp)
                     if key=='Track number':
-                        #trackID = '0.%d'%(int(val)-1)
                         trackID = '0%s%d'%(ffmpegMapSeparatedSymbol, trackNumber)
                         trackNumber = trackNumber+1
                         r =  re.compile('mkvextract:\s*(\d+)').search(val)
@@ -476,11 +527,11 @@ class MediaInformer:
                         prms['mkvinfo_trackNumber'] = val
                     elif key=='Track type':
                         if val=='video':
-                            streamType=0
+                            streamType=StreamType.VIDEO
                         elif val=='audio':
-                            streamType=1
+                            streamType=StreamType.AUDIO
                         elif val=='subtitles':
-                            streamType=2
+                            streamType=StreamType.SUBTITLE
                     elif key=='Language':
                         lang = val
                     elif key=='Language':
@@ -511,14 +562,20 @@ class MediaInformer:
         if streamType!=None:
             if lang==None:
                 lang = 'und'
-            #streams.append([streamType, trackID, lang, prms, ])
             streams.append(cStream(streamType, trackID, lang, prms))
-        #rv['streams'] = streams
         rv.streams = streams
         return rv
 
 
-    def fileInfoUsingMediaInfo(self, filename):
+    def fileInfoUsingMediaInfo(self, filename: str) -> cMediaInfo:
+        """Extract stream information using the mediainfo command-line tool.
+
+        Args:
+            filename: Path to the media file.
+
+        Returns:
+            A cMediaInfo object populated with streams found by mediainfo.
+        """
         rv = cMediaInfo('mediainfo', filename)
         curr_el = {'trackID_int': -1, 'streams': [], 'global': {}, 'chapters': [], 'track_block':-1}
 
@@ -536,21 +593,15 @@ class MediaInformer:
                         curr_el['trackID_int'] += 1
                         track_type = -1
                         if attrs['type']=='Video':
-                            track_type = 0
+                            track_type = StreamType.VIDEO
                         if attrs['type']=='Audio':
-                            track_type = 1
+                            track_type = StreamType.AUDIO
                         if attrs['type']=='Text':
-                            track_type = 2
+                            track_type = StreamType.SUBTITLE
                         if attrs['type']=='Image':
-                            track_type = 3
+                            track_type = StreamType.IMAGE
                         tid = '0%s%d'%(self.mapStreamSeparatedSymbol(filename), curr_el['trackID_int'])
                         stream = cStream(track_type, tid, None, {})
-                        '''
-                        stream.append(track_type)
-                        stream.append('0%s%d'%(self.mapStreamSeparatedSymbol(filename), curr_el['trackID_int']))
-                        stream.append(None)
-                        stream.append({})
-                        '''
                         curr_el['streams'].append(stream)
                     elif attrs['type']=='Menu':
                         curr_el['track_block']=2
@@ -560,52 +611,21 @@ class MediaInformer:
 
         def end_element(name):
             if len(curr_el['name']):
-                #print curr_el['name'], curr_el['attrs'],curr_el['data']
                 if len(curr_el['data']):
                     if curr_el['track_block']==0:
                         curr_el['global'][curr_el['name']] = r'%s'%curr_el['data'].encode('utf-8')
                     elif curr_el['track_block']==1:
                         curr_el['streams'][-1].params[curr_el['name']] = r'%s'%curr_el['data'].encode('utf-8')
-                        #curr_el['streams'][-1][-1][curr_el['name']] = r'%s'%curr_el['data'].encode('utf-8')
                     elif curr_el['track_block']==2:
                         time = curr_el['name']
                         title = r'%s'%curr_el['data'].encode('utf-8')
-                        #print title, time
                         curr_el['chapters'].append(cChapter(time, title))
-                        #curr_el['chapters'][curr_el['name']] = r'%s'%curr_el['data'].encode('utf-8')
             curr_el['name'] = ''
             curr_el['attrs'] = ''
             curr_el['data'] = ''
         def char_data(data):
-            #print 'Character data:', repr(data)
             curr_el['data'] = curr_el['data'] + data
 
-            '''
-            input: video file name
-            output:
-                {
-                    'informer': <informer app>
-                    'filename': filename
-                    'streams': 
-                        [
-                            [
-                                streamType,            // 0 - video, 1 - audio, 2 - subs
-                                trackID,            // ffmpeg track id ('0:0', '0:1')
-                                lang,                // language (3 chars)
-                                params = {}            // additional params (codec, width, height, dwidth, dheight ...)
-                            ],
-                            ...    
-                        ]
-                    'tags': {
-                        '<tag_name>': '<value>',
-                        ...
-                    }
-                }
-            '''
-
-        #print self.__mediainfo_path + ' "%s" --Output=XML'%filename
-        #os.environ['PYTHONIOENCODING'] = 'utf-8'
-        #p = os.popen(self.__mediainfo_path + ' "%s" --Output=XML'%filename)
         cmd = [self.__mediainfo_path, filename, '--Output=XML']
         p = Popen(cmd, stdout=PIPE)
         data = ''
@@ -615,14 +635,6 @@ class MediaInformer:
             data = data + line
             if retcode is not None and len(line)==0:
                 break
-
-        #print '---start---'
-        #print data
-        #print '---end---'
-
-        #import chardet
-        #print chardet.detect(data)['encoding']
-        #sys.exit()
 
         parser = pyexpat.ParserCreate()
         parser.StartElementHandler = start_element
@@ -653,7 +665,7 @@ class MediaInformer:
                 stream.language = LANGUAGES_DICT[stream.params['Language']]
 
 
-            if stream.type==0 and 'Display_aspect_ratio' in stream.params:
+            if stream.type==StreamType.VIDEO and 'Display_aspect_ratio' in stream.params:
                 try:
                     width = int(stream.params['Width'].replace('pixels', '').replace(' ', ''))
                     height = int(stream.params['Height'].replace('pixels', '').replace(' ', ''))
@@ -664,7 +676,6 @@ class MediaInformer:
                     else:
                         drx = float(stream.params['Display_aspect_ratio'][:stream.params['Display_aspect_ratio'].index(':')])
                         dry = float(stream.params['Display_aspect_ratio'][stream.params['Display_aspect_ratio'].index(':')+1:])
-                    #print width, height, drx, dry
                     stream.params['width'] = width
                     stream.params['height'] = height
                     if math.fabs(float(drx)/float(dry)-float(width)/float(height))>.1:
@@ -677,12 +688,19 @@ class MediaInformer:
         rv.streams = curr_el['streams']
         rv.general = curr_el['global']
         rv.chapters = curr_el['chapters']
-        #rv['streams'] = curr_el['streams']
-        #rv['global'] = curr_el['global']
         return rv
 
 
-    def fileInfoUsingMP4Box(self, filename):
+    def fileInfoUsingMP4Box(self, filename: str) -> cMediaInfo:
+        '''Extract stream information from an MPEG-4 file using MP4Box.
+
+        Args:
+            filename: Path to the MPEG-4 media file.
+
+        Returns:
+            A cMediaInfo object populated with streams found by MP4Box.
+        '''
+        # Example MP4Box output:
         '''
             * Movie Info *
                 Timescale 600 - Duration 01:58:40.120
@@ -767,11 +785,11 @@ class MediaInformer:
                     lang = mi_re.groups()[0]
                     tmp = mi_re.groups()[1].split(':')
                     if tmp[0] == 'vide':
-                        stream_type = 0
+                        stream_type = StreamType.VIDEO
                     elif tmp[0] == 'soun':
-                        stream_type = 1
+                        stream_type = StreamType.AUDIO
                     elif tmp[0] =='sbtl': # in ('sbtl', 'text', )
-                        stream_type = 2
+                        stream_type = StreamType.SUBTITLE
                     if len(tmp) == 2:
                         prms['codec'] = tmp[1]
         if stream_type != -1 and track_id != -1:
@@ -780,8 +798,15 @@ class MediaInformer:
         return rv
 
 
-    def fileInfo(self, filename):
-        '''
+    def fileInfo(self, filename: str) -> cMediaInfo:
+        '''Return combined media information for a file, merging data from all available tools.
+
+        Args:
+            filename: Path to the media file to inspect.
+
+        Returns:
+            A cMediaInfo object with streams, tags, and general metadata.
+
             input: video file name
             output:
                 {
@@ -809,7 +834,7 @@ class MediaInformer:
         ext = ext.lower()
         if ext=='.ass' or ext=='.srt' or ext=='.ttxt' or ext=='.ssa':
             rv.informer = 'self'
-            rv.stream_add(cStream(2, '0%s0'%self.mapStreamSeparatedSymbol(filename), None, {'codec': ext[1:], 'encoding': fileCoding.file_encoding(filename)}))
+            rv.stream_add(cStream(StreamType.SUBTITLE, '0%s0'%self.mapStreamSeparatedSymbol(filename), None, {'codec': ext[1:], 'encoding': fileCoding.file_encoding(filename)}))
         else:
             rv = self.fileInfoUsingFFMPEG(filename)
 
@@ -861,20 +886,6 @@ class MediaInformer:
                     rv.informer += '+mp4box'
 
 
-            '''
-            rv = self.fileInfoUsingMediaInfo(filename)
-            if isMatroshkaMedia(filename):
-                tmp = self.fileInfoUsingMKV(filename)
-                if len(rv.streams)==len(tmp.streams):
-                    for stream in rv.streams:
-                        for i in range(len(tmp.streams)):
-                            if stream.trackID==tmp.streams[i].trackID and stream.type==tmp.streams[i].type and tmp.streams[i].params.has_key('mkvinfo_trackNumber'):
-                                stream.params['mkvinfo_trackNumber'] = tmp.streams[i].params['mkvinfo_trackNumber']
-
-            if len(rv.streams)==0:
-                rv = self.fileInfoUsingFFMPEG(filename)
-            '''
-
         try:
             rv.general['mediaDuration'] = self.__mediaDuration(filename)
         except Exception as e:
@@ -887,9 +898,8 @@ class MediaInformer:
         return rv
 
 
-    def __readTags(self, filename):
+    def __readTags(self, filename: str) -> Dict[str, str]:
         rv = {}
-        #p = os.popen(self.__atomicParsley_path + ' \"%s\" -t'%filename)
         cmd = [self.__atomicParsley_path, filename, '-t']
         p = Popen(cmd, stdout=PIPE, stderr=STDOUT)
         key = None
@@ -974,7 +984,6 @@ class MediaInformer:
         if 'artwork' in ap_params:
             name = '.'.join(os.path.basename(filename).split('.')[:-1])
             fname = '%s/%s'%(self.artwork_path, name)
-            #p = os.popen(self.__atomicParsley_path + ' \"%s\" -e \"%s\"'%(filename, fname))
             cmd = [self.__atomicParsley_path, filename, '-e', fname]
             p = Popen(cmd, stdout=PIPE, stderr=STDOUT)
             srch_txt = 'Extracted artwork to file:'
@@ -983,7 +992,6 @@ class MediaInformer:
                 line = p.stdout.readline().decode('UTF-8')
                 if line.find(srch_txt)!=-1:
                     ap_params['artwork'] = line[line.find(srch_txt)+len(srch_txt):].strip()
-                    #p.kill()
                     break
                 if retcode is not None and len(line)==0:
                     break
@@ -995,6 +1003,5 @@ if __name__=='__main__':
     mi = MediaInformer(ffmpeg_path=ffmpeg_path, mkvtoolnix_path=mkvtoolnix_path, mediainfo_path=mediainfo_path, atomicParsley_path=AtomicParsley_path, mp4box_path=mp4box_path, artwork_path=os.getenv('HOME')+'/Desktop')
     for arg in sys.argv[1:]:
         fi = mi.fileInfo(arg)
-        #print fi.dump(mode='short')
         print(fi.dump())
 

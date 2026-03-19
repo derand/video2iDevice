@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+"""Command-line tool for extracting evenly-spaced snapshot images from video files."""
 
 __version__ = '0.1'
 __author__ = 'Andrey Derevyagin'
@@ -12,6 +13,7 @@ __copyright__ = 'Copyright © 2010-2012, Andrey Derevyagin'
 import os
 import sys
 import argparse
+from typing import List, Optional
 from mediaInfo import cMediaInfo, MediaInformer
 from v2d_utils import (ffmpeg_path, mkvtoolnix_path, mediainfo_path,
                        AtomicParsley_path, add_separator_to_filepath,
@@ -23,19 +25,17 @@ from subprocess import Popen, PIPE, STDOUT
 shots_count = 50
 snapshots_dir = './ss'
 
-def __print_cmd(cmd):
+def __print_cmd(cmd: List[str]) -> None:
     cmd_str = add_separator_to_filepath(cmd[0])
     for i in range(1,len(cmd)):
         if cmd[i].find(' ')==-1:
             cmd_str += ' %s'%cmd[i]
         else:
             cmd_str += ' "%s"'%cmd[i]
-    #if sys.platform != 'darwin':
-    #    cmd_str = cmd_str.encode('utf-8')
     print(cmd_str)
 
 
-def _parse_size(value):
+def _parse_size(value: str) -> List[str]:
     """Parse size argument like '1280x720', '*x320', '960x*'."""
     parts = value.split('x')
     if len(parts) != 2:

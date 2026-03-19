@@ -72,28 +72,29 @@
     - [x] `loadSettingsFile()` → `load_configuration_from_file()`
 
 ## Priority 3: Medium (Code Quality)
-- [ ] **Використати Enum для типів потоків**
-    - [ ] Створити `StreamType` enum замість магічних чисел (0=video, 1=audio, 2=subtitle)
+- [x] **Використати Enum для типів потоків**
+    - [x] Створено `StreamType(IntEnum)` в `mediaInfo.py` (VIDEO=0, AUDIO=1, SUBTITLE=2, IMAGE=3)
+    - [x] Замінено всі магічні числа у `mediaInfo.py` та `2iDevice.py`
     - [ ] Винести інші магічні константи (bitrates, frame rates, extensions)
-- [ ] **Додати logging замість print()**
+- [ ] **Додати logging замість print()** _(відкладено)_
     - [ ] Замінити `print()` на `logging` module calls
     - [ ] Налаштувати рівні логування (INFO, DEBUG, ERROR)
-- [ ] **Покращити обробку помилок**
-    - [ ] Видалити bare `except:` clauses
-    - [ ] Ловити конкретні виключення (`FileNotFoundError`, `ValueError`)
-- [ ] **Видалити закоментований/мертвий код**
-    - [ ] Прибрати закоментовані блоки коду у всіх файлах
-- [ ] **Додати docstrings**
-    - [ ] Module docstrings до всіх файлів
-    - [ ] Class docstrings (`Video2iDevice`, `LogToFile`, `MediaInformer`)
-    - [ ] Method docstrings з описом аргументів і return values
-- [ ] **Перейменувати криптичні змінні**
+- [x] **Покращити обробку помилок**
+    - [x] Видалено bare `except:` clauses (4 місця: 2iDevice.py×2, subConverter.py, v2d_utils.py)
+    - [x] Замінено на `(OSError, UnicodeDecodeError)`, `ValueError`, `Exception`
+- [x] **Видалити закоментований/мертвий код**
+    - [x] Прибрано закоментовані блоки з усіх файлів (~130+ рядків мертвого коду)
+- [x] **Додати docstrings**
+    - [x] Module docstrings до всіх файлів
+    - [x] Class docstrings (`Video2iDevice`, `LogToFile`, `MediaInformer`, `cStream`, `cMediaInfo`, `cChapter`, `subConverter`, `mpeg4fixer`)
+    - [x] Method docstrings (Google-style) до всіх публічних методів
+- [ ] **Перейменувати криптичні змінні** _(відкладено)_
     - [ ] `tmp` → контекстно-відповідні імена
     - [ ] `el` → `argument`, `ckey` → `current_key`, `prm` → `parameter`, `rv` → `result`
-- [ ] **Додати Type Hints**
-    - [ ] Python 3 type hints до сигнатур методів
-- [ ] **Валідація вхідних даних**
-    - [ ] Валідувати аргументи CLI (позитивні bitrates, коректні роздільні здатності)
+- [x] **Додати Type Hints**
+    - [x] Python 3 type hints до сигнатур усіх методів у всіх файлах
+- [x] **Валідація вхідних даних**
+    - [x] `_apply_value()`: валідація bitrates (`ab`, `vb` > 0), resolution (`s`), frame rate (`vr`, `r` > 0)
 
 ## Priority 4: Structural (Long-term)
 - [ ] **Модуляризувати кодову базу**

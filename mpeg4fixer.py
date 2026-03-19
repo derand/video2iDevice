@@ -1,28 +1,40 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+"""MPEG-4 file binary fixer for track flags, subtitle handler types, and track names."""
+
 # writed by derand (2derand@gmail.com)
 
 import os
 import sys
 import struct
 import shutil
+from typing import Any, BinaryIO, List, Optional, Tuple
 
 class mpeg4fixer:
+    """Low-level MPEG-4 binary fixer that corrects track flags, handler types, and metadata."""
+
     def __init__(self):
         pass
 
-    def __swapBytes(self, bytes):
+    def __swapBytes(self, bytes: bytes) -> bytes:
         return bytes[::-1]
 
-    def __getSectionInfo(self, f):
+    def __getSectionInfo(self, f: BinaryIO) -> Tuple[int, bytes, int]:
             pos = f.tell()
             tmp = f.read(8)
             sz = struct.unpack('I', self.__swapBytes(tmp[:4]))[0]
             name = tmp[4:].rstrip(b'\x00')
             return (sz, name, pos)
 
-    def fixFlagsAndSubs(self, fn, fixVideoDuration=False):
+    def fixFlagsAndSubs(self, fn: str, fixVideoDuration: bool = False) -> None:
+        """Fix track enabled-flags and subtitle handler types in an MPEG-4 file.
+
+        Args:
+            fn: Path to the MPEG-4 file to modify in-place.
+            fixVideoDuration: If True, overwrite the movie duration with the
+                video track duration.
+        """
         SBTL = 1819566707
         with open(fn, 'rb+') as f:
             fs = os.path.getsize(fn)
@@ -90,8 +102,6 @@ class mpeg4fixer:
                                     if atrack:trackflags -= 1
                                     atrack = True
                                     f.write(self.__swapBytes(struct.pack('I', trackflags)))
-                                #f.seek(tkhd_pos+28)
-                                #print struct.unpack('I', self.__swapBytes(f.read(4)))
                         f.seek(si[0]+si[2])
                     # fix duration 
                     if fixVideoDuration:
@@ -99,10 +109,7 @@ class mpeg4fixer:
                         print(f.write(self.__swapBytes(struct.pack('I', video_dur))))
                 f.seek(pos+moov_sz)
 
-    def __copySection(self, si, fi, fo):
-        '''
-            copy section (si) from fi to end fo
-        '''
+    def __copySection(self, si: Tuple[int, bytes, int], fi: BinaryIO, fo: BinaryIO) -> None:
         buffSz = 1024*1024
         (sz, name, pos) = si
         fo.seek(0, 2)
@@ -117,7 +124,7 @@ class mpeg4fixer:
             fo.write(buff)
             sz -= rsz
 
-    def __getFileStruct(self, fn):
+    def __getFileStruct(self, fn: str) -> List[Any]:
         rv = []
         fs = os.path.getsize(fn)
         with open(fn, 'rb') as f:
@@ -138,7 +145,7 @@ class mpeg4fixer:
                 f.seek(gi[2]+gi[0])
         return rv
 
-    def __writeFreeBlock(self, si, fo):
+    def __writeFreeBlock(self, si: Any, fo: BinaryIO) -> None:
         (sz, name, pos) = si[:3]
         fo.seek(0, 2)
         fo.write(self.__swapBytes(struct.pack('I', sz)))
@@ -147,22 +154,15 @@ class mpeg4fixer:
         while sz>0:
             fo.write(b'x')
             sz -= 1
-        '''
-        buffSz = 1024*1024
-        (sz, name, pos) = si
-        fo.seek(0, 2)
-        rsz = sz
-        while sz>0:
-            if sz > buffSz:
-                rsz = buffSz
-            else:
-                rsz = sz
-            buff = fi.read(rsz)
-            fo.write(buff)
-            sz -= rsz
-        '''
 
-    def setTrackNames(self, fn, names=[]):
+    def setTrackNames(self, fn: str, names: List[Optional[str]] = []) -> None:
+        """Write 'udta/name' metadata atoms to each track in an MPEG-4 file.
+
+        Args:
+            fn: Path to the MPEG-4 file to modify.
+            names: List of track name strings (or None to skip a track), one per
+                track in order of appearance.
+        """
         addSize = 0
         for n in names:
             if n!=None:
@@ -251,5 +251,3 @@ class mpeg4fixer:
 if __name__=='__main__':
     if len(sys.argv)==2:
         mpeg4fixer().fixFlagsAndSubs(sys.argv[1])
-        #names = [None, None, 'OpenDub', 'Persona99', 'Shachiburi', 'Antravoco', 'Shift', 'Stan WarHammer & Nesitach']
-        #mpeg4fixer().setTrackNames(sys.argv[1], names)

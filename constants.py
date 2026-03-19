@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+
+"""Application constants loaded from environment variables (XMPP credentials)."""
+
 import os
 
 try:

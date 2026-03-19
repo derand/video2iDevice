@@ -1,17 +1,29 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+"""Command-line MPEG-4 atom structure viewer that prints the box hierarchy of an MP4 file."""
+
 # writed by derand (2derand@gmail.com)
 
 import sys
 import os
 import struct
+from typing import BinaryIO, Tuple
 
 
-def swapBytes(bytes):
+def swapBytes(bytes: bytes) -> bytes:
+    """Reverse a bytes object."""
     return bytes[::-1]
 
-def getSectionInfo(f):
+def getSectionInfo(f: BinaryIO) -> Tuple[int, bytes, int]:
+    """Read one MPEG-4 box header and return its size, name, and file position.
+
+    Args:
+        f: Open binary file positioned at the start of a box.
+
+    Returns:
+        Tuple of (size, name, position) for the box.
+    """
     pos = f.tell()
     tmp = f.read(8)
     sz = struct.unpack('I', swapBytes(tmp[:4]))[0]

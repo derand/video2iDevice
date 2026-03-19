@@ -1,11 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+"""Utility functions and external tool path constants for the video2iDevice project."""
+
 # writed by derand
 
 import sys
 import os
 import re
+from typing import Tuple
 
 if sys.platform == 'darwin':
     script_dir = os.path.dirname(os.path.realpath(__file__))
@@ -22,15 +25,30 @@ else:
     mediainfo_path = 'mediainfo'
 
 
-def add_separator_to_filepath(filepath):
+def add_separator_to_filepath(filepath: str) -> str:
+    """Return the filepath with shell special characters escaped.
+
+    Args:
+        filepath: Filesystem path that may contain characters requiring escaping.
+
+    Returns:
+        Shell-escaped version of the path.
+    """
     return re.escape(filepath)
-    #for c in '\\ ()[]&":\'`':
-    #    filepath = filepath.replace(c, '\\%s'%c)
-    #return filepath
 
 
 
-def video_size_convert(real1, real2, out1):
+def video_size_convert(real1: int, real2: int, out1: int) -> Tuple[int, int]:
+    """Scale a video dimension proportionally and align the result to a multiple of 16.
+
+    Args:
+        real1: The source dimension to scale from (e.g. width).
+        real2: The other source dimension to scale proportionally (e.g. height).
+        out1: The desired target value for the first dimension.
+
+    Returns:
+        Tuple of (out1, out2) where out2 is scaled and aligned to 16.
+    """
     out2 = (real2*out1)/real1
     if out2%16>7:
         out2 += 16-out2%16
@@ -40,7 +58,15 @@ def video_size_convert(real1, real2, out1):
 
 
 
-def send_xmpp_message(from_uid, password, to_uid, message):
+def send_xmpp_message(from_uid: str, password: str, to_uid: str, message: str) -> None:
+    """Send an XMPP chat message, silently ignoring errors if xmpp is unavailable.
+
+    Args:
+        from_uid: JID of the sending account.
+        password: Password for the sending account.
+        to_uid: JID of the recipient.
+        message: Message body text.
+    """
     try:
         import xmpp
         jid = xmpp.protocol.JID(from_uid)
@@ -48,7 +74,7 @@ def send_xmpp_message(from_uid, password, to_uid, message):
         cl.connect()
         cl.auth(jid.getNode(), password)
         cl.send(xmpp.protocol.Message(to_uid, message, typ='chat'))
-    except:
+    except Exception:
         pass
 
 

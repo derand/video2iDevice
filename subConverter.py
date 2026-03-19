@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+"""Subtitle format converter supporting ASS/SSA and SRT to SRT/TTXT output."""
+
 # writed by derand
 # - Sorry for horrible code -
 
@@ -10,6 +12,7 @@ import sys
 import os
 import shutil
 import fileCoding
+from typing import Any, Dict, List, Optional, Tuple
 
 STTNGS = {
     # remove this items from result
@@ -77,38 +80,74 @@ STTNGS = {
 }
 
 class subConverter:
-    def __init__(self, STTNGS={}):
+    """Converts and processes subtitle files between ASS/SSA, SRT, and TTXT formats."""
+
+    def __init__(self, STTNGS: Dict[str, Any] = {}):
         self.__STNGS = STTNGS
 
-    def timesrt(self, stamp):
+    def timesrt(self, stamp: str) -> str:
+        """Normalize a timestamp string to SRT format (HH:MM:SS,mmm).
+
+        Args:
+            stamp: Timestamp string to normalize.
+
+        Returns:
+            Normalized SRT-format timestamp string.
+        """
         if len(stamp)==12:
             return stamp
         return "0%s0" % (stamp.replace('.', ','))
     
-    def time2int(self, stamp):
+    def time2int(self, stamp: Optional[str]) -> Optional[int]:
+        """Convert a timestamp string to an integer number of milliseconds.
+
+        Args:
+            stamp: Timestamp string in HH:MM:SS,mmm or HH:MM:SS.mmm format.
+
+        Returns:
+            Total milliseconds as an integer, or None if stamp is None.
+        """
         if stamp==None:
             return None
         tmp = stamp.split(':')
         ms = int(tmp[2].replace('.','').replace(',',''));
         return 60*1000*(int(tmp[0])*60+int(tmp[1]))+ms
 
-    def int2time(self, i):
+    def int2time(self, i: int) -> str:
+        """Convert an integer number of milliseconds to an SRT timestamp string.
+
+        Args:
+            i: Time in milliseconds.
+
+        Returns:
+            Timestamp string in HH:MM:SS,mm0 format.
+        """
         (i, ms) = divmod(i, 1000)
         (i, s) = divmod(i, 60)
         (h, m) = divmod(i, 60)
         return '%02d:%02d:%02d,%02d0'%(h,m,s,ms//10)
     
-    def mergeSubs(self, sub, add, anywayNeedSpace):
+    def mergeSubs(self, sub: bytes, add: bytes, anywayNeedSpace: bool) -> bytes:
+        """Merge two subtitle byte strings, inserting a newline when appropriate.
+
+        Args:
+            sub: Existing subtitle text as bytes.
+            add: Text to append as bytes.
+            anywayNeedSpace: If True, always insert a newline between sub and add.
+
+        Returns:
+            Merged subtitle bytes.
+        """
         tmp = ''
         if len(str(add,'utf-8'))>1 or anywayNeedSpace:
             tmp = '\n'
         return '%s%s%s'%(sub,tmp,add)
 
-    def __compareLines(self, val1, val2):
+    def __compareLines(self, val1: List[Any], val2: List[Any]) -> bool:
         # val = [[_style, _name], self.timesrt(elems[1]), subEnd, linetext8, []]
         return val1[0][0]==val2[0][0] and val1[0][1]==val2[0][1] and val1[1]==val2[1] and val1[2]==val2[2] and val1[3]==val2[3]
 
-    def __insert(self, arr, val):
+    def __insert(self, arr: List[Any], val: Any) -> None:
         if len(arr)==0:
             arr.append(val)
         elif len(arr)==1:
@@ -149,10 +188,8 @@ class subConverter:
                 if not self.__compareLines(arr[i], val):
                     arr.insert(i, val)
     
-    def postProcessing(self, s):
-        """
-            combine one chars lines
-        """
+    def postProcessing(self, s: bytes) -> str:
+        """Combine sequences of single-character lines into a single line."""
         arr = s.strip().split('\n')
         i=0
         c=0
@@ -189,10 +226,13 @@ class subConverter:
             arr = tmp                    
         return '\n'.join(arr)
 
-    def writeOut(self, fname_srt, lines):
-        '''
-                write with merge by timing
-        '''
+    def writeOut(self, fname_srt: str, lines: List[Any]) -> None:
+        """Write subtitle lines to an SRT file, merging overlapping timings.
+
+        Args:
+            fname_srt: Output SRT file path.
+            lines: List of subtitle line tuples to write.
+        """
 
         num = 1
         s = ''
@@ -240,7 +280,15 @@ class subConverter:
                 fo.write('%d\n%s --> %s\n%s\n\n'%(num, last[0], last[1], self.postProcessing(s)))
     
 
-    def convertL2srtFormat(self, l):
+    def convertL2srtFormat(self, l: Any) -> Any:
+        """Apply SRT inline style tags (font color, italic, underline) to a subtitle line.
+
+        Args:
+            l: Subtitle line tuple with text and style information.
+
+        Returns:
+            Updated subtitle line tuple with style tags applied to the text.
+        """
         txt = l[3]
         for style in l[4]:
             if style[0][0]=='#' and style[0][1:].upper()!='FFFFFF':
@@ -253,7 +301,15 @@ class subConverter:
                 txt = '&lt;%s&gt;'%(txt)
         return (l[0], l[1], l[2], txt, l[4])
 
-    def groupByTime(self, lines):
+    def groupByTime(self, lines: List[Any]) -> List[List[Any]]:
+        """Group subtitle lines into utterance groups based on overlapping time ranges.
+
+        Args:
+            lines: Sorted list of subtitle line tuples.
+
+        Returns:
+            List of groups, each group being a list of simultaneous subtitle lines.
+        """
         last = (None, None)
         subs = []
         utterance = []
@@ -272,10 +328,13 @@ class subConverter:
             subs.append(utterance)
         return subs
 
-    def writeOut2srt(self, fname_srt, lines):
-        '''
-                write with points at new line
-        '''
+    def writeOut2srt(self, fname_srt: str, lines: List[Any]) -> None:
+        """Write subtitle lines to an SRT file, using dot placeholders for empty slots.
+
+        Args:
+            fname_srt: Output SRT file path.
+            lines: List of subtitle line tuples to write.
+        """
         s = ''
         subs = self.groupByTime(lines)
         for i in subs:
@@ -335,24 +394,21 @@ class subConverter:
                     while s[0]==emptyLine:
                         s = s[1:]
     
-                    #print "%s\t%s\t%s"%(lastTm, tm, " \t ".join(s))
                     if s!='':
                         if self.time2int(lastTm)<self.time2int(tm):
                             fo.write('%d\n%s --> %s\n%s\n\n'%(num, lastTm.encode('utf-8'), tm.encode('utf-8'), self.postProcessing("\n".join(s))) )
                             num += 1
-                    #lastTm = self.int2time(self.time2int(tm)+20)
                     lastTm = tm
     
 
 
-    def writeOut2ttxt(self, fname_ttxt, lines):
-        '''
-                write lines to ttxt format
-        '''
-        
-        #print lines[90]
-        #print lines[90][3]
-        #sys.exit(0)
+    def writeOut2ttxt(self, fname_ttxt: str, lines: List[Any]) -> None:
+        """Write subtitle lines to a 3GPP Timed Text (TTXT) XML file.
+
+        Args:
+            fname_ttxt: Output TTXT file path.
+            lines: List of subtitle line tuples to write.
+        """
         
         s = ''
         subs = self.groupByTime(lines)
@@ -389,7 +445,6 @@ class subConverter:
                     if self.time2int(l[2])>self.time2int(maxTm): maxTm = l[2]
                 lastTm = minTm
                 _prew = []
-                #print ""
                 while self.time2int(lastTm)<self.time2int(maxTm):
                     linesByTime = []
                     tm = None
@@ -401,8 +456,6 @@ class subConverter:
                     for j in i:
                         if  ((self.time2int(lastTm)>=self.time2int(j[1])) and (self.time2int(lastTm)<self.time2int(j[2]))):
                             linesByTime.append(j)
-                    #print maxLines,linesByTime
-    
                     s = []
                     _now = []
                     for j in range(maxLines):
@@ -411,7 +464,6 @@ class subConverter:
                     tmp = []
                     for l in linesByTime: tmp.append(l)
                     for k in range(len(_prew)):
-                        #break
                         for n in range(len(tmp)):
                             if tmp[n]==_prew[k]:
                                 s[k] = tmp[n]
@@ -428,14 +480,10 @@ class subConverter:
                     while s[0]==None:
                         s = s[1:]
     
-                    #print s
                     if s!=[]:
                         if self.time2int(lastTm)<self.time2int(tm):
                             tmFrom = (lastTm[:-4]+'.'+lastTm[-3:]).encode('utf-8')
                             tmTo = (tm[:-4]+'.'+tm[-3:]).encode('utf-8')
-                            #print tmFrom, tmTo
-                            #sub = '¶¶¶¶¶¶¶¶¶¶¶¶¶¶¶¶¶¶¶¶¶¶¶¶В¶¶¶¶¶¶¶¶¶¶¶¶¶¶¶¶¶¶¶¶¶¶¶а¶'
-                            #__tags = [[0, 50, 'color="38 38 38 40"'],]
                             sub = ''
                             __tags = []
                             for l in s:
@@ -501,9 +549,7 @@ class subConverter:
                                             color = color.lower()
                                             if color!='ff ff ff ff':
                                                 subStyles = subStyles+' color="%s"'%color
-                                            #subLen = len(unicode(sub, 'utf-8'))
                                             if len(sub):
-                                                #sub = '%s\n%s'%(sub, add)
                                                 if len(subStyles)>0:
                                                     if len(__tags):
                                                         __lastStyle = __tags[-1]
@@ -513,42 +559,40 @@ class subConverter:
                                                             __tags.append([subLen+_start, subLen+1+_end, subStyles])
                                                     else:
                                                         __tags.append([subLen+_start, subLen+1+_end, subStyles])
-                                                    #tags = '%s<Style fromChar="%d" toChar="%d" %s/>'%(tags, subLen+1+_start, subLen+1+_end, subStyles)
                                             else:
-                                                #sub = '%s'%add
                                                 if len(subStyles)>0:
                                                     __tags.append([subLen+_start, subLen+_end, subStyles])
-                                                    #tags = '%s<Style fromChar="%d" toChar="%d" %s/>'%(tags, subLen+_start, subLen+_end, subStyles)
                                     if len(sub):
                                         sub = '%s\n%s'%(sub, add)
                                     else:
                                         sub = '%s'%add
     
                             tags = ''
-                            #for __t in sorted(__tags, key=lambda el: el[1]-el[0]):
                             for __t in __tags:
                                 tags = '%s<Style fromChar="%d" toChar="%d" %s/>'%(tags, __t[0], __t[1], __t[2])
                                     
-                            #sub = sub.replace('<', '&lt;').replace('>', '&gt;').replace('¶', '&nbsp;')
-                            #sub = sub.replace('<', '&lt;').replace('>', '&gt;').replace('¶', ' ')
                             sub = sub.replace('<', '&lt;').replace('>', '&gt;').replace('¶', '.')
                             if lastSubTm!=tmFrom:
                                 fo.write('\n<TextSample sampleTime="%s" xml:space="preserve"></TextSample>'%lastSubTm)
-                            #print'%s%s'%(sub,tags.encode('utf-8'))
                             fo.write('\n<TextSample sampleTime="%s" xml:space="preserve">%s%s</TextSample>'%(tmFrom, sub, tags.encode('utf-8')))
                             lastSubTm = tmTo
-                            #fo.write('%d\n%s --> %s\n%s\n\n'%(num, lastTm.encode('utf-8'), tm.encode('utf-8'), self.postProcessing("\n".join(s))) )
-                            #str = self.postProcessing("\n".join(s))
-                            #print len(unicode(str, 'utf-8')), str
                             num += 1
-                    #lastTm = self.int2time(self.time2int(tm)+20)
                     lastTm = tm
     
             fo.write('\n<TextSample sampleTime="%s" xml:space="preserve"></TextSample>'%lastSubTm)
             fo.write('\n</TextStream>\n');
 
 
-    def getSubStyle(self, st, defStyles):
+    def getSubStyle(self, st: List[str], defStyles: Dict[str, Any]) -> Optional[bytes]:
+        """Look up the style color for a subtitle line based on style name or author.
+
+        Args:
+            st: Two-element list [style_name, author_name] for the subtitle line.
+            defStyles: Mapping of style names to default color values.
+
+        Returns:
+            Color value bytes for the matched style, or None if not found.
+        """
         rv = None
         if 'subStyleColors' in self.__STNGS:
             for key in self.__STNGS['subStyleColors']:
@@ -565,7 +609,17 @@ class subConverter:
             rv = defStyles[st[0]]
         return rv
 
-    def firstTagBounds(self, line, tags, add=0):
+    def firstTagBounds(self, line: str, tags: List[str], add: int = 0) -> Tuple[Optional[str], int, int]:
+        """Find the position bounds of the first matching inline tag in a line.
+
+        Args:
+            line: Text line to search for tags.
+            tags: List of tag names to look for (e.g. ['font ', 'i']).
+            add: Offset to add to returned positions.
+
+        Returns:
+            Tuple of (tag_name, start_pos, end_pos), or (None, -1, -1) if no tag found.
+        """
         tag = None
         min_pos = -1
         for __tag in tags:
@@ -596,7 +650,18 @@ class subConverter:
             return self.firstTagBounds(line[min_pos+1:], tags, add+min_pos)
         return (tag, min_pos, end_pos)
 
-    def tagsBounds(self, line, tags, bounds=[], add=0):
+    def tagsBounds(self, line: str, tags: List[str], bounds: List[Any] = [], add: int = 0) -> Tuple[str, List[Any]]:
+        """Recursively extract and strip all inline tags from a line, collecting their bounds.
+
+        Args:
+            line: Text line potentially containing inline tags.
+            tags: List of tag names to process.
+            bounds: Accumulated list of [style, start, end] entries.
+            add: Cumulative character offset for position tracking.
+
+        Returns:
+            Tuple of (stripped_line, bounds_list).
+        """
         (tag, min_pos, end_pos) = self.firstTagBounds(line, tags)
         while tag!=None:
             idx = min_pos+line[min_pos:].find('>')+1
@@ -625,7 +690,16 @@ class subConverter:
             (tag, min_pos, end_pos) = self.firstTagBounds(line, tags)
         return line,bounds
 
-    def stylesFromSrtLine(self, line):
+    def stylesFromSrtLine(self, line: str) -> Tuple[str, List[Any]]:
+        """Parse inline style tags from an SRT line, returning clean text and style bounds.
+
+        Args:
+            line: SRT subtitle line possibly containing <font> and <i> tags.
+
+        Returns:
+            Tuple of (clean_text, styles_list) where styles_list contains
+            per-span style information.
+        """
         (l, styles) = self.tagsBounds(line, ['font ', 'i'], [])
 
         #merge equal bounds tags, remove bounds from full-line sub
@@ -644,7 +718,15 @@ class subConverter:
                 styles.append(s)
         return (l, styles)
 
-    def readAss(self, fname_ass):
+    def readAss(self, fname_ass: str) -> List[Any]:
+        """Parse an ASS/SSA subtitle file and return a sorted list of subtitle lines.
+
+        Args:
+            fname_ass: Path to the ASS or SSA subtitle file.
+
+        Returns:
+            Sorted list of subtitle line tuples ready for conversion.
+        """
         with open(fname_ass) as fi:
             block = 0
             lines = []
@@ -673,7 +755,6 @@ class subConverter:
                 if line[:10] == 'Dialogue: ':
                     block = 3
                 if block==3:
-                    #print line
                     if line[:8] == 'alogue: ':
                         line = 'Di%s'%line
                     if line[:10] == 'Dialogue: ':
@@ -682,10 +763,6 @@ class subConverter:
                         linetext = ",".join(elems[9:])
                         linetext = str(linetext, fCoding)
     
-                        #if len(linetext)>12 and ((linetext[:7]=='{\\bord3') or (linetext[:5]=='{\\be1')) and (len(elems[3])>3 and elems[3][:3]=="ed_"):
-                        #    linetext=''
-                        #if len(linetext)>12 and (linetext[:15]=='{\\fad(200,200)}') and (len(elems[3])>3 and elems[3][:3]=="ed_"):
-                        #    linetext=''
     
                         linetext = linetext.replace('\\n','\\N')
                         linetext = linetext.replace('\\N','\n')
@@ -730,7 +807,6 @@ class subConverter:
                             tmpStr = '%s%s%s'%(tmpStr, ch, l)
                         linetext = tmpStr.strip()
                         linetext8 = linetext.encode('utf-8')
-                        #print len(unicode(linetext,'utf-8')),linetext
                         if len(linetext8)>0:
                             _style = elems[3].strip()
                             if _style[0]=='*': _style = _style[1:]
@@ -755,10 +831,6 @@ class subConverter:
                     block = 2
                 if '[Events]' == line:
                     block = 3
-                #if re.compile('Format\: Layer, Start, End').match(line):
-                #    start = True;
-                #if re.compile('\[Events\]').match(line):
-                #    start = True;
 
         c = None
         needFontTag = False;
@@ -783,7 +855,15 @@ class subConverter:
                         lines[i][4].append(s)
         return lines
 
-    def readSrt(self, fname_srt):
+    def readSrt(self, fname_srt: str) -> List[Any]:
+        """Parse an SRT subtitle file and return a sorted list of subtitle lines.
+
+        Args:
+            fname_srt: Path to the SRT subtitle file.
+
+        Returns:
+            Sorted list of subtitle line tuples ready for conversion.
+        """
         with open(fname_srt) as fi:
             idx = None
             tm = None
@@ -813,7 +893,7 @@ class subConverter:
                     if lastLineEmpty:
                         try:
                             x = int(line)
-                        except:
+                        except ValueError:
                             x = None
                         if x!=None and txt!=None:
                             ttt = tm.split('-->')
@@ -824,8 +904,6 @@ class subConverter:
                                 self.__insert(lines, val)
                                 if len(subStyle)>0:
                                     sys.exit(0)
-                                #print '%d\n-%s\n--%s'%(idx, tm, txt)
-                                #fo.write('%d\n%s\n%s\n\n'%(idx, tm, txt))
                             idx = x
                             tm = None
                             txt = None
@@ -868,24 +946,41 @@ class subConverter:
             if len(tmp[1]):
                 val = (val[0], val[1], val[2], tmp[0].encode('utf-8'), tmp[1])
                 lines[i] = val
-            #print '%s %s'%(val[4], val[3])
 
         return lines
 
-    def timeAdd(self, lines, time):
+    def timeAdd(self, lines: List[Any], time: int) -> List[Any]:
+        """Shift all subtitle timestamps by a given number of milliseconds.
+
+        Args:
+            lines: List of subtitle line tuples.
+            time: Offset in milliseconds to add to each timestamp.
+
+        Returns:
+            New list of subtitle line tuples with adjusted timestamps.
+        """
         tmp = []
         for i in range(len(lines)):
             val = lines[i]
             tm1 = self.int2time(self.time2int(val[1])+time)
             tm2 = self.int2time(self.time2int(val[2])+time)
             val = (val[0], tm1, tm2, val[3], val[4])
-            #lines[i] = val
             if self.time2int(val[1])>0:
                 tmp.append(val)
         lines = tmp
         return lines
 
-    def ass2srt(self, fname_ass, fname_srt, sttngs={}):
+    def ass2srt(self, fname_ass: str, fname_srt: str, sttngs: Dict[str, Any] = {}) -> str:
+        """Convert an ASS subtitle file to SRT format.
+
+        Args:
+            fname_ass: Path to the input ASS file.
+            fname_srt: Path for the output SRT file.
+            sttngs: Optional settings dict (supports 'addTimeDiff' key).
+
+        Returns:
+            Path to the written SRT file.
+        """
         lines = self.readAss(fname_ass)
 
         if 'addTimeDiff' in sttngs:
@@ -894,16 +989,18 @@ class subConverter:
         self.writeOut2srt(fname_srt, lines)
         return fname_srt
 
-    def ass2ttxt(self, fname_ass, fname_ttxt, sttngs={}):
+    def ass2ttxt(self, fname_ass: str, fname_ttxt: str, sttngs: Dict[str, Any] = {}) -> str:
+        """Convert an ASS subtitle file to TTXT format.
+
+        Args:
+            fname_ass: Path to the input ASS file.
+            fname_ttxt: Path for the output TTXT file.
+            sttngs: Optional settings dict (supports 'addTimeDiff' key).
+
+        Returns:
+            Path to the written TTXT file.
+        """
         lines = self.readAss(fname_ass)
-        '''
-        for i in range(len(lines)):
-            val = lines[i]
-            tm1 = self.int2time(self.time2int(val[1])+550)
-            tm2 = self.int2time(self.time2int(val[2])+550)
-            val = (val[0], tm1, tm2, val[3], val[4])
-            lines[i] = val
-        '''
         print('----------',sttngs)
         
         if 'addTimeDiff' in sttngs:
@@ -912,7 +1009,17 @@ class subConverter:
         self.writeOut2ttxt(fname_ttxt, lines)
         return fname_ttxt
 
-    def srt2ttxt(self, fname_srt, fname_ttxt, sttngs={}):
+    def srt2ttxt(self, fname_srt: str, fname_ttxt: str, sttngs: Dict[str, Any] = {}) -> str:
+        """Convert an SRT subtitle file to TTXT format.
+
+        Args:
+            fname_srt: Path to the input SRT file.
+            fname_ttxt: Path for the output TTXT file.
+            sttngs: Optional settings dict (supports 'addTimeDiff' key).
+
+        Returns:
+            Path to the written TTXT file.
+        """
         lines = self.readSrt(fname_srt)
 
         if 'addTimeDiff' in sttngs:
@@ -921,7 +1028,17 @@ class subConverter:
         self.writeOut2ttxt(fname_ttxt, lines)
         return fname_ttxt
 
-    def srt2srt(self, fname_srt1, fname_srt2=None, sttngs={}):
+    def srt2srt(self, fname_srt1: str, fname_srt2: Optional[str] = None, sttngs: Dict[str, Any] = {}) -> Optional[str]:
+        """Re-process an SRT file (in-place or to a new file), optionally adjusting timing.
+
+        Args:
+            fname_srt1: Path to the input SRT file.
+            fname_srt2: Optional output path; if None or same as input, overwrites in-place.
+            sttngs: Optional settings dict (supports 'addTimeDiff' key).
+
+        Returns:
+            Path to the output SRT file, or None if written in-place.
+        """
         tmp_fn = fname_srt2
         if fname_srt1==fname_srt2 or fname_srt2==None:
             tmp_fn = "%s.tmp"%fname_srt1
@@ -937,7 +1054,16 @@ class subConverter:
             shutil.move(tmp_fn, fname_srt1)
         return fname_srt2
 
-    def readAssStyles(self, fname_ass, styles={}):
+    def readAssStyles(self, fname_ass: str, styles: Dict[str, Any] = {}) -> Dict[str, Any]:
+        """Parse style color definitions from an ASS file.
+
+        Args:
+            fname_ass: Path to the ASS subtitle file.
+            styles: Existing styles dict to update and return.
+
+        Returns:
+            Updated styles dict mapping style names to color tuples.
+        """
         with open(fname_ass) as fi:
             block = 0
             for line in fi:
@@ -964,20 +1090,12 @@ class subConverter:
 
 
 if __name__=='__main__':
-    #sc = subConverter(STTNGS)
-    #print sc.stylesFromSrtLine(unicode('''<font color=#6BCBE6> Ты же был моим охранником.\nРазве ты не предан своей работе?!''', 'utf-8'))
-    #sys.exit(0)
     if len(sys.argv)==2:
         sc = subConverter(STTNGS)
-        #sc.stylesFromSrtLine(unicode('<i><font color="#b9d4b5">Потому что ты и только ты</font></i>', 'utf-8'))
-        #sc.stylesFromSrtLine(unicode('<i><font color="#b9d4b5">Потому</font> что</i> ты<i> и</i> только ты', 'utf-8'))
         if sys.argv[1][-4:]=='.srt':
             fname_ttxt = os.path.basename(re.compile('\\.srt$').sub('.ttxt', sys.argv[1]))
             sc.srt2ttxt(sys.argv[1], fname_ttxt)
         else:
-            #fname_ttxt = os.path.basename(re.compile('\\.ass$').sub('.ttxt', sys.argv[1]))
-            #print sys.argv[1], fname_ttxt
-            #sc.ass2ttxt(sys.argv[1], fname_ttxt)
             fname_ttxt = os.path.basename(re.compile('\\.ass$').sub('.ttxt', sys.argv[1]))
             print(sys.argv[1], fname_ttxt)
             sc.ass2ttxt(sys.argv[1], fname_ttxt)
