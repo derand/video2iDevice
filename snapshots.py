@@ -14,7 +14,7 @@ import os
 import sys
 import argparse
 from typing import List, Optional
-from mediaInfo import cMediaInfo, MediaInformer
+from media import cMediaInfo, MediaInformer
 from v2d_utils import (ffmpeg_path, mkvtoolnix_path, mediainfo_path,
                        AtomicParsley_path, add_separator_to_filepath,
                        video_size_convert)

@@ -97,9 +97,11 @@
     - [x] `_apply_value()`: валідація bitrates (`ab`, `vb` > 0), resolution (`s`), frame rate (`vr`, `r` > 0)
 
 ## Priority 4: Structural (Long-term)
-- [ ] **Модуляризувати кодову базу**
-    - [ ] Розбити `2iDevice.py` і `mediaInfo.py` на менші модулі
-    - [ ] Створити пакетну структуру (`core`, `media`, `encoding`, `subtitles`, `utils`)
+- [x] **Модуляризувати кодову базу**
+    - [x] Розбити `mediaInfo.py` на пакет `media/` (types.py, informer.py)
+    - [x] Розбити `2iDevice.py` на пакет `v2d/` (settings, log, cli, runner, tagging, encoding/*, packaging, converter)
+    - [x] `2iDevice.py` стала тонким entry point
+    - [ ] Створити пакетну структуру (`core`, `media`, `encoding`, `subtitles`, `utils`) _(відкладено)_
 - [ ] **Абстрактні інтерфейси**
     - [ ] Створити базові класи для media converters
 
