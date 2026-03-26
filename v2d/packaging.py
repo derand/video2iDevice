@@ -3,9 +3,12 @@
 
 import sys
 import os
+import logging
 from typing import Any, List
 
 from v2d.settings import STTNGS
+
+logger = logging.getLogger(__name__)
 from v2d.interfaces import BasePackager
 from v2d_utils import mp4box_path, mkvtoolnix_path, ffmpeg_path
 from mpeg4fixer import mpeg4fixer
@@ -31,8 +34,6 @@ class PackagingMixin(BasePackager):
         se = ''
         currentTrackIdx = 0
         trackID = 0
-        if STTNGS['vv']:
-            print()
         info = self.tagTrackInfo(os.path.basename(fi.filename))
         cmd = [mp4box_path, ]
         for f in files:
@@ -103,8 +104,6 @@ class PackagingMixin(BasePackager):
         Returns:
             ffmpeg process exit code (0 on success).
         """
-        if STTNGS['vv']:
-            print()
         cmd = [ffmpeg_path, '-y', ]
         for f in files:
             addCmd2 = f[1]
@@ -133,7 +132,7 @@ class PackagingMixin(BasePackager):
         if ret_code != 0:
             rv = self.createMPEGusingFfmpeg(files, fi, name)
             if rv != 0:
-                print('Merge streams failed, code:', rv)
+                logger.error('Merge streams failed, code: %s', rv)
                 sys.exit(rv)
 
         self.tag_file(name)
@@ -159,7 +158,6 @@ class PackagingMixin(BasePackager):
             cmd.append(f[1])
         retcode = self._exeCmd(cmd, False)
         if retcode > 1:
-            print(cmd)
-            print('Exit with code: %d' % retcode)
+            logger.error('mkvmerge failed (exit %d): %s', retcode, cmd)
             sys.exit()
         return name

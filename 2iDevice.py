@@ -11,9 +11,11 @@ import json
 import time
 import select
 import shlex
+import logging
 
 from v2d import Video2iDevice, STTNGS
 from v2d.settings import __version__
+from v2d.log import setup_logging
 from media import cMediaInfo
 from v2d_utils import send_xmpp_message
 
@@ -25,6 +27,8 @@ __copyright__ = 'Copyright © 2010-2012, Andrey Derevyagin'
 
 
 if __name__ == '__main__':
+    setup_logging()
+
     script_path = os.path.dirname(os.path.realpath(__file__))
     # set 'FONTCONFIG_FILE' environment variable for font_config
     if os.environ.get('FONTCONFIG_FILE') is None:
@@ -61,6 +65,8 @@ if __name__ == '__main__':
                 if key not in STTNGS:
                     STTNGS[key] = val
     converter.getSettings(argv)
+    if STTNGS['vv']:
+        logging.getLogger().setLevel(logging.DEBUG)
 
     if 'out_path' in STTNGS:
         os.chdir(STTNGS['out_path'])
@@ -80,14 +86,14 @@ if __name__ == '__main__':
     if STTNGS['temp_dir'][-1] == '/':
         STTNGS['temp_dir'] = STTNGS['temp_dir'][:-1]
     if not os.path.exists(STTNGS['temp_dir']):
-        print(os.mkdir(STTNGS['temp_dir']))
+        os.mkdir(STTNGS['temp_dir'])
+        logging.info('Created temp dir: %s', STTNGS['temp_dir'])
 
     converter.mediainformer.artwork_path = STTNGS['temp_dir']
 
     c = 0
     for fn in STTNGS['files']:
-        if STTNGS['vv']:
-            print('\n------------------------ %s ------------------------' % fn)
+        logging.debug('\n------------------------ %s ------------------------', fn)
         if 'info' in STTNGS:
             fi = converter.mediainformer.fileInfo(fn)
             if STTNGS['info'] == 'json':
@@ -98,7 +104,7 @@ if __name__ == '__main__':
                 print(fi.dump())
         else:
             if STTNGS['sleep_between_files'] > 0 and c > 0:
-                print('Sleeping...')
+                logging.info('Sleeping...')
                 time.sleep(STTNGS['sleep_between_files'])
             if STTNGS['streams'] == 'none':
                 fi = cMediaInfo('no need', fn)

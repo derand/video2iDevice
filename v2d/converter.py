@@ -4,9 +4,12 @@
 import sys
 import os
 import struct
+import logging
 from typing import Any, List
 
 from v2d.settings import STTNGS
+
+logger = logging.getLogger(__name__)
 from v2d.interfaces import BaseConverter
 from v2d.log import LogToFile
 from v2d.cli import CLIParserMixin
@@ -45,7 +48,7 @@ class Video2iDevice(BaseConverter, CLIParserMixin, RunnerMixin, TaggingMixin,
             filename: Path to the media file to split in place.
         """
         if 'ss' in STTNGS:
-            print('------ Split Media ------')
+            logger.info('------ Split Media ------')
             fi = self.mediainformer.fileInfo(filename)
             vstreams = [s for s in fi.streams if s.type == StreamType.VIDEO]
             if len(vstreams):
@@ -116,8 +119,7 @@ class Video2iDevice(BaseConverter, CLIParserMixin, RunnerMixin, TaggingMixin,
         for i in strms:
             stream = self._streamById(i, fi.streams)
             stream.params['GlobalTrackNum'] = currentTrack
-            if STTNGS['vv']:
-                print(stream)
+            logger.debug('%s', stream)
 
             if stream.type == StreamType.VIDEO:
                 if len(hardsub_streams) > 0:
@@ -138,15 +140,14 @@ class Video2iDevice(BaseConverter, CLIParserMixin, RunnerMixin, TaggingMixin,
                 if tmpFile is not None:
                     files.append((2, tmpFile, stream))
                     findSubs = False
-            if STTNGS['vv']:
-                print('----------------------------------------', currentTrack)
+            logger.debug('--- stream done: %s', currentTrack)
             currentTrack += 1
 
         # add external streams
         for add in STTNGS['fadd']:
             stream = self._streamFromFAdd(add, fi, currentTrack)
             if stream is None:
-                print("Can't find stream (type: %d) in file or incorrect number" % add[0])
+                logger.error("Can't find stream (type: %d) in file or incorrect number", add[0])
                 sys.exit(1)
 
             out_fn = '%s/%s_%s' % (STTNGS['temp_dir'], os.path.basename(stream.params['filename']), stream.trackId_short)
@@ -154,7 +155,7 @@ class Video2iDevice(BaseConverter, CLIParserMixin, RunnerMixin, TaggingMixin,
                 if len(stream.params['name']):
                     out_fn = '%s_%s' % (out_fn, stream.params['name'])
 
-            print(add)
+            logger.debug('%s', add)
             if add[0] == 0:
                 out_fn = out_fn + '.mp4'
                 if len(hardsub_streams) > 0:
@@ -175,12 +176,8 @@ class Video2iDevice(BaseConverter, CLIParserMixin, RunnerMixin, TaggingMixin,
                     files.append((2, tmpFile, stream))
                     findSubs = False
 
-            if STTNGS['vv']:
-                print('----------------------------------------', currentTrack)
+            logger.debug('--- fadd stream done: %s', currentTrack)
             currentTrack += 1
-
-        if STTNGS['vv']:
-            print()
 
         # write streams to output file
         fmt = STTNGS['format'].lower()
@@ -198,7 +195,7 @@ class Video2iDevice(BaseConverter, CLIParserMixin, RunnerMixin, TaggingMixin,
                 try:
                     os.unlink(f[1])
                 except OSError as e:
-                    print(('Can\'t remove file: %s' % f[1]))
+                    logger.warning("Can't remove file: %s", f[1])
 
         return name
 
@@ -236,5 +233,5 @@ class Video2iDevice(BaseConverter, CLIParserMixin, RunnerMixin, TaggingMixin,
             level_string = struct.pack('b', int('29', 16))
             with open(video, 'r+b') as fobj:
                 fobj.seek(7)
-                print(1, 'correcting profile:', video)
+                logger.info('correcting profile: %s', video)
                 fobj.write(level_string)

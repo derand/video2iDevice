@@ -3,7 +3,10 @@
 
 import sys
 import os
+import logging
 from typing import Any, Dict, List, Optional
+
+logger = logging.getLogger(__name__)
 
 from v2d.settings import STTNGS
 from v2d.interfaces import BaseSubtitleEncoder
@@ -46,7 +49,7 @@ class SubtitleEncoderMixin(BaseSubtitleEncoder):
                     strm = tmp[0]
             if strm is not None:
                 return strm
-        print('Can\'t found stream #%s' % streamId)
+        logger.error("Can't find stream #%s", streamId)
         sys.exit(1)
         return streams[streamId]
 
@@ -59,7 +62,7 @@ class SubtitleEncoderMixin(BaseSubtitleEncoder):
         if not nn[0] in '/~':
             nn = path + nn
         if not os.path.exists(nn):
-            print('file "%s" not exist' % nn)
+            logger.error('file "%s" not exist', nn)
             sys.exit(1)
         _fi = self.mediainformer.fileInfo(nn)
         _fi.streams[0].params['GlobalTrackNum'] = currentTrack
@@ -116,7 +119,7 @@ class SubtitleEncoderMixin(BaseSubtitleEncoder):
             copyfile(iFile, oFile)
         elif ext == 'mp4' or ext == 'm4v':
             if 'copy' in stream.params.get('extended', {}):
-                print('subtitle from .mp4 files always copy')
+                logger.info('subtitle from .mp4 files always copy')
 
             track_id = stream.params.get('mp4_track_id')
             if track_id is None:

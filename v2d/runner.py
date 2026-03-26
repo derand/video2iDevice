@@ -3,12 +3,15 @@
 
 import sys
 import re
+import logging
 from subprocess import Popen, PIPE, STDOUT
 from typing import Optional, List
 
 from v2d.settings import STTNGS
 from v2d.interfaces import BaseRunner
 from v2d_utils import ffmpeg_path, add_separator_to_filepath
+
+logger = logging.getLogger(__name__)
 
 
 class RunnerMixin(BaseRunner):
@@ -127,7 +130,7 @@ class RunnerMixin(BaseRunner):
                     print(l)
                 break
         if retcode != 0:
-            print(cmd)
+            logger.error('Command failed: %s', cmd)
             sys.exit()
         return (retcode, libx264_log, libx264_log_settings)
 
@@ -142,7 +145,7 @@ class RunnerMixin(BaseRunner):
             Process exit code.
         """
         cmd_str = add_separator_to_filepath(cmd[0])
-        print(cmd)
+        logger.debug('%s', cmd)
         for i in range(1, len(cmd)):
             if cmd[i].find(' ') == -1:
                 cmd_str += ' %s' % cmd[i]
@@ -174,7 +177,6 @@ class RunnerMixin(BaseRunner):
             if retcode is not None and len(ch) == 0:
                 break
         if check_exit_code and retcode != 0:
-            print(cmd)
-            print('Exit code: %d' % retcode)
+            logger.error('Command failed (exit %d): %s', retcode, cmd)
             sys.exit()
         return retcode

@@ -5,8 +5,11 @@ import sys
 import os
 import shutil
 import codecs
+import logging
 import fileCoding
 from typing import Any, List, Optional
+
+logger = logging.getLogger(__name__)
 
 from v2d.settings import STTNGS, os_ffmpeg_prms
 from v2d.interfaces import BaseVideoEncoder
@@ -152,7 +155,7 @@ class VideoEncoderMixin(BaseVideoEncoder):
             stream: A ``cStream`` object describing the video stream.
             oFile: Destination path for the encoded video track.
         """
-        print(stream.params)
+        logger.debug('%s', stream.params)
         w = stream.params['width']
         h = stream.params['height']
         if 'dwidth' in stream.params and 'dheight' in stream.params:
@@ -229,7 +232,7 @@ class VideoEncoderMixin(BaseVideoEncoder):
                     if ass_fn is not None:
                         video_filters.append({'ass': '%s' % add_separator_to_filepath(ass_fn)})
                     else:
-                        print('Can\'t set stream', hardsub_stream, 'as hardsub.')
+                        logger.error("Can't set stream %s as hardsub.", hardsub_stream)
                         sys.exit(1)
                         hardsub_stream.params['extended']['hardsub'] = False
                 if 'crop' in STTNGS:
@@ -266,7 +269,7 @@ class VideoEncoderMixin(BaseVideoEncoder):
                         items2Delete.append('%s/x264_2pass.log' % d)
                         items2Delete.append(d)
                     except Exception as e:
-                        print(e)
+                        logger.warning('%s', e)
         for itm in items2Delete:
             try:
                 if os.path.isdir(itm):

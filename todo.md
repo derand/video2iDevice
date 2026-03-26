@@ -76,9 +76,11 @@
     - [x] Створено `StreamType(IntEnum)` в `mediaInfo.py` (VIDEO=0, AUDIO=1, SUBTITLE=2, IMAGE=3)
     - [x] Замінено всі магічні числа у `mediaInfo.py` та `2iDevice.py`
     - [ ] Винести інші магічні константи (bitrates, frame rates, extensions)
-- [ ] **Додати logging замість print()** _(відкладено)_
-    - [ ] Замінити `print()` на `logging` module calls
-    - [ ] Налаштувати рівні логування (INFO, DEBUG, ERROR)
+- [x] **Додати logging замість print()**
+    - [x] `v2d/log.py`: `CLIFormatter` (кольори: сірий debug, жовтий warning, червоний error) + `setup_logging()`
+    - [x] `2iDevice.py`: налаштування logging на старті, рівень DEBUG якщо `-vv`
+    - [x] Всі `v2d/` модулі: `logger = logging.getLogger(__name__)`, замінено print() на logging calls
+    - [x] Залишено `print()`: прогрес-рядки з `\r` (runner.py), кольоровий вивід розміру відео, `-h`/`-v`/`-info` CLI output
 - [x] **Покращити обробку помилок**
     - [x] Видалено bare `except:` clauses (4 місця: 2iDevice.py×2, subConverter.py, v2d_utils.py)
     - [x] Замінено на `(OSError, UnicodeDecodeError)`, `ValueError`, `Exception`

@@ -5,10 +5,13 @@ import sys
 import json
 import shlex
 import codecs
+import logging
 import fileCoding
 from typing import List, Dict, Any
 
 from v2d.settings import STTNGS, help
+
+logger = logging.getLogger(__name__)
 
 
 class CLIParserMixin:
@@ -39,8 +42,7 @@ class CLIParserMixin:
                     ckey = 'files'
                 self._apply_value(ckey, el)
                 saveP = True
-        if STTNGS['vv']:
-            print(STTNGS)
+        logger.debug('%s', STTNGS)
 
     def _apply_flag(self, ckey: str):
         """Process a valueless flag argument (starts with '-').
@@ -167,7 +169,7 @@ class CLIParserMixin:
                 try:
                     val = int(el.rstrip('k'))
                     if val <= 0:
-                        print(f'Warning: {ckey} must be positive, got {el!r}')
+                        logger.warning('%s must be positive, got %r', ckey, el)
                 except ValueError:
                     pass  # non-numeric value (e.g. 'copy') is allowed
             elif ckey == 's' and 'x' in el:
@@ -176,20 +178,20 @@ class CLIParserMixin:
                     try:
                         w_part, h_part = parts
                         if w_part != '*' and int(w_part) <= 0:
-                            print(f'Warning: resolution width must be positive, got {el!r}')
+                            logger.warning('resolution width must be positive, got %r', el)
                         if h_part != '*' and int(h_part) <= 0:
-                            print(f'Warning: resolution height must be positive, got {el!r}')
+                            logger.warning('resolution height must be positive, got %r', el)
                     except ValueError:
-                        print(f'Warning: resolution must be WxH format with integers, got {el!r}')
+                        logger.warning('resolution must be WxH format with integers, got %r', el)
                 else:
-                    print(f'Warning: resolution must be WxH format, got {el!r}')
+                    logger.warning('resolution must be WxH format, got %r', el)
             elif ckey in ('vr', 'r'):
                 try:
                     val = float(el)
                     if val <= 0:
-                        print(f'Warning: frame rate must be positive, got {el!r}')
+                        logger.warning('frame rate must be positive, got %r', el)
                 except ValueError:
-                    print(f'Warning: frame rate must be a number, got {el!r}')
+                    logger.warning('frame rate must be a number, got %r', el)
             # --- end validation ---
             if ckey in STTNGS:
                 if isinstance(STTNGS[ckey], list):
@@ -217,7 +219,7 @@ class CLIParserMixin:
             encoding = fileCoding.file_encoding(filename)
             file = codecs.open(filename, mode='r', encoding=encoding)
         except (OSError, UnicodeDecodeError):
-            print('error open file %s' % filename)
+            logger.error('error open file %s', filename)
             sys.exit(1)
         inside_key = False
         save_key = ''
@@ -232,8 +234,7 @@ class CLIParserMixin:
                 _tmp += line.strip()
                 if _tmp[-1] == arrSymb:
                     if inside_key:
-                        if STTNGS['vv']:
-                            print(_tmp)
+                        logger.debug('%s', _tmp)
                         rv[save_key] = json.loads(_tmp)
                         inside_key = False
             else:
