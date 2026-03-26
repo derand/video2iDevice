@@ -230,7 +230,7 @@ class cChapter(object):
 
     def __convertTimeString(self, time_str: str) -> int:
         _hours = _min = _sec = _msec = 0
-        tmp = re.search('_(\d{2})_(\d{2})_(\d{2})(\d{3})', time_str)
+        tmp = re.search(r'_(\d{2})_(\d{2})_(\d{2})(\d{3})', time_str)
         if tmp:
             _hours = int(tmp.group(1))
             _min = int(tmp.group(2))

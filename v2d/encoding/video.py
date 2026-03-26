@@ -37,10 +37,12 @@ class VideoEncoderMixin:
         if _pass is not None:
             add.append('-pass')
             add.append('%s' % _pass)
-        add.extend(['-vcodec', STTNGS['vcodec'],
-                    '-flags', '+loop',
-                    '-cmp', 'chroma',
-                    '-me_method', 'full'])
+        add.append('-vcodec')
+        add.append(STTNGS['vcodec'])
+        if STTNGS['vcodec'] == 'libx264':
+            add.extend(['-flags', '+loop',
+                        '-cmp', 'chroma',
+                        '-me_method', 'full'])
         rv.extend(add)
         return rv
 
@@ -54,37 +56,44 @@ class VideoEncoderMixin:
     def _videoFfmpegParamsQuality(self, fileName: str, _map: Optional[str],
                                    crf: Any = 0, _pass: Any = 0,
                                    hQuality: bool = True) -> List[str]:
+        is_libx264 = STTNGS['vcodec'] == 'libx264'
         if crf != 0:
             ffmpeg_params = self._videoFfmpegParamsCRF(fileName, _map, crf)
-            ffmpeg_params_add = ['-refs', '%d' % STTNGS['refs'],
-                                 '-threads', '%s' % STTNGS['threads']]
+            ffmpeg_params_add = []
+            if is_libx264:
+                ffmpeg_params_add.extend(['-refs', '%d' % STTNGS['refs'],
+                                          '-threads', '%s' % STTNGS['threads']])
         else:
             ffmpeg_params = self._videoFfmpegParamsPasses(fileName, _map, _pass)
             ffmpeg_params_add = ['-b:v', '"%d k"' % STTNGS['b'],
                                  '-maxrate', '"%d k"' % STTNGS['b'],
-                                 '-bufsize', '"%d k"' % int(STTNGS['b'] * 2.5),
-                                 '-refs', '%d' % STTNGS['refs'],
-                                 '-threads', '%s' % STTNGS['threads']]
+                                 '-bufsize', '"%d k"' % int(STTNGS['b'] * 2.5)]
+            if is_libx264:
+                ffmpeg_params_add.extend(['-refs', '%d' % STTNGS['refs'],
+                                          '-threads', '%s' % STTNGS['threads']])
             ffmpeg_params_add.extend(os_ffmpeg_prms)
         ffmpeg_params.extend(ffmpeg_params_add)
         ffmpeg_params_add = []
-        if hQuality:
-            ffmpeg_params_add = ['-partitions', '+parti4x4+parti8x8+partp4x4+partp8x8+partb8x8',
-                                 '-subq', '12',
-                                 '-trellis', '1',
-                                 '-coder', '1',
-                                 '-me_range', '32',
-                                 '-level', '4.1',
-                                 '-profile:v', 'high',
-                                 '-bf', '12']
+        if STTNGS['vcodec'] == 'libx264':
+            if hQuality:
+                ffmpeg_params_add = ['-partitions', '+parti4x4+parti8x8+partp4x4+partp8x8+partb8x8',
+                                     '-subq', '12',
+                                     '-trellis', '1',
+                                     '-coder', '1',
+                                     '-me_range', '32',
+                                     '-level', '4.1',
+                                     '-profile:v', 'high',
+                                     '-bf', '12']
+            else:
+                ffmpeg_params_add = ['-partitions', '+parti4x4+partp8x8+partb8x8',
+                                     '-subq', '6',
+                                     '-trellis', '0',
+                                     '-coder', '0',
+                                     '-me_range', '16',
+                                     '-level', '3.1',
+                                     '-profile:v', 'baseline']
         else:
-            ffmpeg_params_add = ['-partitions', '+parti4x4+partp8x8+partb8x8',
-                                 '-subq', '6',
-                                 '-trellis', '0',
-                                 '-coder', '0',
-                                 '-me_range', '16',
-                                 '-level', '3.1',
-                                 '-profile:v', 'baseline']
+            pass  # hardware encoders (e.g. h264_v4l2m2m) don't accept -level/-profile:v string values
         ffmpeg_params.extend(ffmpeg_params_add)
         return ffmpeg_params
 
@@ -167,7 +176,9 @@ class VideoEncoderMixin:
         print('\033[1;33m %dx%d  ==> %dx%d \033[00m' % (w, h, _w, _h))
 
         passes = [1, 2]
-        if 'passes' in STTNGS:
+        if STTNGS['vcodec'] != 'libx264':
+            passes = [None]
+        elif 'passes' in STTNGS:
             passes = []
             for el in STTNGS['passes'].split(':'):
                 passes.append(int(el))

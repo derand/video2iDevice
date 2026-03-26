@@ -54,7 +54,7 @@ class MediaInformer:
         return int(prm)
 
     def __mediaDuration(self, filename: str) -> Optional[float]:
-        duration_re_compiled = re.compile('Duration:\s*(\d{2}):(\d{2}):(\d{2})\.(\d{2})')
+        duration_re_compiled = re.compile(r'Duration:\s*(\d{2}):(\d{2}):(\d{2})\.(\d{2})')
         cmd = [self.__ffmpeg_path, '-i', filename]
         p = Popen(cmd, stdout=PIPE, stderr=STDOUT)
         while True:
@@ -200,7 +200,7 @@ class MediaInformer:
             while True:
                 retcode = p.poll()
                 line = p.stdout.readline().decode('UTF-8')
-                tmp = re.search('^\s+Stream\s+#0(.)\d+', line)
+                tmp = re.search(r'^\s+Stream\s+#0(.)\d+', line)
                 if tmp:
                     rv = tmp.group(1)
                     break
@@ -244,7 +244,7 @@ class MediaInformer:
             if len(line)>2 and line[:2]=='|+':
                 val = line[2:].strip()
                 inTrackSegment = (val=='Segment tracks') or (val=='Tracks')
-            tmp = re.search('\|\s*\+(.*)', line)
+            tmp = re.search(r'\|\s*\+(.*)', line)
             if tmp:
                 tmp = tmp.group(1).strip()
                 if tmp == 'A track' or tmp == 'Track':
@@ -261,7 +261,7 @@ class MediaInformer:
                     if key=='Track number':
                         trackID = '0%s%d'%(ffmpegMapSeparatedSymbol, trackNumber)
                         trackNumber = trackNumber+1
-                        r =  re.compile('mkvextract:\s*(\d+)').search(val)
+                        r =  re.compile(r'mkvextract:\s*(\d+)').search(val)
                         if r:
                             val = r.groups()[0]
                         prms['mkvinfo_trackNumber'] = val
@@ -496,8 +496,8 @@ class MediaInformer:
         rv = cMediaInfo('mp4box', filename)
         cmd = [self.__mp4box_path, '-info', filename, ]
         p = Popen(cmd, stdout=PIPE, stderr=PIPE)
-        track_re_compiled = re.compile('Track #\s{0,1}(\d)+\s*Info\s-\sTrackID\s(\d+)')
-        mi_re_compiled = re.compile('Media\sInfo:\s+Language\s\"([^\"]+)\".+Type\s\"([^\"]+)\"')
+        track_re_compiled = re.compile(r'Track #\s{0,1}(\d)+\s*Info\s-\sTrackID\s(\d+)')
+        mi_re_compiled = re.compile(r'Media\sInfo:\s+Language\s\"([^\"]+)\".+Type\s\"([^\"]+)\"')
         stream_type = -1
         track_type = -1
         lang = None
@@ -654,7 +654,7 @@ class MediaInformer:
                 val = line[line.find(':')+2:]
                 key = srch.groups()[0]
                 if key=='----':
-                    srch = re.compile('\"\s\[(.+)\]').search(line)
+                    srch = re.compile(r'\"\s\[(.+)\]').search(line)
                     if srch!=None:
                         key = srch.groups()[0]
             else:
