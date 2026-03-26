@@ -6,12 +6,13 @@ import os
 from typing import Any, Dict, List, Optional
 
 from v2d.settings import STTNGS
+from v2d.interfaces import BaseSubtitleEncoder
 from v2d_utils import mp4box_path, mkvtoolnix_path
 from media import isMatroshkaMedia
-from subConverter import subConverter
+from subtitles import subConverter
 
 
-class SubtitleEncoderMixin:
+class SubtitleEncoderMixin(BaseSubtitleEncoder):
     """Mixin providing subtitle stream extraction and conversion."""
 
     def _streamById(self, streamId: Any, streams: List) -> Any:

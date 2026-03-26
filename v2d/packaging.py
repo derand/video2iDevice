@@ -6,11 +6,12 @@ import os
 from typing import Any, List
 
 from v2d.settings import STTNGS
+from v2d.interfaces import BasePackager
 from v2d_utils import mp4box_path, mkvtoolnix_path, ffmpeg_path
 from mpeg4fixer import mpeg4fixer
 
 
-class PackagingMixin:
+class PackagingMixin(BasePackager):
     """Mixin providing MP4/MKV container creation via MP4Box, ffmpeg, and mkvmerge."""
 
     def createMPEGusingMP4Box(self, files: List, fi: Any, name: str) -> int:

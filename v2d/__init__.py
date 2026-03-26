@@ -5,6 +5,8 @@ Re-exports the main public API for convenience.
 """
 
 from v2d.settings import ConversionSettings, STTNGS, atomicParsleyOptions, __version__
+from v2d.interfaces import (BaseConverter, BaseRunner, BaseVideoEncoder,
+                             BaseAudioEncoder, BaseSubtitleEncoder, BasePackager)
 from v2d.log import LogToFile
 from v2d.converter import Video2iDevice
 
@@ -13,6 +15,12 @@ __all__ = [
     'STTNGS',
     'atomicParsleyOptions',
     '__version__',
+    'BaseConverter',
+    'BaseRunner',
+    'BaseVideoEncoder',
+    'BaseAudioEncoder',
+    'BaseSubtitleEncoder',
+    'BasePackager',
     'LogToFile',
     'Video2iDevice',
 ]

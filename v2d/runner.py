@@ -7,10 +7,11 @@ from subprocess import Popen, PIPE, STDOUT
 from typing import Optional, List
 
 from v2d.settings import STTNGS
+from v2d.interfaces import BaseRunner
 from v2d_utils import ffmpeg_path, add_separator_to_filepath
 
 
-class RunnerMixin:
+class RunnerMixin(BaseRunner):
     """Mixin providing ffmpeg execution and subprocess helpers."""
 
     def _printCmd(self, cmd: str) -> None:

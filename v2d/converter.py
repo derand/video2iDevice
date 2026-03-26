@@ -7,6 +7,7 @@ import struct
 from typing import Any, List
 
 from v2d.settings import STTNGS
+from v2d.interfaces import BaseConverter
 from v2d.log import LogToFile
 from v2d.cli import CLIParserMixin
 from v2d.runner import RunnerMixin
@@ -20,7 +21,7 @@ from v2d_utils import (ffmpeg_path, mp4box_path, AtomicParsley_path,
                        mkvtoolnix_path, mediainfo_path)
 
 
-class Video2iDevice(CLIParserMixin, RunnerMixin, TaggingMixin,
+class Video2iDevice(BaseConverter, CLIParserMixin, RunnerMixin, TaggingMixin,
                     VideoEncoderMixin, AudioEncoderMixin,
                     SubtitleEncoderMixin, PackagingMixin):
     """Main converter class: parses CLI arguments, encodes video/audio/subtitles, and packages output."""

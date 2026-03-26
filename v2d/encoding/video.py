@@ -9,12 +9,13 @@ import fileCoding
 from typing import Any, List, Optional
 
 from v2d.settings import STTNGS, os_ffmpeg_prms
+from v2d.interfaces import BaseVideoEncoder
 from v2d.encoding import _mergeFfmpegParams
 from v2d_utils import add_separator_to_filepath
 from media import isMatroshkaMedia
 
 
-class VideoEncoderMixin:
+class VideoEncoderMixin(BaseVideoEncoder):
     """Mixin providing video stream encoding via ffmpeg."""
 
     def _videoFfmpegParamsBase(self, fileName: str, _map: Optional[str]) -> List[str]:

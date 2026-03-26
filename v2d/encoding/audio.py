@@ -5,10 +5,11 @@ import os
 from typing import Any, List
 
 from v2d.settings import STTNGS
+from v2d.interfaces import BaseAudioEncoder
 from v2d.encoding import _mergeFfmpegParams
 
 
-class AudioEncoderMixin:
+class AudioEncoderMixin(BaseAudioEncoder):
     """Mixin providing audio stream encoding via ffmpeg."""
 
     def _audioFfmpegParamsBase(self, fileName: str, _map: str) -> List[str]:

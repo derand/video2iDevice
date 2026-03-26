@@ -101,9 +101,12 @@
     - [x] Розбити `mediaInfo.py` на пакет `media/` (types.py, informer.py)
     - [x] Розбити `2iDevice.py` на пакет `v2d/` (settings, log, cli, runner, tagging, encoding/*, packaging, converter)
     - [x] `2iDevice.py` стала тонким entry point
-    - [ ] Створити пакетну структуру (`core`, `media`, `encoding`, `subtitles`, `utils`) _(відкладено)_
-- [ ] **Абстрактні інтерфейси**
-    - [ ] Створити базові класи для media converters
+    - [x] Створити пакетну структуру (`core`=`v2d/`, `media/`, `encoding`=`v2d/encoding/`, `subtitles/`, `utils/`)
+        - [x] `utils/__init__.py` — re-exports з v2d_utils, fileCoding, mpeg4fixer
+        - [x] `subtitles/__init__.py` — re-exports subConverter
+- [x] **Абстрактні інтерфейси**
+    - [x] `v2d/interfaces.py`: BaseRunner, BaseVideoEncoder, BaseAudioEncoder, BaseSubtitleEncoder, BasePackager, BaseConverter
+    - [x] Міксіни успадковуються від відповідних ABC: RunnerMixin, VideoEncoderMixin, AudioEncoderMixin, SubtitleEncoderMixin, PackagingMixin, Video2iDevice
 
 ## Priority 5: Testing
 - [ ] **Додати юніт-тести**
