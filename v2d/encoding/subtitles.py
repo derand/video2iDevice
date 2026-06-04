@@ -58,7 +58,7 @@ class SubtitleEncoderMixin(BaseSubtitleEncoder):
         path = os.path.dirname(fi.filename)
         if path[-1] != '/':
             path += '/'
-        nn = self.buildFN(fi.filename, fadd[1])
+        nn = self.buildFN(fi.filename, fadd.path)
         if not nn[0] in '/~':
             nn = path + nn
         if not os.path.exists(nn):
@@ -66,24 +66,21 @@ class SubtitleEncoderMixin(BaseSubtitleEncoder):
             sys.exit(1)
         _fi = self.mediainformer.fileInfo(nn)
         _fi.streams[0].params['GlobalTrackNum'] = currentTrack
-        name = None
-        if 'sname' in fadd[-1]:
-            name = fadd[-1]['sname']
 
         stream = None
-        if 'stream' in fadd[2]:
-            stream = self._streamById(fadd[2]['stream'], _fi.streams)
+        if fadd.stream is not None:
+            stream = self._streamById(fadd.stream, _fi.streams)
         else:
             for i in range(len(_fi.streams)):
                 tmp_stream = self._streamById(i, _fi.streams)
-                if tmp_stream.type == fadd[0]:
+                if tmp_stream.type == fadd.stream_type:
                     stream = tmp_stream
                     break
         if stream is not None:
-            stream.params['extended'] = fadd[-1]
+            stream.params['extended'] = fadd.as_extended_dict()
             stream.params['filename'] = _fi.filename
             stream.params['informer'] = _fi.informer
-            stream.params['name'] = name
+            stream.params['name'] = fadd.name
         return stream
 
     def cSubs(self, iFile: str, stream: Any, informer: Any, prms: Dict, oFile: str) -> Optional[str]:

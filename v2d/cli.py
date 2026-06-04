@@ -9,7 +9,7 @@ import logging
 import fileCoding
 from typing import List, Dict, Any
 
-from v2d.settings import STTNGS, help
+from v2d.settings import STTNGS, StreamSpec, help
 
 logger = logging.getLogger(__name__)
 
@@ -70,7 +70,7 @@ class CLIParserMixin:
         if ckey == 'vcopy' or ckey == 'acopy':
             tmp = STTNGS['fadd']
             if len(tmp) > 0:
-                tmp[-1][-1]['copy'] = True
+                tmp[-1].copy = True
             else:
                 STTNGS[ckey] = True
             saveP = True
@@ -78,7 +78,7 @@ class CLIParserMixin:
         if ckey == 'copy' or ckey == 'hardsub':
             tmp = STTNGS['fadd']
             if len(tmp) > 0:
-                tmp[-1][-1][ckey] = True
+                setattr(tmp[-1], ckey, True)
             saveP = True
         # global single params
         if ckey in ('tn', 'fd', 'ctf', 'vv', 'tagging_mode', 'test_mode'):
@@ -96,7 +96,7 @@ class CLIParserMixin:
             sys.exit(0)
         # info flags
         if ckey == 'info':
-            STTNGS[ckey] = None
+            STTNGS[ckey] = 'default'
         if ckey == 'info1':
             STTNGS['info'] = 'short'
             saveP = True
@@ -108,64 +108,69 @@ class CLIParserMixin:
             tt = 2
             if ckey == 'afile': tt = 1
             if ckey == 'vfile': tt = 0
-            STTNGS['fadd'].append((tt, el, {}))
+            STTNGS['fadd'].append(StreamSpec(stream_type=tt, path=el))
         elif ckey in ('episodes_titles', 'TRACK_REGEX', 'TRACKS_REGEX'):
             STTNGS[ckey] = el.split(';')
         elif ckey == 'stream':
             tmp = STTNGS['fadd']
             if len(tmp) > 0:
-                tmp[-1][-1]['stream'] = el
+                tmp[-1].stream = el
         elif ckey == 'sname':
             tmp = STTNGS['fadd']
             if len(tmp) > 0:
-                tmp[-1][-1]['sname'] = el
+                tmp[-1].name = el
         elif ckey == 'ar' and len(STTNGS['fadd']) > 0:
-            STTNGS['fadd'][-1][-1]['ar'] = int(el)
+            STTNGS['fadd'][-1].ar = int(el)
         elif ckey == 'ab' and len(STTNGS['fadd']) > 0:
-            STTNGS['fadd'][-1][-1]['ab'] = int(el)
+            STTNGS['fadd'][-1].ab = int(el)
         elif ckey == 'addTimeDiff' and len(STTNGS['fadd']) > 0:
-            if STTNGS['fadd'][-1][0] == 2:
-                STTNGS['fadd'][-1][-1]['addTimeDiff'] = int(el)
+            if STTNGS['fadd'][-1].stream_type == 2:
+                STTNGS['fadd'][-1].add_time_diff = int(el)
         elif ckey == 'avol':
             tmp = STTNGS['fadd']
             if len(tmp) > 0:
-                tmp[-1][-1]['vol'] = el
+                tmp[-1].vol = el
         elif ckey == 'delay':
             tmp = STTNGS['fadd']
             if len(tmp) > 0:
-                tmp[-1][-1]['delay'] = int(el)
+                tmp[-1].delay = int(el)
         elif ckey == 'lang':
             tmp = STTNGS['fadd']
             if el.find(':') == -1 and len(tmp) > 0:
-                tmp[-1][-1]['lang'] = el
+                tmp[-1].lang = el
             else:
                 STTNGS[ckey] = el
         elif ckey == 'crf':
             tmp = STTNGS['fadd']
             if len(tmp) > 0:
-                tmp[-1][-1]['crf'] = el
+                tmp[-1].crf = el
             else:
                 STTNGS[ckey] = el
         elif ckey == 'ffmpeg_coding_params':
             tmp = STTNGS['fadd']
             if len(tmp) > 0:
-                tmp[-1][-1][ckey] = shlex.split(el)
+                tmp[-1].ffmpeg_coding_params = shlex.split(el)
         elif ckey == 'web_optimization':
             STTNGS[ckey] = el != '0'
         elif ckey == 'stream_prefix':
             tmp = STTNGS['fadd']
             if len(tmp) > 0:
-                tmp[-1][-1][ckey] = el
+                tmp[-1].stream_prefix = el
         elif ckey in self._iTunMOVI_arrayKeys:
             for tmp in el.split(','):
                 STTNGS[ckey].append(tmp.strip())
         elif ckey == 'threads':
             STTNGS[ckey] = int(el)
+        elif ckey == 'info':
+            if el in ('json', 'short'):
+                STTNGS[ckey] = el
+            else:
+                STTNGS['files'].append(el)
         elif ckey == 'vcodec':
             STTNGS[ckey] = el
         else:
             # --- CLI input validation ---
-            if ckey in ('ab', 'vb'):
+            if ckey in ('ab', 'b'):
                 try:
                     val = int(el.rstrip('k'))
                     if val <= 0:
@@ -226,7 +231,7 @@ class CLIParserMixin:
         _tmp = ''
         rv = {}
         arrSymb = None
-        file_lines = file.read().encode('utf-8')
+        file_lines = file.read()
         for line in file_lines.split('\n'):
             if len(line) < 1 or line[0] == '#':
                 continue

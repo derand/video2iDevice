@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 """MP4/MKV container packaging mixin for Video2iDevice."""
 
-import sys
 import os
 import logging
 from typing import Any, List
 
 from v2d.settings import STTNGS
+from v2d.exceptions import FfmpegError
 
 logger = logging.getLogger(__name__)
 from v2d.interfaces import BasePackager
@@ -132,8 +132,7 @@ class PackagingMixin(BasePackager):
         if ret_code != 0:
             rv = self.createMPEGusingFfmpeg(files, fi, name)
             if rv != 0:
-                logger.error('Merge streams failed, code: %s', rv)
-                sys.exit(rv)
+                raise FfmpegError(['ffmpeg', 'merge', name], rv)
 
         self.tag_file(name)
 
@@ -158,6 +157,5 @@ class PackagingMixin(BasePackager):
             cmd.append(f[1])
         retcode = self._exeCmd(cmd, False)
         if retcode > 1:
-            logger.error('mkvmerge failed (exit %d): %s', retcode, cmd)
-            sys.exit()
+            raise FfmpegError(cmd, retcode)
         return name

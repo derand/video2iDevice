@@ -3,7 +3,7 @@
 
 import sys
 from dataclasses import dataclass, field
-from typing import Optional, List, Any, Dict
+from typing import Optional, List, Any, Dict, TYPE_CHECKING
 
 __version__ = '0.6.0'
 
@@ -129,6 +129,46 @@ else:
 
 
 @dataclass
+class StreamSpec:
+    """Describes one external stream added via -vfile / -afile / -sfile."""
+
+    stream_type: int    # 0=video, 1=audio, 2=subtitle
+    path: str           # file path template (may contain [NAME], [2EID] etc.)
+
+    stream: Optional[str] = None                    # stream selector within the file
+    name: Optional[str] = None                      # display title (sname)
+    lang: Optional[str] = None
+    ar: Optional[int] = None                        # audio sample rate override
+    ab: Optional[int] = None                        # audio bitrate override (kbps)
+    vol: Optional[str] = None                       # audio volume (256 = 100%)
+    delay: Optional[int] = None                     # track start delay (ms)
+    crf: Optional[Any] = None
+    add_time_diff: Optional[int] = None             # subtitle time offset (ms)
+    ffmpeg_coding_params: Optional[List[str]] = None
+    stream_prefix: Optional[str] = None
+    copy: bool = False
+    hardsub: bool = False
+
+    def as_extended_dict(self) -> Dict:
+        """Return dict compatible with stream.params['extended']."""
+        d: Dict[str, Any] = {}
+        if self.stream is not None:               d['stream'] = self.stream
+        if self.name is not None:                 d['sname'] = self.name
+        if self.lang is not None:                 d['lang'] = self.lang
+        if self.ar is not None:                   d['ar'] = self.ar
+        if self.ab is not None:                   d['ab'] = self.ab
+        if self.vol is not None:                  d['vol'] = self.vol
+        if self.delay is not None:                d['delay'] = self.delay
+        if self.crf is not None:                  d['crf'] = self.crf
+        if self.add_time_diff is not None:        d['addTimeDiff'] = self.add_time_diff
+        if self.ffmpeg_coding_params is not None: d['ffmpeg_coding_params'] = self.ffmpeg_coding_params
+        if self.stream_prefix is not None:        d['stream_prefix'] = self.stream_prefix
+        if self.copy:                             d['copy'] = True
+        if self.hardsub:                          d['hardsub'] = True
+        return d
+
+
+@dataclass
 class ConversionSettings:
     """Typed settings container for a single video conversion job."""
 
@@ -147,7 +187,7 @@ class ConversionSettings:
     streams: str = ''        # stream selection
     tfile: str = ''          # tags settings file path
     fd: bool = False         # fix video duration
-    fadd: list = field(default_factory=list)  # per-stream additions
+    fadd: List['StreamSpec'] = field(default_factory=list)  # per-stream additions
     format: str = 'm4v'      # output format (m4v, mp4, mkv)
     add2TrackIdx: int = 0
     vcodec: str = 'libx264'

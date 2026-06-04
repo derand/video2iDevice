@@ -97,7 +97,9 @@ class VideoEncoderMixin(BaseVideoEncoder):
                                      '-level', '3.1',
                                      '-profile:v', 'baseline']
         else:
-            pass  # hardware encoders (e.g. h264_v4l2m2m) don't accept -level/-profile:v string values
+            # hardware encoders (e.g. h264_v4l2m2m) don't accept -level/-profile:v string values
+            if STTNGS['vcodec'] == 'h264_v4l2m2m':
+                ffmpeg_params_add = ['-pix_fmt', 'yuv420p']  # encoder requires 8-bit, convert from 10-bit if needed
         ffmpeg_params.extend(ffmpeg_params_add)
         return ffmpeg_params
 
@@ -234,7 +236,6 @@ class VideoEncoderMixin(BaseVideoEncoder):
                     else:
                         logger.error("Can't set stream %s as hardsub.", hardsub_stream)
                         sys.exit(1)
-                        hardsub_stream.params['extended']['hardsub'] = False
                 if 'crop' in STTNGS:
                     video_filters.append({'crop': STTNGS['crop']})
                 if 's' in STTNGS:

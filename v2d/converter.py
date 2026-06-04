@@ -147,7 +147,7 @@ class Video2iDevice(BaseConverter, CLIParserMixin, RunnerMixin, TaggingMixin,
         for add in STTNGS['fadd']:
             stream = self._streamFromFAdd(add, fi, currentTrack)
             if stream is None:
-                logger.error("Can't find stream (type: %d) in file or incorrect number", add[0])
+                logger.error("Can't find stream (type: %d) in file or incorrect number", add.stream_type)
                 sys.exit(1)
 
             out_fn = '%s/%s_%s' % (STTNGS['temp_dir'], os.path.basename(stream.params['filename']), stream.trackId_short)
@@ -156,7 +156,7 @@ class Video2iDevice(BaseConverter, CLIParserMixin, RunnerMixin, TaggingMixin,
                     out_fn = '%s_%s' % (out_fn, stream.params['name'])
 
             logger.debug('%s', add)
-            if add[0] == 0:
+            if add.stream_type == 0:
                 out_fn = out_fn + '.mp4'
                 if len(hardsub_streams) > 0:
                     stream.params['hardsub_streams'] = hardsub_streams
@@ -164,14 +164,14 @@ class Video2iDevice(BaseConverter, CLIParserMixin, RunnerMixin, TaggingMixin,
                 files.append((0, out_fn, stream))
                 self.cVideo(stream.params['filename'], stream, files[-1][1])
 
-            elif add[0] == 1:
+            elif add.stream_type == 1:
                 out_fn = out_fn + '.aac'
                 files.append((1, out_fn, stream))
                 self.cAudio(stream.params['filename'], stream, files[-1][1])
 
-            elif add[0] == 2:
+            elif add.stream_type == 2:
                 out_fn = out_fn + '.ttxt'
-                tmpFile = self.cSubs(stream.params['filename'], stream, stream.params['informer'], add[2], out_fn)
+                tmpFile = self.cSubs(stream.params['filename'], stream, stream.params['informer'], stream.params.get('extended', {}), out_fn)
                 if tmpFile is not None:
                     files.append((2, tmpFile, stream))
                     findSubs = False

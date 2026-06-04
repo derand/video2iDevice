@@ -9,6 +9,7 @@ from typing import Optional, List
 
 from v2d.settings import STTNGS
 from v2d.interfaces import BaseRunner
+from v2d.exceptions import FfmpegError
 from v2d_utils import ffmpeg_path, add_separator_to_filepath
 
 logger = logging.getLogger(__name__)
@@ -130,8 +131,7 @@ class RunnerMixin(BaseRunner):
                     print(l)
                 break
         if retcode != 0:
-            logger.error('Command failed: %s', cmd)
-            sys.exit()
+            raise FfmpegError(cmd, retcode)
         return (retcode, libx264_log, libx264_log_settings)
 
     def _exeCmd(self, cmd: List[str], check_exit_code: bool = True) -> int:
@@ -139,7 +139,7 @@ class RunnerMixin(BaseRunner):
 
         Args:
             cmd: Command + arguments list.
-            check_exit_code: If True, call sys.exit on non-zero exit code.
+            check_exit_code: If True, raise FfmpegError on non-zero exit code.
 
         Returns:
             Process exit code.
@@ -177,6 +177,5 @@ class RunnerMixin(BaseRunner):
             if retcode is not None and len(ch) == 0:
                 break
         if check_exit_code and retcode != 0:
-            logger.error('Command failed (exit %d): %s', retcode, cmd)
-            sys.exit()
+            raise FfmpegError(cmd, retcode)
         return retcode

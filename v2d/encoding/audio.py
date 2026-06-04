@@ -7,6 +7,7 @@ from typing import Any, List
 from v2d.settings import STTNGS
 from v2d.interfaces import BaseAudioEncoder
 from v2d.encoding import _mergeFfmpegParams
+from v2d.exceptions import FfmpegError
 
 
 class AudioEncoderMixin(BaseAudioEncoder):
@@ -83,7 +84,7 @@ class AudioEncoderMixin(BaseAudioEncoder):
             if vol != 256:
                 ffmpeg_params_add.extend(['-vol', '%d' % vol])
             ffmpeg_params.extend(ffmpeg_params_add)
-            ffmpeg_params_add = ffmpeg_params
+            ffmpeg_params_add = list(ffmpeg_params)
             ffmpeg_params.extend(['-strict', 'experimental'])
         ffmpeg_params.append('"%s"' % oFile)
 
@@ -94,21 +95,17 @@ class AudioEncoderMixin(BaseAudioEncoder):
             stream_prefix = None
             if 'extended' in stream.params and 'stream_prefix' in stream.params['extended']:
                 stream_prefix = stream.params['extended']['stream_prefix']
-            if self.execute_ffmpeg_command(ffmpeg_params, stream_prefix)[0] != 0:
+            try:
+                self.execute_ffmpeg_command(ffmpeg_params, stream_prefix)
+            except FfmpegError:
                 tmp_fn = '%s/tmp.ac3' % STTNGS['temp_dir']
                 ffmpeg_params = self._audioFfmpegParamsTmpAc3(iFile, stream.trackID, 448, ar, STTNGS['threads'])
                 ffmpeg_params.append('"%s"' % tmp_fn)
                 self.execute_ffmpeg_command(ffmpeg_params, stream_prefix)
                 ffmpeg_params = ffmpeg_params_add
-                try:
-                    idx = ffmpeg_params.index('-i')
-                except Exception as e:
-                    raise e
+                idx = ffmpeg_params.index('-i')
                 ffmpeg_params[idx + 1] = '"%s"' % tmp_fn
-                try:
-                    idx = ffmpeg_params.index('-map')
-                except Exception as e:
-                    raise e
+                idx = ffmpeg_params.index('-map')
                 del ffmpeg_params[idx:idx + 2]
                 ffmpeg_params.append('"%s"' % oFile)
 

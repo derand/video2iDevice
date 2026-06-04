@@ -24,6 +24,9 @@ class BaseRunner(ABC):
 
         Returns:
             A tuple ``(retcode, libx264_log, libx264_log_settings)``.
+
+        Raises:
+            FfmpegError: if ffmpeg exits with a non-zero return code.
         """
 
 
