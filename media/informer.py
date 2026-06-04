@@ -48,8 +48,8 @@ class MediaInformer:
         self.artwork_path = artwork_path
 
     def __stringToNumber(self, prm: str) -> Union[int, float]:
-        prm = prm[:prm.find(' ')]
-        if prm.find('.')>-1:
+        prm = prm.split()[0]
+        if '.' in prm:
             return float(prm)
         return int(prm)
 
