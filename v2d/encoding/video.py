@@ -141,6 +141,10 @@ class VideoEncoderMixin(BaseVideoEncoder):
                 ass_fn = '%s/%s.ass' % (STTNGS['temp_dir'], os.path.basename(fn))
                 cmd = ['-y', '-i', srt_fn, ass_fn]
                 self.execute_ffmpeg_command(cmd)
+                try:
+                    os.unlink(srt_fn)
+                except OSError:
+                    pass
         elif file_ext == '.srt':
             ass_fn = '%s/%s.ass' % (STTNGS['temp_dir'], os.path.basename(fn))
             cmd = ['-y', '-i', fn, ass_fn]
@@ -214,6 +218,16 @@ class VideoEncoderMixin(BaseVideoEncoder):
             hardsub_streams = stream.params['hardsub_streams']
 
         items2Delete = []
+        if not copyFlag and len(hardsub_streams) == 1:
+            hardsub_stream = hardsub_streams[0]
+            ass_fn = self._prepareHardsubFile(hardsub_stream)
+            if ass_fn is not None:
+                video_filters.append({'ass': '%s' % add_separator_to_filepath(ass_fn)})
+                items2Delete.append(ass_fn)
+            else:
+                logger.error("Can't set stream %s as hardsub.", hardsub_stream)
+                sys.exit(1)
+
         for _pass in passes:
             ffmpeg_params = []
             if copyFlag:
@@ -226,16 +240,6 @@ class VideoEncoderMixin(BaseVideoEncoder):
 
                 if 'vr' in STTNGS:
                     ffmpeg_params_add.extend(['-r', '%.3f' % STTNGS['vr']])
-
-                # video filters section
-                if len(hardsub_streams) == 1:
-                    hardsub_stream = hardsub_streams[0]
-                    ass_fn = self._prepareHardsubFile(hardsub_stream)
-                    if ass_fn is not None:
-                        video_filters.append({'ass': '%s' % add_separator_to_filepath(ass_fn)})
-                    else:
-                        logger.error("Can't set stream %s as hardsub.", hardsub_stream)
-                        sys.exit(1)
                 if 'crop' in STTNGS:
                     video_filters.append({'crop': STTNGS['crop']})
                 if 's' in STTNGS:

@@ -82,24 +82,43 @@ class cStream(object):
         elif mode=='short':
             tid = self.trackId_short
             rv = 'Stream %s: '%tid
-            language_str = self.params.get('Language') or self.language
+            language_str = self.language or self.params.get('Language')
             if language_str:
                 language_str = '(%s)'%language_str
             else:
                 language_str = ''
             if self.type==StreamType.VIDEO:
-                fps = 'x'
-                if self.params.get('Frame_rate'):
-                    fps = self.params.get('Frame_rate').split(' ')[0]
-                    if len(fps.split('.')) > 1 and fps.split('.')[1].isdigit() and int(fps.split('.')[1]) == 0:
+                codec = self.params.get('Format') or self.params.get('codec') or '?'
+                w, h = self.params.get('width'), self.params.get('height')
+                size = '%sx%s'%(w, h) if w and h else '?'
+                rv += 'V%s, %s, %s'%(language_str, codec, size)
+                fps = self.params.get('Frame_rate') or self.params.get('frame_rate')
+                if fps:
+                    fps = fps.split(' ')[0]
+                    if '.' in fps and fps.split('.')[1].isdigit() and int(fps.split('.')[1]) == 0:
                         fps = fps.split('.')[0]
-                    fps += 'fps'
-                rv += 'V%s, %s, %sx%s @%s, %s'%(language_str, self.params.get('Format') or self.params.get('codec'), self.params.get('width'), self.params.get('height'), fps, self.params.get('Bit_rate'))
-            if self.type==StreamType.AUDIO:
-                rv += 'A%s, %s, %s, %s'%(language_str, self.params.get('Format') or self.params.get('codec'), self.params.get('Bit_rate'), self.params.get('Sampling_rate'))
-            if self.type==StreamType.SUBTITLE:
-                rv += 'S%s, %s, \"%s\"'%(language_str, self.params.get('Codec_ID'), self.params.get('Title'), )
-            if self.type==StreamType.IMAGE:
+                    rv += ' @%sfps'%fps
+                bitrate = self.params.get('BitRate') or self.params.get('Bit_rate') or self.params.get('video_bitrate')
+                if bitrate:
+                    try:
+                        bitrate = '%d kb/s' % (int(bitrate) // 1000)
+                    except (ValueError, TypeError):
+                        pass
+                    rv += ', %s'%bitrate
+            elif self.type==StreamType.AUDIO:
+                codec = self.params.get('Format') or self.params.get('codec') or '?'
+                freq = self.params.get('frequency') or self.params.get('Sampling_rate')
+                rv += 'A%s, %s'%(language_str, codec)
+                if freq:
+                    rv += ', %sHz'%freq
+                name = self.params.get('name')
+                if name:
+                    rv += ', "%s"'%name
+            elif self.type==StreamType.SUBTITLE:
+                codec = self.params.get('codec') or self.params.get('Codec_ID') or '?'
+                name = self.params.get('name') or self.params.get('Title') or ''
+                rv += 'S%s, %s, "%s"'%(language_str, codec, name)
+            elif self.type==StreamType.IMAGE:
                 rv += 'I %s, %sx%s'%(self.params.get('codec'), self.params.get('width'), self.params.get('height'))
         elif mode=='dict':
             rv = {

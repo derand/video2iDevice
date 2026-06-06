@@ -139,6 +139,13 @@ class MediaInformer:
                     prms['width'] = self.__stringToNumber(w)
                     prms['height'] = self.__stringToNumber(h)
 
+                    for item in info[3:]:
+                        item = item.strip()
+                        if 'fps' in item:
+                            prms['frame_rate'] = item.split(' ')[0]
+                        elif 'kb/s' in item:
+                            prms['video_bitrate'] = item
+
                     if prms['codec'] in ('mjpeg', 'png', ) and lng is None:
                         tp = StreamType.IMAGE
 
@@ -320,25 +327,24 @@ class MediaInformer:
         curr_el = {'trackID_int': -1, 'streams': [], 'global': {}, 'chapters': [], 'track_block':-1}
 
         def start_element(name, attrs):
-            curr_el['name'] = r'%s'%name.encode('utf-8')
+            curr_el['name'] = name
             curr_el['attrs'] = attrs
             curr_el['data'] = ''
             if name=='track':
                 if 'type' in attrs:
-                    #print attrs['type']
                     if attrs['type']=='General':
                         curr_el['track_block']=0
-                    elif attrs['type']=='Video' or attrs['type']=='Audio' or attrs['type']=='Text' or attrs['type']=='Image':
+                    elif attrs['type'] in ('Video', 'Audio', 'Text', 'Image'):
                         curr_el['track_block']=1
                         curr_el['trackID_int'] += 1
                         track_type = -1
                         if attrs['type']=='Video':
                             track_type = StreamType.VIDEO
-                        if attrs['type']=='Audio':
+                        elif attrs['type']=='Audio':
                             track_type = StreamType.AUDIO
-                        if attrs['type']=='Text':
+                        elif attrs['type']=='Text':
                             track_type = StreamType.SUBTITLE
-                        if attrs['type']=='Image':
+                        elif attrs['type']=='Image':
                             track_type = StreamType.IMAGE
                         tid = '0%s%d'%(self.mapStreamSeparatedSymbol(filename), curr_el['trackID_int'])
                         stream = cStream(track_type, tid, None, {})
@@ -346,23 +352,20 @@ class MediaInformer:
                     elif attrs['type']=='Menu':
                         curr_el['track_block']=2
                     else:
-                        ''' Missed block name '''
                         curr_el['track_block']=-1
 
         def end_element(name):
-            if len(curr_el['name']):
-                if len(curr_el['data']):
-                    if curr_el['track_block']==0:
-                        curr_el['global'][curr_el['name']] = r'%s'%curr_el['data'].encode('utf-8')
-                    elif curr_el['track_block']==1:
-                        curr_el['streams'][-1].params[curr_el['name']] = r'%s'%curr_el['data'].encode('utf-8')
-                    elif curr_el['track_block']==2:
-                        time = curr_el['name']
-                        title = r'%s'%curr_el['data'].encode('utf-8')
-                        curr_el['chapters'].append(cChapter(time, title))
+            if curr_el['name'] and curr_el['data']:
+                if curr_el['track_block']==0:
+                    curr_el['global'][curr_el['name']] = curr_el['data']
+                elif curr_el['track_block']==1:
+                    curr_el['streams'][-1].params[curr_el['name']] = curr_el['data']
+                elif curr_el['track_block']==2:
+                    curr_el['chapters'].append(cChapter(curr_el['name'], curr_el['data']))
             curr_el['name'] = ''
             curr_el['attrs'] = ''
             curr_el['data'] = ''
+
         def char_data(data):
             curr_el['data'] = curr_el['data'] + data
 
@@ -381,8 +384,7 @@ class MediaInformer:
         parser.EndElementHandler = end_element
         parser.CharacterDataHandler = char_data
         try:
-            import chardet
-            parser.Parse(str(data, chardet.detect(data)['encoding']).encode('utf-8'), 1)
+            parser.Parse(data.encode('utf-8'), 1)
         except Exception as e:
             return rv
 
