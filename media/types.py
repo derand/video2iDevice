@@ -112,14 +112,19 @@ class cStream(object):
 
     def format(self) -> str:
         """Return the codec or format string for this stream."""
-        rv = ''
-        if 'Format' in self.params and self.type!=StreamType.SUBTITLE:   #  "and self.type!=2" added 2020.02.16
-            rv = self.params['Format']
-        elif 'codec' in self.params and self.type!=StreamType.SUBTITLE:  #  "and self.type!=2" added 2020.02.16
-            rv = self.params['codec']
-        elif self.type==StreamType.SUBTITLE and ('Codec_ID' in self.params and self.params['Codec_ID'].upper()=='S_TEXT/UTF8') or ('CodecID' in self.params and self.params['CodecID'].upper()=='S_TEXT/UTF8'):
-            rv = 'srt'
-        return rv
+        if self.type != StreamType.SUBTITLE:
+            if 'Format' in self.params:
+                return self.params['Format']
+            if 'codec' in self.params:
+                return self.params['codec']
+            return ''
+        # Subtitle: derive format from Codec_ID, then fall back to codec param.
+        codec_id = (self.params.get('Codec_ID') or self.params.get('CodecID') or '').upper()
+        if codec_id in ('S_TEXT/ASS', 'S_TEXT/SSA'):
+            return codec_id.split('/')[-1].lower()   # 'ass' or 'ssa'
+        if codec_id == 'S_TEXT/UTF8':
+            return 'srt'
+        return self.params.get('codec', '')
 
 class cMediaInfo(object):
     """Container for all media information about a single file, including streams, tags, and chapters."""
