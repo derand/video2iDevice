@@ -1,7 +1,7 @@
 RPI_HOST  := rpi42
 RPI_PATH  := src/video2iDevice_v2/
 
-RSYNC_FLAGS := -av --progress --delete \
+RSYNC_FLAGS := -av --delete \
 	--exclude='.git/' \
 	--exclude='__pycache__/' \
 	--exclude='*.pyc' \

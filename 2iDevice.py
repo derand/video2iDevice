@@ -23,7 +23,7 @@ __version__ = __version__
 __author__ = 'Andrey Derevyagin'
 __maintainer__ = 'Andrey Derevyagin'
 __email__ = '2derand+2idevice@gmail.com'
-__copyright__ = 'Copyright © 2010-2012, Andrey Derevyagin'
+__copyright__ = 'Copyright © 2010-2026, Andrey Derevyagin'
 
 
 if __name__ == '__main__':
