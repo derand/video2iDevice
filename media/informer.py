@@ -3,7 +3,6 @@
 
 """Media information extraction using ffmpeg, mkvinfo, mediainfo and MP4Box."""
 
-# writed by derand
 
 
 import sys

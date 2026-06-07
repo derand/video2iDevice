@@ -2,9 +2,6 @@
 # -*- coding: utf-8 -*-
 """video2iDevice — entry point.  All logic lives in the v2d package."""
 
-# writed by derand
-# - Sorry for horrible code -
-
 import sys
 import os
 import json
@@ -20,10 +17,7 @@ from media import cMediaInfo
 from v2d_utils import send_xmpp_message
 
 __version__ = __version__
-__author__ = 'Andrey Derevyagin'
-__maintainer__ = 'Andrey Derevyagin'
-__email__ = '2derand+2idevice@gmail.com'
-__copyright__ = 'Copyright © 2010-2026, Andrey Derevyagin'
+__copyright__ = 'Copyright © 2010-2026'
 
 
 if __name__ == '__main__':

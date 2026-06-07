@@ -3,7 +3,6 @@
 
 """Media type definitions: StreamType, cStream, cMediaInfo, cChapter."""
 
-# writed by derand
 
 
 import os

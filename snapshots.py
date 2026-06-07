@@ -4,10 +4,7 @@
 """Command-line tool for extracting evenly-spaced snapshot images from video files."""
 
 __version__ = '0.1'
-__author__ = 'Andrey Derevyagin'
-__maintainer__ = 'Andrey Derevyagin'
-__email__ = '2derand+2idevice@gmail.com'
-__copyright__ = 'Copyright © 2010-2012, Andrey Derevyagin'
+__copyright__ = 'Copyright © 2010-2012'
 
 
 import os

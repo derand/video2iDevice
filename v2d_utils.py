@@ -3,7 +3,6 @@
 
 """Utility functions and external tool path constants for the video2iDevice project."""
 
-# writed by derand
 
 import sys
 import os

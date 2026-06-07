@@ -3,7 +3,6 @@
 
 """Command-line MPEG-4 atom structure viewer that prints the box hierarchy of an MP4 file."""
 
-# writed by derand (2derand@gmail.com)
 
 import sys
 import os

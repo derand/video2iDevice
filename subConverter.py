@@ -3,8 +3,6 @@
 
 """Subtitle format converter supporting ASS/SSA and SRT to SRT/TTXT output."""
 
-# writed by derand
-# - Sorry for horrible code -
 
 import re
 import glob

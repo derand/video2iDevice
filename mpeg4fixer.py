@@ -3,7 +3,6 @@
 
 """MPEG-4 file binary fixer for track flags, subtitle handler types, and track names."""
 
-# writed by derand (2derand@gmail.com)
 
 import os
 import sys
