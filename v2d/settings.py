@@ -5,7 +5,7 @@ import sys
 from dataclasses import dataclass, field
 from typing import Optional, List, Any, Dict
 
-__version__ = '0.6.0'
+__version__ = '0.7.0'
 
 if sys.platform == 'darwin':
     os_ffmpeg_prms = []

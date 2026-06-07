@@ -134,7 +134,7 @@ class PackagingMixin(BasePackager):
             if rv != 0:
                 raise FfmpegError(['ffmpeg', 'merge', name], rv)
 
-        self.tag_file(name)
+        self.tag_file(name, fi.filename)
 
         self.log.put('Fixing flags on result mpeg file...\n')
         if not STTNGS.get('test_mode'):

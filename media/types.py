@@ -110,6 +110,13 @@ class cStream(object):
                 rv += 'A%s, %s'%(language_str, codec)
                 if freq:
                     rv += ', %sHz'%freq
+                if 'BitRate' in self.params:
+                    try:
+                        rv += ', %d kb/s' % (int(self.params['BitRate']) // 1000)
+                    except (ValueError, TypeError):
+                        pass
+                elif 'bitrate' in self.params:
+                    rv += ', %d kb/s' % self.params['bitrate']
                 name = self.params.get('name')
                 if name:
                     rv += ', "%s"'%name

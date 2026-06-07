@@ -96,17 +96,19 @@ class TaggingMixin:
         rv += "  </dict>\n</plist>\n"
         return rv
 
-    def tag_file(self, fn: str) -> None:
+    def tag_file(self, fn: str, source_fn: Optional[str] = None) -> None:
         """Tag an MP4/M4V file with iTunes metadata using AtomicParsley.
 
         Args:
             fn: Path to the output MP4/M4V file to tag.
+            source_fn: Path to the original source file, used for TRACK_REGEX
+                matching. Falls back to fn when not provided.
         """
         if not STTNGS['tn']:
             prms = {
                 'encodingTool': STTNGS['encodingTool'],
             }
-            info = self.tagTrackInfo(fn)
+            info = self.tagTrackInfo(source_fn or fn)
             for option in atomicParsleyOptions:
                 if option in STTNGS:
                     prms[option] = STTNGS[option]
