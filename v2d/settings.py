@@ -33,6 +33,8 @@ class StreamSpec:
     stream_prefix: Optional[str] = None
     copy: bool = False
     hardsub: bool = False
+    default: bool = False                           # mark track as default (mkv/mp4)
+    forced: bool = False                            # mark track as forced (mkv only)
 
     def as_extended_dict(self) -> Dict:
         """Return dict compatible with stream.params['extended']."""
@@ -50,6 +52,8 @@ class StreamSpec:
         if self.stream_prefix is not None:        d['stream_prefix'] = self.stream_prefix
         if self.copy:                             d['copy'] = True
         if self.hardsub:                          d['hardsub'] = True
+        if self.default:                          d['default'] = True
+        if self.forced:                           d['forced'] = True
         return d
 
 
@@ -81,6 +85,9 @@ class ConversionSettings:
     vr: float = 23.976       # video frame rate (fps)
     ctf: bool = False        # clear temp files after converting
     vv: bool = False         # verbose/debug mode
+    attachments: bool = True    # copy attachments (fonts, cover) from mkv sources
+    attach_fonts: bool = True   # attach fonts referenced by subtitles but missing
+    fonts_dir: List[str] = field(default_factory=lambda: ['~/.fonts', '~/.fonts/subs'])
     web_optimization: bool = True
     temp_dir: str = '.'
     encodingTool: str = '2iDevice'

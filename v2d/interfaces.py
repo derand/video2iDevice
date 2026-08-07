@@ -100,12 +100,14 @@ class BasePackager(ABC):
         """
 
     @abstractmethod
-    def createMKV(self, files: List, fi: Any) -> str:
+    def createMKV(self, files: List, fi: Any, sources: Optional[List[str]] = None) -> str:
         """Build a Matroska (MKV) container.
 
         Args:
             files: List of ``(type, path, stream)`` tuples for each track.
             fi: Source file info object used to derive the output filename.
+            sources: Source media files, main file first, used for attachments
+                and chapters.
 
         Returns:
             Path to the finished MKV output file.

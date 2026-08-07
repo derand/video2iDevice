@@ -156,6 +156,9 @@ class CLIParserMixin:
         p.add_argument('-tagging_mode',  dest='tagging_mode', action='store_const', const=True,  help='tag only, skip encoding')
         p.add_argument('-test_mode',     dest='test_mode',    action='store_const', const=True,  help='dry run — print commands without executing')
         p.add_argument('-web_optimization', dest='web_optimization', type=lambda x: x != '0', metavar='0|1', help='fast-start optimization (def 1)')
+        p.add_argument('-attachments',   dest='attachments',  type=lambda x: x != '0', metavar='0|1', help='copy attachments from mkv source (def 1)')
+        p.add_argument('-attach_fonts',  dest='attach_fonts', type=lambda x: x != '0', metavar='0|1', help='attach fonts used by subtitles (def 1)')
+        p.add_argument('-fontsdir',      dest='fonts_dir',    action=_ArrayAppendAction, metavar='DIR', help='font search dirs (def ~/.fonts,~/.fonts/subs)')
         p.add_argument('-ss',            dest='ss',           metavar='TIME',  help='split: start[/duration] HH:MM:SS.ms')
         p.add_argument('-sleep_between_files', dest='sleep_between_files', type=int, metavar='INT', help='pause between files (seconds)')
         p.add_argument('-threads', '-th', dest='threads',     type=int, metavar='INT', help='thread count')
@@ -189,6 +192,8 @@ class CLIParserMixin:
         # ── Per-stream flag modifiers ──────────────────────────────────────
         p.add_argument('-hardsub', dest='hardsub', action=_StreamFlagAction, nargs=0, help='render as hard subtitles (ASS only)')
         p.add_argument('-copy',    dest='copy',    action=_StreamFlagAction, nargs=0, help='copy stream without re-encoding')
+        p.add_argument('-default', dest='default', action=_StreamFlagAction, nargs=0, help='mark this track as default')
+        p.add_argument('-forced',  dest='forced',  action=_StreamFlagAction, nargs=0, help='mark this track as forced (mkv only)')
 
         # ── Per-stream value modifiers ─────────────────────────────────────
         p.add_argument('-stream',               dest='stream',              action=_StreamValueAction,        metavar='STR',  help='stream selector within the external file')

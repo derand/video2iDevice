@@ -41,6 +41,18 @@ class Video2iDevice(BaseConverter, CLIParserMixin, RunnerMixin, TaggingMixin,
         )
         self.log = LogToFile()
 
+    def _rejectSplitForMKV(self) -> None:
+        """Refuse ``-ss`` for MKV output.
+
+        Splitting runs the finished file through ffmpeg, re-encoding video and
+        copying audio only — subtitles, attachments and chapters would be lost
+        without a word. Better to say so than to hand back a broken result.
+        """
+        if STTNGS['format'].lower() == 'mkv':
+            raise NotImplementedError(
+                '-ss is not implemented for mkv output — it would drop '
+                'subtitles, fonts and chapters from the result')
+
     def splitMedia(self, filename: str) -> None:
         """Trim/split *filename* using the ``ss`` setting (start[/duration]).
 
@@ -48,6 +60,7 @@ class Video2iDevice(BaseConverter, CLIParserMixin, RunnerMixin, TaggingMixin,
             filename: Path to the media file to split in place.
         """
         if 'ss' in STTNGS:
+            self._rejectSplitForMKV()
             logger.info('------ Split Media ------')
             fi = self.mediainformer.fileInfo(filename)
             vstreams = [s for s in fi.streams if s.type == StreamType.VIDEO]
@@ -81,6 +94,9 @@ class Video2iDevice(BaseConverter, CLIParserMixin, RunnerMixin, TaggingMixin,
         Returns:
             Path to the final output file.
         """
+        if 'ss' in STTNGS:
+            self._rejectSplitForMKV()       # fail now, not after encoding
+
         name = os.path.basename(fi.filename)
         files = []
         findSubs = True
@@ -95,20 +111,26 @@ class Video2iDevice(BaseConverter, CLIParserMixin, RunnerMixin, TaggingMixin,
             for s in tmp.split(':'):
                 strms.append(s)
 
-        # check hardsub and get unique media file names for logging
+        # check hardsub and collect source media file names (main file first —
+        # createMKV takes chapters from the first entry)
         hardsub_streams = []
-        media_file_names = set()
+        media_file_names = []
+
+        def remember_source(filename):
+            if filename not in media_file_names:
+                media_file_names.append(filename)
+
         for i in strms:
             stream = self._streamById(i, fi.streams)
             if 'extended' in stream.params and 'hardsub' in stream.params['extended']:
                 stream.params['filename'] = fi.filename
                 hardsub_streams.append(stream)
-            media_file_names.add(fi.filename)
+            remember_source(fi.filename)
         for fadd in STTNGS['fadd']:
             stream = self._streamFromFAdd(fadd, fi)
             if 'extended' in stream.params and 'hardsub' in stream.params['extended']:
                 hardsub_streams.append(stream)
-            media_file_names.add(stream.params['filename'])
+            remember_source(stream.params['filename'])
         for x in media_file_names:
             self.log.put('----------------------------\n', False)
             self.log.put(self.mediainformer.fileInfo(x).dump(), True)
@@ -185,7 +207,7 @@ class Video2iDevice(BaseConverter, CLIParserMixin, RunnerMixin, TaggingMixin,
             name = self.createMPEG(files, fi)
         elif fmt in ['mkv']:
             STTNGS['web_optimization'] = False
-            name = self.createMKV(files, fi)
+            name = self.createMKV(files, fi, media_file_names)
 
         self.splitMedia(name)
 

@@ -8,11 +8,25 @@ from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
+import fileCoding
 from v2d.settings import STTNGS
 from v2d.interfaces import BaseSubtitleEncoder
 from v2d_utils import mp4box_path, mkvtoolnix_path
 from media import isMatroshkaMedia
 from subtitles import subConverter
+
+# Subtitle stream format (cStream.format()) → file extension used when the track
+# is copied out of the source container instead of being converted.
+_SUB_EXTENSION = {
+    'ass': 'ass',   'ssa': 'ssa',
+    'srt': 'srt',   'subrip': 'srt',
+    'webvtt': 'vtt',
+    'pgs': 'sup',   'hdmv_pgs_subtitle': 'sup',
+    'vobsub': 'idx', 'dvd_subtitle': 'idx',
+}
+
+# Extensions whose content is text and therefore has a character encoding.
+_TEXT_SUB_EXTENSIONS = frozenset(['ass', 'ssa', 'srt', 'vtt'])
 
 
 class SubtitleEncoderMixin(BaseSubtitleEncoder):
@@ -56,7 +70,7 @@ class SubtitleEncoderMixin(BaseSubtitleEncoder):
     def _streamFromFAdd(self, fadd: Any, fi: Any, currentTrack: int = 0) -> Any:
         """Build a stream object from an external file addition entry."""
         path = os.path.dirname(fi.filename)
-        if path[-1] != '/':
+        if path and path[-1] != '/':
             path += '/'
         nn = self.buildFN(fi.filename, fadd.path)
         if not nn[0] in '/~':
@@ -83,6 +97,79 @@ class SubtitleEncoderMixin(BaseSubtitleEncoder):
             stream.params['name'] = fadd.name
         return stream
 
+    def _subCharset(self, iFile: str) -> Optional[str]:
+        """Detect the character encoding of a text subtitle file, or None."""
+        try:
+            return fileCoding.file_encoding(iFile)
+        except Exception as e:                      # detection is best-effort
+            logger.warning('cannot detect encoding of "%s": %s', iFile, e)
+            return None
+
+    def _copySubs(self, iFile: str, stream: Any, oFile: str) -> Optional[str]:
+        """Copy a subtitle track out of *iFile* keeping its original format.
+
+        Used for MKV output, where styling must survive: ASS stays ASS instead of
+        being flattened into timed text. Text tracks coming out of Matroska are
+        already UTF-8 by specification, so only external files get their encoding
+        sniffed for a later ``--sub-charset``.
+
+        Args:
+            iFile: Source media file or standalone subtitle file.
+            stream: A ``cStream`` object describing the subtitle stream.
+            oFile: Destination path proposed by the caller (``.ttxt`` suffix is
+                replaced with the real subtitle extension).
+
+        Returns:
+            Path to the copied subtitle file, or None when the track cannot be
+            carried over.
+        """
+        base = oFile[:-len('.ttxt')] if oFile.lower().endswith('.ttxt') else oFile
+        ext = iFile.split('.')[-1].lower()
+
+        # Standalone subtitle file — copy as-is.
+        if ext in ('srt', 'ass', 'ssa', 'vtt', 'sup'):
+            out_fn = '%s.%s' % (base, ext)
+            if STTNGS['sc']:
+                from shutil import copyfile
+                copyfile(iFile, out_fn)
+                if ext in _TEXT_SUB_EXTENSIONS:
+                    stream.params['sub_charset'] = self._subCharset(iFile)
+            return out_fn
+
+        if ext in ('mp4', 'm4v', 'mov'):
+            logger.error('subtitles from "%s" cannot go into mkv: timed text '
+                         '(tx3g) conversion is not implemented — track skipped', iFile)
+            return None
+
+        fmt = stream.format().lower()
+        sub_ext = _SUB_EXTENSION.get(fmt)
+        if sub_ext is None:
+            logger.error('unsupported subtitle format "%s" in "%s" — track skipped',
+                         fmt, iFile)
+            return None
+        out_fn = '%s.%s' % (base, sub_ext)
+
+        if isMatroshkaMedia(iFile) and 'mkvinfo_trackNumber' in stream.params:
+            if STTNGS['sc']:
+                cmd = [mkvtoolnix_path + 'mkvextract', 'tracks', iFile,
+                       '%s:%s' % (stream.params['mkvinfo_trackNumber'], out_fn)]
+                self._exeCmd(cmd)
+            return out_fn
+
+        ffmpeg_params = ['-y',
+                         '-i', '"%s"' % iFile,
+                         '-map', stream.trackID,
+                         '-an',
+                         '-vn',
+                         '-scodec', 'copy',
+                         out_fn]
+        if STTNGS['sc']:
+            stream_prefix = None
+            if 'extended' in stream.params and 'stream_prefix' in stream.params['extended']:
+                stream_prefix = stream.params['extended']['stream_prefix']
+            self.execute_ffmpeg_command(ffmpeg_params, stream_prefix)
+        return out_fn
+
     def cSubs(self, iFile: str, stream: Any, informer: Any, prms: Dict, oFile: str) -> Optional[str]:
         """Convert a subtitle stream to TTXT format in *oFile*.
 
@@ -102,6 +189,8 @@ class SubtitleEncoderMixin(BaseSubtitleEncoder):
                 return None
             else:
                 stream.params['extended']['hardsub'] = True
+        if STTNGS['format'].lower() == 'mkv':
+            return self._copySubs(iFile, stream, oFile)
         ext = iFile.split('.')[-1].lower()
         if ext == 'srt':
             if STTNGS['sc']:
